@@ -23,6 +23,7 @@ interface TeacherSignupData {
   role: 'teacher';
 }
 
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;

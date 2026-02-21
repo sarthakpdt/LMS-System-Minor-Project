@@ -92,6 +92,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
       },
     ]);
   }
+  
 
   // Admin routes
   return createBrowserRouter([

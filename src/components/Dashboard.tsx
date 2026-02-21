@@ -17,6 +17,7 @@ const performanceData = [
   { month: 'Jun', avgScore: 79, submissions: 89 },
 ];
 
+
 const gradeDistribution = [
   { name: 'A (90-100)', value: 285, color: '#10b981' },
   { name: 'B (80-89)', value: 412, color: '#3b82f6' },
