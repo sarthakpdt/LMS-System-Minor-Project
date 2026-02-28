@@ -6,8 +6,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  // Check if user is in state OR in localStorage (for timing issues after login)
+  const isAuthenticated = user || (typeof localStorage !== 'undefined' && !!localStorage.getItem("lms_user"));
 
   // 1. Show a loading state if the AuthContext is still checking for a token
   if (loading) {

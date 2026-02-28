@@ -1,150 +1,153 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-// --- Types & Interfaces ---
+type Role = "student" | "teacher" | "admin";
+
 interface User {
-  id: string;
-  name: string;
+  id: string;           // MongoDB _id from server
   email: string;
-  role: 'admin' | 'teacher' | 'student';
+  role: Role;
+  token: string;
 }
-
-interface StudentSignupData {
-  name: string;
-  email: string;
-  password: string;
-  role: 'student';
-  studentId: string;
-}
-
-interface TeacherSignupData {
-  name: string;
-  email: string;
-  password: string;
-  role: 'teacher';
-}
-
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  loading: boolean; // Vital for ProtectedRoute
-  login: (email: string, password: string, role: string) => Promise<{ success: boolean; message?: string }>;
-  signup: (userData: any) => Promise<{ success: boolean; message?: string }>;
+  login: (email: string, password: string, role: Role) => Promise<any>;
+  signup: (data: any) => Promise<any>;
   logout: () => void;
+  loading: boolean;
 }
 
-// 1. Create the Context object
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for stored user/token on mount
+  // ✅ LOAD USER FROM LOCALSTORAGE ON REFRESH
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('lms_token');
-      const storedUser = localStorage.getItem('lms_current_user');
-      
-      if (token && storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          localStorage.removeItem('lms_token');
-          localStorage.removeItem('lms_current_user');
-        }
-      }
-      setLoading(false);
-    };
-    checkAuth();
+    const storedUser = localStorage.getItem("lms_user");
+
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
+    setLoading(false);
   }, []);
 
-  // LOGIN Logic
-  const login = async (email: string, password: string, role: string): Promise<{ success: boolean; message?: string }> => {
+  // ================= LOGIN =================
+  const login = async (email: string, password: string, role: Role) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      setLoading(true);
+
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password, role }),
       });
 
-      const result = await response.json();
+      const data = await res.json();
+      console.log("Login full response:", { status: res.status, data });
 
-      if (!response.ok) {
-        return { success: false, message: result.message || 'Login failed' };
+      if (!res.ok) {
+        console.error("Login failed with status", res.status, ":", data);
+        return { success: false, message: data.message || "Login failed" };
       }
 
-      const { token, data } = result;
-      localStorage.setItem('lms_token', token);
-      localStorage.setItem('lms_current_user', JSON.stringify(data.user));
-      
-      setUser(data.user);
+      // Handle different possible response structures
+      const userFromResponse = data?.user || data?.data?.user || null;
+      const token = data?.token || null;
+
+      if (!userFromResponse || !token) {
+        console.error("Invalid response structure. Got:", { user: userFromResponse, token });
+        return { success: false, message: "Invalid response from server" };
+      }
+
+      const userData: User = {
+        id: userFromResponse.id || userFromResponse._id || "",
+        email: userFromResponse.email,
+        role: userFromResponse.role,
+        token: token,
+      };
+
+      setUser(userData);
+      localStorage.setItem("lms_user", JSON.stringify(userData));
+
       return { success: true };
     } catch (error) {
-      return { success: false, message: 'Server error. Please check your connection.' };
+      console.error("Login error:", error);
+      return { success: false, message: "Server error" };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // SIGNUP Logic
-  const signup = async (userData: any): Promise<{ success: boolean; message?: string }> => {
+  // ================= SIGNUP =================
+  const signup = async (formData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
+      setLoading(true);
+      
+      console.log("Sending signup data:", formData);
+
+      const res = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      const data = await res.json();
+      console.log("Signup response:", data, "Status:", res.status);
 
-      if (!response.ok) {
-        return { success: false, message: result.message || 'Signup failed' };
+      if (!res.ok) {
+        console.error("Signup validation failed:", data);
+        return { success: false, message: data.message || "Registration failed" };
       }
 
-      if (userData.role === 'student') {
-        return { 
-          success: true, 
-          message: 'Account created! Please wait for admin approval.' 
+      // If signup successful, optionally auto-login the user
+      if (data.token && data.user) {
+        const userData: User = {
+          id: data.user.id || data.user._id || "",
+          email: data.user.email,
+          role: data.user.role,
+          token: data.token,
         };
-      }
-
-      if (result.token) {
-        localStorage.setItem('lms_token', result.token);
-        localStorage.setItem('lms_current_user', JSON.stringify(result.data.user));
-        setUser(result.data.user);
+        setUser(userData);
+        localStorage.setItem("lms_user", JSON.stringify(userData));
+        console.log("User auto-logged in after signup");
       }
 
       return { success: true };
     } catch (error) {
-      return { success: false, message: 'Server error. Please try again later.' };
+      console.error("Signup error:", error);
+      return { success: false, message: "Server error" };
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ================= LOGOUT =================
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('lms_token');
-    localStorage.removeItem('lms_current_user');
+    localStorage.removeItem("lms_user");
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated: !!user, 
-      loading, // Pass loading to the provider
-      login, 
-      signup, 
-      logout 
-    }}>
-      {/* Do not render children until initial auth check is done to prevent flickering/redirect loops */}
-      {!loading && children}
+    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+      {children}
     </AuthContext.Provider>
   );
-}
+};
 
-// 2. THE EXPORTED HOOK (This is what RoleSwitcher.tsx is looking for)
-export function useAuth() {
+// ================= CUSTOM HOOK =================
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider");
   }
+
   return context;
-}
+};

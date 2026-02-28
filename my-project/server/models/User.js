@@ -1,18 +1,20 @@
 // server/models/User.js
 const mongoose = require('mongoose');
 
-const UserSchema = new mongoose.Schema({
- name: { type: String, required: true },
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  studentId: { type: String }, // Optional for teachers, required for students
-  phoneNumber: { type: String },
+  password: { type: String, required: true },
+  role: { 
+    type: String, 
+    enum: ['admin', 'teacher', 'student'], 
+    default: 'student' 
+  },
+  // REMOVE 'required: true' from these:
+  studentId: { type: String }, 
   department: { type: String },
   semester: { type: String },
-  academicYear: { type: String },
-  course: { type: String },
-  dob: { type: Date },
-  password: { type: String, required: true },
-  role: { type: String, enum: ['student', 'teacher'], default: 'student' }
+  phone: { type: String }
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', userSchema);

@@ -1,14 +1,20 @@
+import React, { ReactNode } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { TeacherAuth } from './TeacherAuth';
 
 interface ProtectedTeacherRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function ProtectedTeacherRoute({ children }: ProtectedTeacherRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
 
-  if (!isAuthenticated || user?.role !== 'teacher') {
+  // Check if user is authenticated and has teacher role
+  // Also check localStorage as backup in case state hasn't updated yet
+  const storedUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem("lms_user") || 'null') : null;
+  const currentUser = user || storedUser;
+
+  if (!currentUser || currentUser?.role !== 'teacher') {
     return <TeacherAuth />;
   }
 
