@@ -1,59 +1,38 @@
 import { useParams, Link } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { ArrowLeft, Camera, Monitor, AlertTriangle, CheckCircle, Clock, User, Eye } from 'lucide-react';
 
-const mockStudents = [
-  { 
-    id: 1, 
-    name: 'Emma Thompson', 
-    avatar: 'ET',
-    status: 'active',
-    progress: 75,
-    flagged: false,
-    tabSwitches: 0,
-    facialDetection: true,
-    timeElapsed: 28,
-    questionsAnswered: 15
-  },
-  { 
-    id: 2, 
-    name: 'James Wilson', 
-    avatar: 'JW',
-    status: 'active',
-    progress: 60,
-    flagged: true,
-    tabSwitches: 3,
-    facialDetection: false,
-    timeElapsed: 28,
-    questionsAnswered: 12
-  },
-  { 
-    id: 3, 
-    name: 'Sophia Chen', 
-    avatar: 'SC',
-    status: 'active',
-    progress: 85,
-    flagged: false,
-    tabSwitches: 0,
-    facialDetection: true,
-    timeElapsed: 28,
-    questionsAnswered: 17
-  },
-  { 
-    id: 4, 
-    name: 'Michael Brown', 
-    avatar: 'MB',
-    status: 'completed',
-    progress: 100,
-    flagged: true,
-    tabSwitches: 5,
-    facialDetection: true,
-    timeElapsed: 30,
-    questionsAnswered: 20
-  },
-];
+// will be populated from backend
 
 export function TeacherQuizMonitor() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const [students, setStudents] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/students/approved');
+        if (!res.ok) return;
+        let data = (await res.json()).data || [];
+        if (user?.role === 'teacher') {
+          const prof = await fetch(`http://localhost:5000/api/admin/teachers/${user.id}`);
+          if (prof.ok) {
+            const teacher = (await prof.json()).data || {};
+            if (teacher.assignedStudents && teacher.assignedStudents.length) {
+              const ids = new Set(teacher.assignedStudents.map((s: any) => String(s._id || s)));
+              data = data.filter((s: any) => ids.has(String(s._id)));
+            }
+          }
+        }
+        setStudents(data);
+      } catch (err) {
+        console.warn('failed to load students for quiz monitor', err);
+      }
+    }
+    load();
+  }, [user]);
 
   return (
     <div className="p-8">
@@ -163,95 +142,17 @@ export function TeacherQuizMonitor() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Student</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Progress</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Time</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Tab Switches</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Face Detection</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {mockStudents.map((student) => (
-                <tr key={student.id} className={`hover:bg-gray-50 ${student.flagged ? 'bg-red-50' : ''}`}>
+              {students.map((student) => (
+                <tr key={student._id || student.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        student.flagged ? 'bg-red-100' : 'bg-blue-100'
-                      }`}>
-                        <span className={`text-sm font-semibold ${
-                          student.flagged ? 'text-red-600' : 'text-blue-600'
-                        }`}>{student.avatar}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{student.name}</p>
-                        {student.flagged && (
-                          <p className="text-xs text-red-600 font-medium">⚠ Flagged for review</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      student.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {student.status === 'active' ? (
-                        <>
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          Active
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-3 h-3" />
-                          Completed
-                        </>
-                      )}
-                    </span>
+                    <p className="font-medium text-gray-900">{student.name}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-full max-w-[120px] h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            student.progress === 100 ? 'bg-green-500' : 'bg-blue-500'
-                          }`}
-                          style={{ width: `${student.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-600">
-                        {student.questionsAnswered}/20 ({student.progress}%)
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-sm text-gray-900">{student.timeElapsed} min</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      student.tabSwitches > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                    }`}>
-                      {student.tabSwitches > 0 && <AlertTriangle className="w-3 h-3" />}
-                      {student.tabSwitches}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {student.facialDetection ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        <CheckCircle className="w-3 h-3" />
-                        Detected
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                        <AlertTriangle className="w-3 h-3" />
-                        Not Detected
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-xs font-medium">
-                      <Eye className="w-3 h-3" />
-                      View Screen
-                    </button>
+                    <p className="text-xs text-gray-500">{student.email}</p>
                   </td>
                 </tr>
               ))}

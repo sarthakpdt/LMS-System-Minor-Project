@@ -1,30 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, Filter, Download, Mail, MoreVertical, TrendingUp, TrendingDown, Award, Target } from 'lucide-react';
 
-const studentsData = [
-  // Advanced Level Students (82-100%)
-  { id: 1, name: 'Sarah Johnson', email: 'sarah.j@school.edu', avatar: 'SJ', enrolled: 6, avgScore: 96.5, attendance: 97, status: 'Excellent', trend: 'up', level: 'Advanced', consecutiveAboveThreshold: 5, lastQuizzes: [94, 96, 97, 95, 98] },
-  { id: 2, name: 'David Lee', email: 'david.l@school.edu', avatar: 'DL', enrolled: 5, avgScore: 94.2, attendance: 96, status: 'Excellent', trend: 'up', level: 'Advanced', consecutiveAboveThreshold: 6, lastQuizzes: [92, 94, 95, 93, 96] },
-  { id: 3, name: 'Emily White', email: 'emily.w@school.edu', avatar: 'EW', enrolled: 6, avgScore: 92.8, attendance: 95, status: 'Excellent', trend: 'up', level: 'Advanced', consecutiveAboveThreshold: 4, lastQuizzes: [90, 92, 94, 93, 92] },
-  { id: 4, name: 'Sophia Chen', email: 'sophia.c@school.edu', avatar: 'SC', enrolled: 7, avgScore: 91.2, attendance: 96, status: 'Excellent', trend: 'up', level: 'Advanced', consecutiveAboveThreshold: 7, lastQuizzes: [89, 91, 92, 90, 93] },
-  { id: 5, name: 'Ryan Martinez', email: 'ryan.m@school.edu', avatar: 'RM', enrolled: 4, avgScore: 88.4, attendance: 94, status: 'Excellent', trend: 'up', level: 'Advanced', consecutiveAboveThreshold: 3, lastQuizzes: [86, 88, 90, 87, 89] },
 
-  // Intermediate Level Students (66-81%)
-  { id: 6, name: 'Emma Thompson', email: 'emma.t@school.edu', avatar: 'ET', enrolled: 6, avgScore: 79.5, attendance: 94, status: 'Good', trend: 'up', level: 'Intermediate', consecutiveAboveThreshold: 2, lastQuizzes: [75, 78, 80, 82, 81] },
-  { id: 7, name: 'Michael Chen', email: 'michael.c@school.edu', avatar: 'MC', enrolled: 5, avgScore: 77.3, attendance: 88, status: 'Good', trend: 'up', level: 'Intermediate', consecutiveAboveThreshold: 2, lastQuizzes: [74, 76, 78, 79, 77] },
-  { id: 8, name: 'Olivia Davis', email: 'olivia.d@school.edu', avatar: 'OD', enrolled: 6, avgScore: 76.9, attendance: 91, status: 'Good', trend: 'up', level: 'Intermediate', consecutiveAboveThreshold: 1, lastQuizzes: [72, 75, 77, 79, 80] },
-  { id: 9, name: 'Daniel Garcia', email: 'daniel.g@school.edu', avatar: 'DG', enrolled: 5, avgScore: 74.4, attendance: 88, status: 'Good', trend: 'up', level: 'Intermediate', consecutiveAboveThreshold: 0, lastQuizzes: [70, 73, 75, 76, 72] },
-  { id: 10, name: 'Ava Martinez', email: 'ava.m@school.edu', avatar: 'AM', enrolled: 6, avgScore: 72.6, attendance: 85, status: 'Good', trend: 'down', level: 'Intermediate', consecutiveAboveThreshold: 0, lastQuizzes: [75, 74, 72, 70, 71] },
-  { id: 11, name: 'Ethan Taylor', email: 'ethan.t@school.edu', avatar: 'ET', enrolled: 4, avgScore: 70.1, attendance: 85, status: 'Good', trend: 'up', level: 'Intermediate', consecutiveAboveThreshold: 1, lastQuizzes: [68, 69, 71, 72, 70] },
-  { id: 12, name: 'Noah Anderson', email: 'noah.a@school.edu', avatar: 'NA', enrolled: 5, avgScore: 68.3, attendance: 89, status: 'Good', trend: 'up', level: 'Intermediate', consecutiveAboveThreshold: 0, lastQuizzes: [65, 67, 69, 70, 68] },
-
-  // Beginner Level Students (0-65%)
-  { id: 13, name: 'James Wilson', email: 'james.w@school.edu', avatar: 'JW', enrolled: 5, avgScore: 62.3, attendance: 78, status: 'Needs Attention', trend: 'up', level: 'Beginner', consecutiveAboveThreshold: 1, lastQuizzes: [58, 60, 63, 65, 64] },
-  { id: 14, name: 'Michael Brown', email: 'michael.b@school.edu', avatar: 'MB', enrolled: 4, avgScore: 58.7, attendance: 82, status: 'Needs Attention', trend: 'up', level: 'Beginner', consecutiveAboveThreshold: 2, lastQuizzes: [55, 57, 60, 62, 59] },
-  { id: 15, name: 'Isabella Lee', email: 'isabella.l@school.edu', avatar: 'IL', enrolled: 7, avgScore: 55.8, attendance: 75, status: 'Needs Attention', trend: 'down', level: 'Beginner', consecutiveAboveThreshold: 0, lastQuizzes: [58, 56, 54, 55, 53] },
-  { id: 16, name: 'Liam Harris', email: 'liam.h@school.edu', avatar: 'LH', enrolled: 5, avgScore: 52.4, attendance: 70, status: 'Needs Attention', trend: 'down', level: 'Beginner', consecutiveAboveThreshold: 0, lastQuizzes: [55, 53, 51, 50, 52] },
-  { id: 17, name: 'Mia Johnson', email: 'mia.j@school.edu', avatar: 'MJ', enrolled: 4, avgScore: 48.9, attendance: 68, status: 'Critical', trend: 'down', level: 'Beginner', consecutiveAboveThreshold: 0, lastQuizzes: [50, 49, 48, 47, 49] },
-];
 
 // Promotion thresholds
 const promotionCriteria = {
@@ -41,20 +19,50 @@ const promotionCriteria = {
 };
 
 export function Students() {
+  const { user } = useAuth();
+  const [allStudents, setAllStudents] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
 
-  const filteredStudents = studentsData.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterLevel === 'all' || student.level === filterLevel;
+  // load students from API
+  useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/students/approved');
+        if (!res.ok) return;
+        const json = await res.json();
+        let students = json.data || [];
+        if (user?.role === 'teacher') {
+          // if teacher, restrict to his assignedStudents if present
+          const profRes = await fetch(`http://localhost:5000/api/admin/teachers/${user.id}`);
+          if (profRes.ok) {
+            const profJson = await profRes.json();
+            const teacher = profJson.data || {};
+            if (teacher.assignedStudents && teacher.assignedStudents.length) {
+              const ids = new Set(teacher.assignedStudents.map((s: any) => String(s._id || s)));
+              students = students.filter((s: any) => ids.has(String(s._id)));
+            }
+          }
+        }
+        setAllStudents(students);
+      } catch (err) {
+        console.warn('Failed to load students list', err);
+      }
+    }
+    fetchStudents();
+  }, [user]);
+
+  const filteredStudents = allStudents.filter(student => {
+    const matchesSearch = student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterLevel === 'all' || student.level === filterLevel || true;
     return matchesSearch && matchesFilter;
   });
 
   const levelCounts = {
-    Advanced: studentsData.filter(s => s.level === 'Advanced').length,
-    Intermediate: studentsData.filter(s => s.level === 'Intermediate').length,
-    Beginner: studentsData.filter(s => s.level === 'Beginner').length,
+    Advanced: allStudents.filter(s => s.level === 'Advanced').length,
+    Intermediate: allStudents.filter(s => s.level === 'Intermediate').length,
+    Beginner: allStudents.filter(s => s.level === 'Beginner').length,
   };
 
   const getLevelColor = (level: string) => {
@@ -66,20 +74,6 @@ export function Students() {
     }
   };
 
-  const getPromotionStatus = (student: typeof studentsData[0]) => {
-    if (student.level === 'Advanced') return null;
-    
-    const criteria = student.level === 'Beginner' ? promotionCriteria.beginner : promotionCriteria.intermediate;
-    const progress = (student.consecutiveAboveThreshold / criteria.consecutiveRequired) * 100;
-    
-    return {
-      threshold: criteria.threshold,
-      required: criteria.consecutiveRequired,
-      current: student.consecutiveAboveThreshold,
-      progress: progress,
-      nextLevel: criteria.promoteTo,
-    };
-  };
 
   return (
     <div className="p-8">
@@ -99,7 +93,7 @@ export function Students() {
           </div>
           <p className="text-sm opacity-90 mb-1">Advanced Level</p>
           <p className="text-4xl font-bold">{levelCounts.Advanced}</p>
-          <p className="text-xs opacity-75 mt-2">{((levelCounts.Advanced / studentsData.length) * 100).toFixed(0)}% of total students</p>
+          <p className="text-xs opacity-75 mt-2">{allStudents.length > 0 ? ((levelCounts.Advanced / allStudents.length) * 100).toFixed(0) : '0'}% of total students</p>
         </div>
 
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg">
@@ -111,7 +105,7 @@ export function Students() {
           </div>
           <p className="text-sm opacity-90 mb-1">Intermediate Level</p>
           <p className="text-4xl font-bold">{levelCounts.Intermediate}</p>
-          <p className="text-xs opacity-75 mt-2">{((levelCounts.Intermediate / studentsData.length) * 100).toFixed(0)}% of total students</p>
+          <p className="text-xs opacity-75 mt-2">{allStudents.length > 0 ? ((levelCounts.Intermediate / allStudents.length) * 100).toFixed(0) : '0'}% of total students</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
@@ -123,7 +117,7 @@ export function Students() {
           </div>
           <p className="text-sm opacity-90 mb-1">Beginner Level</p>
           <p className="text-4xl font-bold">{levelCounts.Beginner}</p>
-          <p className="text-xs opacity-75 mt-2">{((levelCounts.Beginner / studentsData.length) * 100).toFixed(0)}% of total students</p>
+          <p className="text-xs opacity-75 mt-2">{allStudents.length > 0 ? ((levelCounts.Beginner / allStudents.length) * 100).toFixed(0) : '0'}% of total students</p>
         </div>
       </div>
 
@@ -193,106 +187,29 @@ export function Students() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Last 5 Quizzes</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Promotion Progress</th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Semester</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredStudents.map((student) => {
-                const promotionStatus = getPromotionStatus(student);
-                return (
-                  <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+              {filteredStudents.map((student) => (
+                  <tr key={student._id || student.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-semibold text-blue-600">{student.avatar}</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{student.name}</p>
-                          <p className="text-xs text-gray-500">{student.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getLevelColor(student.level)}`}>
-                        {student.level === 'Advanced' && <Award className="w-3 h-3" />}
-                        {student.level}
-                      </span>
+                      <p className="font-medium text-gray-900">{student.name || '--'}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{student.avgScore}%</span>
-                        {student.trend === 'up' ? (
-                          <TrendingUp className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-red-500" />
-                        )}
-                      </div>
+                      <p className="text-xs text-gray-500">{student.email || '--'}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-1">
-                        {student.lastQuizzes.map((score, idx) => (
-                          <div
-                            key={idx}
-                            className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium ${
-                              promotionStatus && score >= promotionStatus.threshold
-                                ? 'bg-green-100 text-green-700 border border-green-300'
-                                : 'bg-gray-100 text-gray-700 border border-gray-300'
-                            }`}
-                            title={`Quiz ${idx + 1}: ${score}%`}
-                          >
-                            {score}
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-xs text-gray-500">{student.department || '--'}</p>
                     </td>
                     <td className="px-6 py-4">
-                      {promotionStatus ? (
-                        <div className="max-w-xs mx-auto">
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-gray-600">To {promotionStatus.nextLevel}</span>
-                            <span className="font-medium text-gray-900">
-                              {promotionStatus.current}/{promotionStatus.required} quizzes
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                promotionStatus.progress >= 100 ? 'bg-green-500' : 'bg-blue-500'
-                              }`}
-                              style={{ width: `${Math.min(promotionStatus.progress, 100)}%` }}
-                            />
-                          </div>
-                          {promotionStatus.progress >= 100 && (
-                            <p className="text-xs text-green-600 font-medium mt-1 text-center">
-                              ✓ Ready for promotion!
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-500 mt-1 text-center">
-                            Need ≥{promotionStatus.threshold}% consistently
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-500">Highest Level</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        student.status === 'Excellent' ? 'bg-green-100 text-green-800' :
-                        student.status === 'Good' ? 'bg-blue-100 text-blue-800' :
-                        student.status === 'Needs Attention' ? 'bg-orange-100 text-orange-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {student.status}
-                      </span>
+                      <p className="text-xs text-gray-500">{student.semester || '--'}</p>
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>

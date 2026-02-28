@@ -5,7 +5,13 @@ type Role = "student" | "teacher" | "admin";
 interface User {
   id: string;           // MongoDB _id from server
   email: string;
+  name?: string;
   role: Role;
+  department?: string;
+  semester?: string;
+  studentId?: string;
+  employeeId?: string;
+  approvalStatus?: string;
   token: string;
 }
 
@@ -51,8 +57,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Login full response:", { status: res.status, data });
 
       if (!res.ok) {
-        console.error("Login failed with status", res.status, ":", data);
-        return { success: false, message: data.message || "Login failed" };
+        const message = data.message || data.error || "Login failed";
+        console.error("Login failed with status", res.status, "->", message, "(full response)", data);
+        return { success: false, message };
       }
 
       // Handle different possible response structures
@@ -64,12 +71,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, message: "Invalid response from server" };
       }
 
-      const userData: User = {
+      // start with the basic fields returned by auth
+      let userData: User = {
         id: userFromResponse.id || userFromResponse._id || "",
         email: userFromResponse.email,
         role: userFromResponse.role,
         token: token,
+        name: userFromResponse.name || undefined,
+        approvalStatus: userFromResponse.approvalStatus || undefined,
       };
+
+      // Attempt to fetch a fuller profile (student/teacher) from the API
+      try {
+        if (userData.role === 'student') {
+          const profileRes = await fetch(`http://localhost:5000/api/admin/students/${userData.id}`);
+          if (profileRes.ok) {
+            const profileJson = await profileRes.json();
+            const full = profileJson.data || profileJson;
+            userData = {
+              ...userData,
+              name: full.name || userData.name,
+              department: full.department,
+              semester: full.semester,
+              studentId: full.studentId,
+              approvalStatus: full.approvalStatus || userData.approvalStatus,
+            };
+          }
+        } else if (userData.role === 'teacher') {
+          const profileRes = await fetch(`http://localhost:5000/api/admin/teachers/${userData.id}`);
+          if (profileRes.ok) {
+            const profileJson = await profileRes.json();
+            const full = profileJson.data || profileJson;
+            userData = {
+              ...userData,
+              name: full.name || userData.name,
+              department: full.department,
+              employeeId: full.employeeId,
+              approvalStatus: full.approvalStatus || userData.approvalStatus,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch full profile after login:', err);
+      }
 
       setUser(userData);
       localStorage.setItem("lms_user", JSON.stringify(userData));
@@ -102,18 +146,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Signup response:", data, "Status:", res.status);
 
       if (!res.ok) {
-        console.error("Signup validation failed:", data);
-        return { success: false, message: data.message || "Registration failed" };
+        const message = data.message || data.error || "Registration failed";
+        console.error("Signup validation failed (status", res.status, "):", message, data);
+        return { success: false, message };
       }
 
       // If signup successful, optionally auto-login the user
       if (data.token && data.user) {
-        const userData: User = {
+        let userData: User = {
           id: data.user.id || data.user._id || "",
           email: data.user.email,
           role: data.user.role,
           token: data.token,
+          name: data.user.name || undefined,
+          approvalStatus: data.user.approvalStatus || undefined,
         };
+
+        // Try to fetch full profile similar to login
+        try {
+          if (userData.role === 'student') {
+            const profileRes = await fetch(`http://localhost:5000/api/admin/students/${userData.id}`);
+            if (profileRes.ok) {
+              const profileJson = await profileRes.json();
+              const full = profileJson.data || profileJson;
+              userData = {
+                ...userData,
+                name: full.name || userData.name,
+                department: full.department,
+                semester: full.semester,
+                studentId: full.studentId,
+                approvalStatus: full.approvalStatus || userData.approvalStatus,
+              };
+            }
+          } else if (userData.role === 'teacher') {
+            const profileRes = await fetch(`http://localhost:5000/api/admin/teachers/${userData.id}`);
+            if (profileRes.ok) {
+              const profileJson = await profileRes.json();
+              const full = profileJson.data || profileJson;
+              userData = {
+                ...userData,
+                name: full.name || userData.name,
+                department: full.department,
+                employeeId: full.employeeId,
+                approvalStatus: full.approvalStatus || userData.approvalStatus,
+              };
+            }
+          }
+        } catch (err) {
+          console.warn('Could not fetch full profile after signup:', err);
+        }
+
         setUser(userData);
         localStorage.setItem("lms_user", JSON.stringify(userData));
         console.log("User auto-logged in after signup");
