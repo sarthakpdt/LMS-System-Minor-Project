@@ -3,25 +3,23 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes'); // 1. Import the new admin routes
+const adminRoutes = require('./routes/adminRoutes');
+const courseRoutes = require('./routes/courseRoutes'); // ✅ LINE 1 — add this
 
 dotenv.config();
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ Connection Error:", err));
 
-// 2. Register the Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes); // This enables http://localhost:5000/api/admin/...
+app.use('/api/admin', adminRoutes);
+app.use('/api/courses', courseRoutes); // ✅ LINE 2 — add this
 
-// Basic route for server health check
 app.get('/', (req, res) => {
   res.send('EduTrack API is running...');
 });
