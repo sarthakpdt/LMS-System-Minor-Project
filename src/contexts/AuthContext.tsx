@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ================= LOGIN =================
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
   const login = async (email: string, password: string, role: Role) => {
     try {
       setLoading(true);
@@ -75,7 +75,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Login full response:", data, "Status:", res.status);
 
       if (!res.ok) {
-        console.log("Login failed with status", res.status, "->", data.message, "(full response)", data);
         return { success: false, message: data.message || "Login failed" };
       }
 
@@ -104,9 +103,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData);
       localStorage.setItem("lms_user", JSON.stringify(userData));
 
-      // Return assignedCourses so TeacherAuth can show subject picker
       return {
         success: true,
+        userName: userData.name || email.split("@")[0],   // ← used by subject picker
         assignedCourses: userData.assignedCourses || [],
         setActiveSubject,
       };
@@ -118,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ================= SIGNUP =================
+  // ── SIGNUP ─────────────────────────────────────────────────────────────────
   const signup = async (formData: any) => {
     try {
       setLoading(true);
@@ -130,6 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const data = await res.json();
+      console.log("Signup full response:", data, "Status:", res.status);
 
       if (!res.ok) {
         return { success: false, message: data.message || "Registration failed" };
@@ -163,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ================= LOGOUT =================
+  // ── LOGOUT ─────────────────────────────────────────────────────────────────
   const logout = () => {
     setUser(null);
     setActiveSubjectState(null);

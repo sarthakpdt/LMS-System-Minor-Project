@@ -54,6 +54,15 @@ exports.register = async (req, res) => {
       if (!additionalData.employeeId) {
         return res.status(400).json({ success: false, message: 'employeeId is required for teachers' });
       }
+      // phone is mandatory in schema; validate early for clearer error
+      if (!additionalData.phone) {
+        return res.status(400).json({ success: false, message: 'phone number is required for teachers' });
+      }
+      // you may also enforce department if desired
+      if (!additionalData.department) {
+        // not returning error, just defaulting later; uncomment to enforce
+        // return res.status(400).json({ success: false, message: 'department is required for teachers' });
+      }
     } else if (role === 'admin') {
       Model = Admin;
     } else {

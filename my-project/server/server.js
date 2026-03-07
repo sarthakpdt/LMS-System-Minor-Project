@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const courseRoutes = require('./routes/courseRoutes'); // ✅ LINE 1 — add this
 
 dotenv.config();
 const app = express();
@@ -17,8 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log("❌ Connection Error:", err));
 
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/courses', courseRoutes); // ✅ LINE 2 — add this
+app.use('/api/admin', adminRoutes);  // all admin + course routes live here
 
 app.get('/', (req, res) => {
   res.send('EduTrack API is running...');
