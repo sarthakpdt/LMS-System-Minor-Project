@@ -56,11 +56,6 @@ exports.register = async (req, res) => {
           message: 'Employee ID is required for admins' 
         });
       }
-    } else {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid role' 
-      });
     }
 
     // Check if user exists
@@ -80,7 +75,6 @@ exports.register = async (req, res) => {
       ...additionalData
     });
 
-    // ✅ Full user object returned on register
     res.status(201).json({
       success: true,
       message: `Registration successful! Your account is ${role === 'student' ? 'pending admin approval' : 'pending verification'}`,
@@ -90,11 +84,7 @@ exports.register = async (req, res) => {
         name: user.name, 
         email: user.email, 
         role: role,
-        approvalStatus: user.approvalStatus,
-        semester: user.semester,
-        department: user.department,
-        studentId: user.studentId,
-        employeeId: user.employeeId,
+        approvalStatus: user.approvalStatus
       }
     });
   } catch (error) {
@@ -168,7 +158,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // ✅ Full user object returned on login
     res.status(200).json({
       success: true,
       message: `Welcome ${user.name}!`,
@@ -178,11 +167,7 @@ exports.login = async (req, res) => {
         name: user.name, 
         email: user.email, 
         role: role,
-        approvalStatus: user.approvalStatus,
-        semester: user.semester,
-        department: user.department,
-        studentId: user.studentId,
-        employeeId: user.employeeId,
+        approvalStatus: user.approvalStatus
       }
     });
   } catch (error) {
