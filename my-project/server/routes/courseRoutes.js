@@ -21,6 +21,7 @@ router.get('/semester/:sem', async (req, res) => {
   }
 });
 
+
 // GET all courses
 router.get('/', async (req, res) => {
   try {
