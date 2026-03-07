@@ -34,8 +34,9 @@ const teacherSchema = new mongoose.Schema({
   },
   department: { 
     type: String, 
-    required: true,
-    enum: ['CS', 'EE', 'ME', 'CE', 'Other']
+    required: false,
+    enum: ['CS', 'EE', 'ME', 'CE', 'BA', 'MATH', 'PHYS', 'CHEM', 'Other'],
+    default: 'Other'
   },
   specialization: {
     type: String

@@ -28,23 +28,23 @@ POST /api/auth/register
 }
 ```
 
-**Response:**
+**Response (student)**:
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "user": {
-      "_id": "65f1a2b3c4d5e6f7g8h9i0j1",
-      "email": "student@example.com",
-      "firstName": "John",
-      "lastName": "Doe",
-      "role": "student"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "message": "Registration successful! Your account is pending admin approval.",
+  "user": {
+    "id": "65f1a2b3c4d5e6f7g8h9i0j1",
+    "email": "student@example.com",
+    "role": "student",
+    "approvalStatus": "pending"
   }
 }
 ```
+> No `token` is returned for students; login must wait until the account is approved.
+
+**Response (non-students)** remains unchanged (includes `token`).
+
 
 ---
 

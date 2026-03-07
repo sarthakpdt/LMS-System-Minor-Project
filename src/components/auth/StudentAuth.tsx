@@ -143,24 +143,19 @@ export function StudentAuth() {
       const result = await signup(finalData);
 
       if (result.success) {
-        toast.success('Account created!', {
-          description: role === 'student' ? 'Redirecting to your portal...' : 'Account pending verification. Redirecting...',
-          duration: 3000,
-        });
-        
-        // Check if user was auto-logged in after signup
-        setTimeout(() => {
-          const loggedInUser = localStorage.getItem("lms_user");
-          if (loggedInUser) {
-            // User was auto-logged in, redirect to home
-            console.log("User auto-logged in. Redirecting...");
-            navigate('/');
-          } else {
-            // User wasn't auto-logged in, switch to login tab
-            console.log("User not logged in yet. Switching to login tab.");
-            setIsLogin(true);
-          }
-        }, 500);
+        if (result.pending) {
+          toast.success('Account created!', {
+            description: 'Your account is pending admin approval. Please wait before logging in.',
+            duration: 4000,
+          });
+          setIsLogin(true); // show login form so they can't assume dashboard
+        } else {
+          toast.success('Account created!', {
+            description: 'Redirecting to your portal...',
+            duration: 3000,
+          });
+          setTimeout(() => navigate('/'), 500);
+        }
       } else {
         setError(result.message || 'Signup failed');
         toast.error('Signup failed', { description: result.message });

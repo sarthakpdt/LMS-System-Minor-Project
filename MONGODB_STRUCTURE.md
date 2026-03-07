@@ -42,7 +42,7 @@ SchoolData (Database)
   
   // ===== STUDENT SPECIFIC =====
   studentId: String,               // "STD2024001" (required, unique)
-  department: String,              // "CS", "EE", "ME", "CE" (required)
+  department: String,              // "CS", "EE", "ME", "CE", "BA", "MATH", "PHYS", "CHEM" (required)
   semester: String,                // "1", "2", "3", ... "8" (required)
   enrollmentYear: Number,          // 2024
   
@@ -118,7 +118,7 @@ SchoolData (Database)
   
   // ===== TEACHER SPECIFIC =====
   employeeId: String,              // "EMP2024001" (required, unique)
-  department: String,              // "CS", "EE", "ME", "CE" (required)
+  department: String,              // "CS", "EE", "ME", "CE", "BA", "MATH", "PHYS", "CHEM" (required)
   specialization: String,          // "AI/ML", "Web Development"
   qualification: String,           // "B.Tech", "M.Tech", "Ph.D"
   

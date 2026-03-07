@@ -35,7 +35,7 @@ const studentSchema = new mongoose.Schema({
   department: { 
     type: String, 
     required: true,
-    enum: ['CS', 'EE', 'ME', 'CE', 'Other']
+    enum: ['CS', 'EE', 'ME', 'CE', 'BA', 'MATH', 'PHYS', 'CHEM', 'Other']
   },
   semester: { 
     type: String, 

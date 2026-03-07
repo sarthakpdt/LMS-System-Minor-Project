@@ -24,6 +24,7 @@ import { AdminQuizDashboard } from "./components/admin/AdminQuizDashboard";
 import { StudentApprovals } from "./components/admin/StudentApprovals";
 import { NotFound } from "./components/NotFound";
 import { StudentAuth } from "./components/auth/StudentAuth"; // Ensure this import exists
+import { TeacherAuth } from "./components/auth/TeacherAuth"; // teacher-specific auth page
 
 // Wrapper component for protected student routes
 function ProtectedStudentLayout() {
@@ -69,7 +70,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
     return createBrowserRouter([
       {
         path: "/auth",
-        Component: StudentAuth, // Teachers can also use the same auth page
+        Component: TeacherAuth, // use teacher variant with department/specialization fields
       },
       {
         path: "/",

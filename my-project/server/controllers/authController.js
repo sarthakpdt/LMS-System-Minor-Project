@@ -11,6 +11,26 @@ const generateToken = (id) => {
   });
 };
 
+// ─── Helper: build teacher user payload ───────────────────────────────────────
+const buildTeacherPayload = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: 'teacher',
+  approvalStatus: user.approvalStatus || 'pending',
+  department: user.department || null,
+  specialization: user.specialization || null,
+  employeeId: user.employeeId || null,
+  phone: user.phone || null,
+  // Return full assignedCourses array so frontend can show subject picker
+  assignedCourses: (user.assignedCourses || []).map(c => ({
+    courseId: c.courseId,
+    courseCode: c.courseCode,
+    courseName: c.courseName,
+    semester: c.semester,
+  })),
+});
+
 // POST /api/auth/register
 exports.register = async (req, res) => {
   try {
@@ -55,25 +75,32 @@ exports.register = async (req, res) => {
       ...additionalData,
     });
 
-    res.status(201).json({
+    const payload = {
       success: true,
       message: role === 'student'
         ? 'Registration successful! Your account is pending admin approval.'
         : 'Registration successful!',
-      token: generateToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: role,
-        approvalStatus: user.approvalStatus || 'pending',
-        semester: user.semester || null,
-        department: user.department || null,
-        studentId: user.studentId || null,
-        employeeId: user.employeeId || null,
-        phone: user.phone || null,
-      },
-    });
+      user: role === 'teacher'
+        ? buildTeacherPayload(user)
+        : {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role,
+            approvalStatus: user.approvalStatus || 'pending',
+            semester: user.semester || null,
+            department: user.department || null,
+            studentId: user.studentId || null,
+            employeeId: user.employeeId || null,
+            phone: user.phone || null,
+          },
+    };
+
+    if (role !== 'student') {
+      payload.token = generateToken(user._id);
+    }
+
+    res.status(201).json(payload);
 
   } catch (error) {
     console.error('Register error:', error);
@@ -121,18 +148,20 @@ exports.login = async (req, res) => {
       success: true,
       message: `Welcome back, ${user.name}!`,
       token: generateToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: role,
-        approvalStatus: user.approvalStatus || null,
-        semester: user.semester || null,
-        department: user.department || null,
-        studentId: user.studentId || null,
-        employeeId: user.employeeId || null,
-        phone: user.phone || null,
-      },
+      user: role === 'teacher'
+        ? buildTeacherPayload(user)
+        : {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role,
+            approvalStatus: user.approvalStatus || null,
+            semester: user.semester || null,
+            department: user.department || null,
+            studentId: user.studentId || null,
+            employeeId: user.employeeId || null,
+            phone: user.phone || null,
+          },
     });
 
   } catch (error) {
