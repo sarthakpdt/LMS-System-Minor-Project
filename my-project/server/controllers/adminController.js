@@ -115,7 +115,7 @@ exports.approveTeacher = async (req, res) => {
   }
 };
 
-// @desc    Get teacher by ID  (fixes the 404 in Students.tsx)
+// @desc    Get teacher by ID
 exports.getTeacherById = async (req, res) => {
   try {
     const teacher = await Teacher.findById(req.params.teacherId).lean();
@@ -129,7 +129,7 @@ exports.getTeacherById = async (req, res) => {
   }
 };
 
-// @desc    Get all courses (with enrolled student count)
+// @desc    Get all courses (with populated teacher)
 exports.getAllCourses = async (req, res) => {
   try {
     const courses = await Course.find()
@@ -164,7 +164,6 @@ exports.createCourse = async (req, res) => {
       description: description || '',
     });
 
-    // If a teacher is assigned, add course to teacher's assignedCourses
     if (teacherId) {
       await Teacher.findByIdAndUpdate(teacherId, {
         $push: {
@@ -199,7 +198,6 @@ exports.enrollStudentsByCriteria = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    // Find all approved students matching dept + semester
     const students = await Student.find({
       approvalStatus: 'approved',
       department,
@@ -212,7 +210,6 @@ exports.enrollStudentsByCriteria = async (req, res) => {
 
     const studentIds = students.map(s => s._id);
 
-    // Add course to each student's enrolledCourses (avoid duplicates)
     await Student.updateMany(
       {
         _id: { $in: studentIds },
@@ -231,12 +228,10 @@ exports.enrollStudentsByCriteria = async (req, res) => {
       }
     );
 
-    // Add students to the course's enrolledStudents list (avoid duplicates)
     await Course.findByIdAndUpdate(courseId, {
       $addToSet: { enrolledStudents: { $each: studentIds } }
     });
 
-    // If course has a teacher, add these students to teacher's assignedStudents
     if (course.teacher) {
       await Teacher.findByIdAndUpdate(course.teacher, {
         $addToSet: { assignedStudents: { $each: studentIds } }
@@ -258,7 +253,9 @@ exports.enrollStudentsByCriteria = async (req, res) => {
 exports.getCourseStudents = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const course = await Course.findById(courseId).populate('enrolledStudents', 'name email department semester studentId level').lean();
+    const course = await Course.findById(courseId)
+      .populate('enrolledStudents', 'name email department semester studentId level')
+      .lean();
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
@@ -268,17 +265,21 @@ exports.getCourseStudents = async (req, res) => {
   }
 };
 
-// @desc    Get all approved teachers (for course assignment dropdown)
+// @desc    Get all teachers for course assignment dropdown
+// ✅ FIX: Returns ALL teachers (approved + pending) so admin can assign any registered teacher
 exports.getApprovedTeachers = async (req, res) => {
   try {
-    const teachers = await Teacher.find({ approvalStatus: 'approved' }, 'name email department assignedCourses employeeId').lean();
+    const teachers = await Teacher.find(
+      { isActive: true },
+      'name email department assignedCourses employeeId approvalStatus'
+    ).lean();
     res.status(200).json({ success: true, data: teachers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get single student by ID (for student dashboard)
+// @desc    Get single student by ID
 exports.getStudentById = async (req, res) => {
   try {
     const student = await Student.findById(req.params.studentId).lean();
@@ -305,7 +306,7 @@ exports.assignTeacherToCourse = async (req, res) => {
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) return res.status(404).json({ success: false, message: 'Teacher not found' });
 
-    // Remove course from old teacher's assignedCourses if different
+    // Remove course from old teacher's assignedCourses if teacher is changing
     if (course.teacher && String(course.teacher) !== String(teacherId)) {
       await Teacher.findByIdAndUpdate(course.teacher, {
         $pull: { assignedCourses: { courseId: course._id } }
@@ -333,15 +334,22 @@ exports.assignTeacherToCourse = async (req, res) => {
       });
     }
 
-    // Also add enrolled students to teacher's assignedStudents
+    // Add enrolled students to teacher's assignedStudents
     if (course.enrolledStudents?.length) {
       await Teacher.findByIdAndUpdate(teacherId, {
         $addToSet: { assignedStudents: { $each: course.enrolledStudents } }
       });
     }
 
-    const updated = await Course.findById(courseId).populate('teacher', 'name email department').lean();
-    res.status(200).json({ success: true, message: `${teacher.name} assigned to ${course.courseName}`, data: updated });
+    const updated = await Course.findById(courseId)
+      .populate('teacher', 'name email department')
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: `${teacher.name} assigned to ${course.courseName}`,
+      data: updated
+    });
   } catch (error) {
     console.error('assignTeacherToCourse error:', error);
     res.status(500).json({ success: false, message: error.message });

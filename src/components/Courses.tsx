@@ -22,6 +22,7 @@ export function Courses() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const isTeacher = user?.role === 'teacher';
+  const isStudent = user?.role === 'student';
 
   const [courses, setCourses] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -56,10 +57,22 @@ export function Courses() {
       const res = await fetch(`${BASE}/courses`);
       const json = await res.json();
       let data: any[] = json.data || [];
+
       if (isTeacher && user?.assignedCourses?.length) {
         const myCourseIds = new Set(user.assignedCourses.map((c: any) => String(c.courseId)));
         data = data.filter((c: any) => myCourseIds.has(String(c._id)));
       }
+
+      // For students: only show their enrolled courses
+      if (isStudent) {
+        const studentRes = await fetch(`${BASE}/students/${user?.id}`);
+        const studentJson = await studentRes.json();
+        const enrolledIds = new Set(
+          (studentJson.data?.enrolledCourses || []).map((c: any) => String(c.courseId))
+        );
+        data = data.filter((c: any) => enrolledIds.has(String(c._id)));
+      }
+
       setCourses(data);
     } catch { toast.error('Failed to load courses'); }
     finally { setLoading(false); }
@@ -129,7 +142,6 @@ export function Courses() {
     finally { setEnrolling(false); }
   };
 
-  // ── Assign Teacher ────────────────────────────────────────────────────────
   const handleAssignTeacher = async () => {
     if (!assignTeacherId || !assignModal) { toast.error('Select a teacher'); return; }
     setAssigning(true);
@@ -149,7 +161,8 @@ export function Courses() {
   };
 
   const filtered = courses.filter(c => {
-    const matchSearch = c.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch =
+      c.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.courseCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.teacher?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchDept = filterDept === 'all' || c.department === filterDept;
@@ -159,6 +172,99 @@ export function Courses() {
 
   const deptLabel = (val: string) => DEPARTMENTS.find(d => d.value === val)?.label || val;
 
+  // ── Student view ──────────────────────────────────────────────────────────
+  if (isStudent) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-semibold text-gray-900 mb-2">My Courses</h2>
+          <p className="text-gray-600">Courses you are enrolled in this semester.</p>
+        </div>
+
+        {/* Search */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by course name or code..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-gray-500">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading courses...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-gray-500">No courses enrolled yet</p>
+            <p className="text-sm mt-1">Your admin will enroll you based on your department and semester.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered.map(course => (
+              <div
+                key={course._id}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+              >
+                <div className="p-6 flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1 flex-wrap">
+                        <h3 className="text-lg font-semibold text-gray-900">{course.courseName}</h3>
+                        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          {course.courseCode}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-wrap mt-1">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">
+                          {deptLabel(course.department)}
+                        </span>
+                        <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">
+                          Semester {course.semester}
+                        </span>
+
+                        {/* ── Teacher name — the key fix ── */}
+                        {course.teacher?.name ? (
+                          <span className="flex items-center gap-1 text-emerald-700 text-xs font-medium bg-emerald-50 px-2 py-0.5 rounded">
+                            <UserCheck className="w-3.5 h-3.5" />
+                            {course.teacher.name}
+                          </span>
+                        ) : (
+                          <span className="text-orange-500 text-xs font-medium">⚠ No teacher assigned</span>
+                        )}
+                      </div>
+
+                      {course.description && (
+                        <p className="text-sm text-gray-500 mt-1.5">{course.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Enrolled count */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-2xl font-bold text-gray-900">{course.enrolledStudents?.length || 0}</p>
+                    <p className="text-xs text-gray-400">enrolled</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Admin / Teacher view (unchanged) ─────────────────────────────────────
   return (
     <div className="p-8">
       <div className="mb-8 flex items-start justify-between">
@@ -217,7 +323,7 @@ export function Courses() {
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">{deptLabel(course.department)}</span>
                         <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">Semester {course.semester}</span>
-                        {course.teacher ? (
+                        {course.teacher?.name ? (
                           <span className="text-gray-600 text-sm flex items-center gap-1">
                             <UserCheck className="w-3.5 h-3.5 text-green-500" /> {course.teacher.name}
                           </span>
@@ -237,7 +343,6 @@ export function Courses() {
 
                     {isAdmin && (
                       <>
-                        {/* Assign Teacher button */}
                         <button
                           onClick={() => {
                             setAssignModal({ courseId: course._id, courseName: course.courseName, currentTeacherId: course.teacher?._id || '' });
@@ -248,8 +353,6 @@ export function Courses() {
                           <UserCheck className="w-4 h-4" />
                           {course.teacher ? 'Change Teacher' : 'Assign Teacher'}
                         </button>
-
-                        {/* Enroll Students button */}
                         <button
                           onClick={() => { setEnrollModal({ courseId: course._id, courseName: course.courseName, dept: course.department, sem: course.semester }); setEnrollDept(course.department); setEnrollSem(course.semester); }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
@@ -259,7 +362,6 @@ export function Courses() {
                       </>
                     )}
 
-                    {/* Toggle students */}
                     <button onClick={() => toggleCourseStudents(course._id)}
                       className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
                       {expandedCourse === course._id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />} Students
@@ -268,7 +370,6 @@ export function Courses() {
                 </div>
               </div>
 
-              {/* Enrolled Students Panel */}
               {expandedCourse === course._id && (
                 <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
                   {loadingStudents === course._id ? (
@@ -312,7 +413,7 @@ export function Courses() {
         </div>
       )}
 
-      {/* ── Create Course Modal ── */}
+      {/* Create Course Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
@@ -375,7 +476,7 @@ export function Courses() {
         </div>
       )}
 
-      {/* ── Assign Teacher Modal ── */}
+      {/* Assign Teacher Modal */}
       {assignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -388,22 +489,15 @@ export function Courses() {
             </div>
             <div className="p-6 space-y-4">
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm text-purple-800">
-                Select an approved teacher to assign to this course. They will be able to see this course and its students in their dashboard.
+                Select an approved teacher to assign to this course.
               </div>
               {teachers.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 text-sm">
-                  No approved teachers found. Approve teachers first from Student Approvals.
-                </div>
+                <div className="text-center py-4 text-gray-500 text-sm">No approved teachers found.</div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {teachers.map(t => (
-                    <button
-                      key={t._id}
-                      onClick={() => setAssignTeacherId(t._id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                        assignTeacherId === t._id ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'
-                      }`}
-                    >
+                    <button key={t._id} onClick={() => setAssignTeacherId(t._id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${assignTeacherId === t._id ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'}`}>
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm ${assignTeacherId === t._id ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
                         {t.name?.[0]?.toUpperCase()}
                       </div>
@@ -431,7 +525,7 @@ export function Courses() {
         </div>
       )}
 
-      {/* ── Enroll Students Modal ── */}
+      {/* Enroll Students Modal */}
       {enrollModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -444,7 +538,7 @@ export function Courses() {
             </div>
             <div className="p-6 space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                All <strong>approved students</strong> matching the selected department and semester will be enrolled together.
+                All <strong>approved students</strong> matching the selected department and semester will be enrolled.
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
