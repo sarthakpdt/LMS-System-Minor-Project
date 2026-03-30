@@ -32,7 +32,7 @@ const buildTeacherPayload = (user) => ({
 });
 
 // POST /api/auth/register
-exports.register = async (req, res) => {
+const register = async (req, res) => {
   try {
     const { name, email, password, role, ...additionalData } = req.body;
 
@@ -122,7 +122,7 @@ exports.register = async (req, res) => {
 };
 
 // POST /api/auth/login
-exports.login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
@@ -178,3 +178,5 @@ exports.login = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+module.exports = { register, login };  
