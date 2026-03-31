@@ -12,11 +12,31 @@ const materialSchema = new mongoose.Schema({
   },
   subject: {
     type: String,
-    required: true
+    default: ''
+  },
+  // Which course this material belongs to
+  courseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course',
+    default: null
+  },
+  courseName: {
+    type: String,
+    default: ''
+  },
+  // Category of material
+  category: {
+    type: String,
+    enum: [
+      'Lecture Notes', 'Practice Sheet', 'Assignment', 'Video Lecture',
+      'Reference Material', 'Lab Manual', 'Previous Year Paper',
+      'Visual Aids', 'Guidelines', 'Other'
+    ],
+    default: 'Other'
   },
   fileType: {
     type: String,
-    enum: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'png', 'mp4', 'other'],
+    enum: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'mp4', 'other'],
     default: 'other'
   },
   fileName: {
@@ -28,7 +48,7 @@ const materialSchema = new mongoose.Schema({
     required: true
   },
   fileSize: {
-    type: Number, // in bytes
+    type: Number,
     default: 0
   },
   uploadedBy: {
@@ -37,13 +57,18 @@ const materialSchema = new mongoose.Schema({
     required: true
   },
   uploadedByName: {
-    type: String
+    type: String,
+    default: ''
   },
   isPublished: {
     type: Boolean,
     default: true
   },
   downloadCount: {
+    type: Number,
+    default: 0
+  },
+  viewCount: {
     type: Number,
     default: 0
   }

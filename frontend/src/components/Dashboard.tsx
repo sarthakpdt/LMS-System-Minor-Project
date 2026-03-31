@@ -151,9 +151,9 @@ function StudentDashboard() {
       )}
 
       {activeTab === 'materials' && <StudentMaterials />}
-      {activeTab === 'attendance' && <StudentAttendance studentId={user?._id} />}
+       {activeTab === 'attendance' && <StudentAttendance studentId={user?.id} />}
       {/* Students get NotificationsPanel in read-only mode (no canCreate role) */}
-      {activeTab === 'notifications' && <NotificationsPanel userId={user?._id} role="student" userName={user?.name} />}
+       {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="student" userName={user?.name} />}
     </div>
   );
 }
@@ -340,10 +340,10 @@ function TeacherDashboard() {
         </>
       )}
 
-      {activeTab === 'materials' && <StudyMaterials teacherId={user?._id} teacherName={user?.name} />}
-      {activeTab === 'attendance' && <AttendanceManager teacherId={user?._id} teacherName={user?.name} />}
+      {activeTab === 'materials' && <StudyMaterials teacherId={user?.id} teacherName={user?.name} />}
+      {activeTab === 'attendance' && <AttendanceManager teacherId={user?.id} teacherName={user?.name} />}
       {/* ✅ FIX: teachers can now also create notifications for students */}
-      {activeTab === 'notifications' && <NotificationsPanel userId={user?._id} role="teacher" userName={user?.name} />}
+      {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="teacher" userName={user?.name} />}
     </div>
   );
 }
@@ -520,7 +520,8 @@ function AdminDashboard() {
       {/* ✅ FIX: Admin now has Timetable tab */}
       {activeTab === 'timetable' && <TimetableManager />}
       {/* ✅ FIX: Admin notification panel with isAdmin flag for delete ability */}
-      {activeTab === 'notifications' && <NotificationsPanel userId={user?._id} role="admin" userName={user?.name} isAdmin />}
+      {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="admin" userName={user?.name} isAdmin />}
+
     </div>
   );
 }

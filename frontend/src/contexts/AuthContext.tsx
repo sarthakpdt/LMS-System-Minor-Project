@@ -10,7 +10,7 @@ interface AssignedCourse {
 }
 
 interface User {
-  id: string;
+  id: string;       // ← This is what Dashboard uses: user?.id  
   email: string;
   name?: string;
   role: Role;
@@ -43,10 +43,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("lms_user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem("lms_user");
+      }
+    }
 
     const storedSubject = localStorage.getItem("lms_active_subject");
-    if (storedSubject) setActiveSubjectState(JSON.parse(storedSubject));
+    if (storedSubject) {
+      try {
+        setActiveSubjectState(JSON.parse(storedSubject));
+      } catch {
+        localStorage.removeItem("lms_active_subject");
+      }
+    }
 
     setLoading(false);
   }, []);
@@ -79,12 +91,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const userFromResponse = data?.user || data?.data?.user || null;
-      const token = data?.token || null;
+      const token = data?.token || data?.data?.token || null;
 
       if (!userFromResponse || !token) {
         return { success: false, message: "Invalid response from server" };
       }
 
+      // ── IMPORTANT: id is stored as "id" (string), NOT "_id" ──────────────
+      // All components must use user?.id  (not user?._id)
       const userData: User = {
         id: userFromResponse.id || userFromResponse._id || "",
         email: userFromResponse.email,
@@ -92,7 +106,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token,
         name: userFromResponse.name || undefined,
         approvalStatus: userFromResponse.approvalStatus || undefined,
-        semester: userFromResponse.semester || undefined,
+        semester: userFromResponse.semester
+          ? String(userFromResponse.semester)
+          : undefined,
         department: userFromResponse.department || undefined,
         specialization: userFromResponse.specialization || undefined,
         studentId: userFromResponse.studentId || undefined,
@@ -105,13 +121,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       return {
         success: true,
-        userName: userData.name || email.split("@")[0],   // ← used by subject picker
+        userName: userData.name || email.split("@")[0],
         assignedCourses: userData.assignedCourses || [],
         setActiveSubject,
       };
     } catch (error) {
       console.error("Login error:", error);
-      return { success: false, message: "Server error" };
+      return { success: false, message: "Server error. Is the backend running?" };
     } finally {
       setLoading(false);
     }
@@ -143,7 +159,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           token: data.token,
           name: data.user.name || undefined,
           approvalStatus: data.user.approvalStatus || undefined,
-          semester: data.user.semester || undefined,
+          semester: data.user.semester ? String(data.user.semester) : undefined,
           department: data.user.department || undefined,
           specialization: data.user.specialization || undefined,
           studentId: data.user.studentId || undefined,
@@ -172,7 +188,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, activeSubject, setActiveSubject, login, signup, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, activeSubject, setActiveSubject, login, signup, logout, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );
