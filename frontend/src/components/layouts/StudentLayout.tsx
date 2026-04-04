@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut } from 'lucide-react';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,6 +12,7 @@ export function StudentLayout() {
     { to: '/courses', icon: BookOpen, label: 'My Courses' },
     { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quizzes & Tests' },
+    { to: '/my-progress', icon: ClipboardList, label: 'My Progress & Level' },
   ];
 
   const handleLogout = () => {

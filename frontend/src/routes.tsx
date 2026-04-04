@@ -23,10 +23,12 @@ import { StudentQuizTake } from "./components/student/StudentQuizTake";
 import { AdminQuizDashboard } from "./components/admin/AdminQuizDashboard";
 import { StudentApprovals } from "./components/admin/StudentApprovals";
 import { NotFound } from "./components/NotFound";
-import { StudentAuth } from "./components/auth/StudentAuth"; // Ensure this import exists
-import { TeacherAuth } from "./components/auth/TeacherAuth"; // teacher-specific auth page
+import { StudentAuth } from "./components/auth/StudentAuth";
+import { TeacherAuth } from "./components/auth/TeacherAuth";
+// NEW imports
+import { BucketDashboard } from "./components/teacher/BucketDashboard";
+import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
 
-// Wrapper component for protected student routes
 function ProtectedStudentLayout() {
   return (
     <ProtectedRoute>
@@ -35,7 +37,6 @@ function ProtectedStudentLayout() {
   );
 }
 
-// Wrapper component for protected teacher routes
 function ProtectedTeacherLayout() {
   return (
     <ProtectedTeacherRoute>
@@ -49,7 +50,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
     return createBrowserRouter([
       {
         path: "/auth",
-        Component: StudentAuth, // Publicly accessible
+        Component: StudentAuth,
       },
       {
         path: "/",
@@ -60,6 +61,8 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { path: "materials", Component: StudyMaterials },
           { path: "quizzes", Component: StudentQuizList },
           { path: "quiz/:id", Component: StudentQuizTake },
+          // NEW: student progress page
+          { path: "my-progress", Component: StudentBucketProgress },
           { path: "*", Component: NotFound },
         ],
       },
@@ -70,7 +73,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
     return createBrowserRouter([
       {
         path: "/auth",
-        Component: TeacherAuth, // use teacher variant with department/specialization fields
+        Component: TeacherAuth,
       },
       {
         path: "/",
@@ -88,12 +91,13 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { path: "performance-levels", Component: PerformanceLevels },
           { path: "analytics", Component: Analytics },
           { path: "notifications", Component: TeacherNotifications },
+          // NEW: bucket management dashboard
+          { path: "bucket-dashboard", Component: BucketDashboard },
           { path: "*", Component: NotFound },
         ],
       },
     ]);
   }
-  
 
   // Admin routes
   return createBrowserRouter([

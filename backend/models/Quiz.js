@@ -16,7 +16,15 @@ const quizSchema = new mongoose.Schema({
   timeLimit: { type: Number, default: 30 },
   totalMarks: { type: Number, default: 0 },
   isPublished: { type: Boolean, default: false },
-  dueDate: { type: Date }
+  dueDate: { type: Date },
+
+  // ── NEW: Difficulty / Bucket targeting ────────────────────────────────────
+  // Which bucket is this quiz targeted at? If null → available to all buckets
+  difficulty: {
+    type: String,
+    enum: ['Easy', 'Medium', 'Hard', null],
+    default: null,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Quiz', quizSchema);

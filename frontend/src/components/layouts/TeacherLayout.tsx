@@ -105,6 +105,7 @@ export function TeacherLayout() {
     { to: '/materials', icon: FolderOpen, label: 'Materials' },
     { to: '/assignments', icon: FileText, label: 'Assignments' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quiz Management' },
+    { to: '/bucket-dashboard', icon: TrendingUp, label: 'Student Buckets' },
     { to: '/grading', icon: Sparkles, label: 'Auto Grading' },
     { to: '/performance-levels', icon: TrendingUp, label: 'Performance Levels' },
     { to: '/analytics', icon: BarChart3, label: 'Performance' },

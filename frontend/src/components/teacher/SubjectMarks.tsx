@@ -1,121 +1,161 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, Download, Filter, BookOpen, Users, Award, TrendingUp, TrendingDown, Eye, BarChart2 } from 'lucide-react';
+import {
+  Search, Download, BookOpen, Users, Award,
+  TrendingUp, TrendingDown, Eye, BarChart2
+} from 'lucide-react';
 
+const API = 'http://localhost:5000/api';
 
+// Helper: read the JWT token from wherever it is stored
+function getToken(user: any): string {
+  // AuthContext stores the full user object in lms_user — token is inside it
+  if (user?.token) return user.token;
+  try {
+    const stored = localStorage.getItem('lms_user');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.token) return parsed.token;
+    }
+  } catch { /* ignore */ }
+  return '';
+}
 
 export function SubjectMarks() {
   const { user } = useAuth();
-  // dynamic lists loaded from DB
-  const [subjectsData, setSubjectsData] = useState<any[]>([]);
-  const [studentsData, setStudentsData] = useState<any[]>([]);
-  // teacher's own subjects or courses
-  const [mySubjects, setMySubjects] = useState<string[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterLevel, setFilterLevel] = useState('all');
-  const [viewMode, setViewMode] = useState<'my-subjects' | 'all-subjects'>('my-subjects');
 
-  // load data on mount or when user changes
-  useEffect(() => {
-    async function load() {
-      try {
-        // fetch approved students
-        const res = await fetch('http://localhost:5000/api/admin/students/approved');
-        if (!res.ok) return;
-        const json = await res.json();
-        const students = json.data || [];
-        setStudentsData(students);
+  const [allCourses, setAllCourses]           = useState<any[]>([]);
+  const [coursesLoading, setCoursesLoading]   = useState(true);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [studentsData, setStudentsData]       = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [searchTerm, setSearchTerm]           = useState('');
+  const [filterLevel, setFilterLevel]         = useState('all');
+  const [viewMode, setViewMode]               = useState<'my-subjects' | 'all-subjects'>('my-subjects');
 
-        // build subjects list from student courses
-        const subjSet = new Set<string>();
-        students.forEach((s: any) => {
-          if (s.courses && Array.isArray(s.courses)) {
-            s.courses.forEach((c: any) => {
-              if (c.courseName) subjSet.add(c.courseName);
-              else if (c.courseCode) subjSet.add(c.courseCode);
-            });
-          }
-        });
-        const allSubjects = Array.from(subjSet).map((name, idx) => ({ id: idx, name, teacher: '', studentCount: 0, category: '' }));
-        setSubjectsData(allSubjects);
-
-        // if teacher, fetch own profile for assigned courses
-        if (user?.role === 'teacher') {
-          const prof = await fetch(`http://localhost:5000/api/admin/teachers/${user.id}`);
-          if (prof.ok) {
-            const teacher = (await prof.json()).data || {};
-            if (teacher.assignedCourses && Array.isArray(teacher.assignedCourses)) {
-              setMySubjects(teacher.assignedCourses.map((c: any) => c.courseName || c.courseCode));
-            }
-          }
+  // ── Build set of courseIds assigned to this teacher ───────────────────────
+  // user.assignedCourses[].courseId was fixed in authController to be a plain string,
+  // but also handle ObjectId objects for backwards compatibility with old localStorage cache
+  const myAssignedCourseIds: Set<string> = new Set(
+    (user?.assignedCourses || [])
+      .map((c: any) => {
+        const id = c.courseId;
+        if (!id) return '';
+        // Handle both plain string and ObjectId object
+        if (typeof id === 'string') return id;
+        if (typeof id === 'object') {
+          // ObjectId object has toString() method
+          return String(id);
         }
+        return String(id);
+      })
+      .filter(Boolean)
+  );
 
-        // select first subject by default
-        setSelectedSubject(allSubjects[0]?.name || '');
+  // ── Load ALL courses from DB once on mount ────────────────────────────────
+  useEffect(() => {
+    async function loadAllCourses() {
+      setCoursesLoading(true);
+      try {
+        // GET /api/courses returns a plain array (not wrapped in { data })
+        const res = await fetch(`${API}/courses`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const courses: any[] = Array.isArray(json) ? json : (json.data || []);
+        setAllCourses(courses);
       } catch (err) {
-        console.warn('Failed to load subject marks data', err);
+        console.warn('Failed to load courses:', err);
+        setAllCourses([]);
+      } finally {
+        setCoursesLoading(false);
       }
     }
-    load();
-  }, [user]);
+    loadAllCourses();
+  }, []);
 
-  // Filter subjects based on view mode
-  const availableSubjects = viewMode === 'my-subjects' 
-    ? subjectsData.filter(s => mySubjects.includes(s.name))
-    : subjectsData;
+  // ── Derive visible course list based on view mode ─────────────────────────
+  const myCourses = allCourses.filter(c => myAssignedCourseIds.has(String(c._id)));
+  const availableCourses = viewMode === 'my-subjects' ? myCourses : allCourses;
 
-  // Get students for selected subject (from raw student courses)
-  const subjectStudents = studentsData
-    .map((stu) => {
-      const course = (stu.courses || []).find((c: any) => (c.courseName || c.courseCode) === selectedSubject);
-      if (course) {
-        return {
-          id: stu._id,
-          name: stu.name,
-          avatar: stu.name ? stu.name.split(' ').map(n=>n[0]).join('') : '',
-          subject: selectedSubject,
-          level: course.level || '',
-          midterm: course.midterm || 0,
-          final: course.final || 0,
-          assignments: course.assignments || 0,
-          quizAvg: course.quizAvg || 0,
-          total: course.marks || course.grade || 0,
-          grade: course.grade || '',
-          trend: course.trend || '',
-          attendance: stu.attendance || 0,
-        };
+  // ── Auto-select first course when list changes ────────────────────────────
+  useEffect(() => {
+    if (availableCourses.length > 0) {
+      setSelectedCourseId(String(availableCourses[0]._id));
+    } else {
+      setSelectedCourseId('');
+      setStudentsData([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, allCourses.length]);
+
+  // ── Fetch marks whenever selected course changes ──────────────────────────
+  const loadMarks = useCallback(async (courseId: string) => {
+    if (!courseId) { setStudentsData([]); return; }
+
+    setLoadingStudents(true);
+    try {
+      const token = getToken(user);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const url = viewMode === 'my-subjects'
+        ? `${API}/teachers/course/${courseId}/marks`
+        : `${API}/teachers/all-courses/marks?courseId=${courseId}`;
+
+      const res = await fetch(url, { headers });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        console.warn(`Marks API error ${res.status}:`, errJson.message);
+        setStudentsData([]);
+        return;
       }
-      return null;
-    })
-    .filter(Boolean);
 
-  // Filter students based on search and level
-  const filteredStudents = subjectStudents.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = filterLevel === 'all' || student.level === filterLevel;
+      const json = await res.json();
+      setStudentsData(json.data || []);
+    } catch (err) {
+      console.warn('Failed to load marks:', err);
+      setStudentsData([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [user, viewMode]);
+
+  useEffect(() => {
+    loadMarks(selectedCourseId);
+  }, [selectedCourseId, loadMarks]);
+
+  // ── Filter students ───────────────────────────────────────────────────────
+  const filteredStudents = studentsData.filter(student => {
+    const matchesSearch = (student.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLevel  = filterLevel === 'all' || student.level === filterLevel;
     return matchesSearch && matchesLevel;
   });
 
-  // Calculate subject statistics
-  const subjectStats = {
-    totalStudents: subjectStudents.length,
-    avgScore: subjectStudents.reduce((acc, s) => acc + s.total, 0) / subjectStudents.length || 0,
-    highestScore: Math.max(...subjectStudents.map(s => s.total)),
-    lowestScore: Math.min(...subjectStudents.map(s => s.total)),
-    passRate: (subjectStudents.filter(s => s.total >= 60).length / subjectStudents.length * 100) || 0,
-  };
+  // ── Stats — always safe (no Infinity / divide-by-zero) ───────────────────
+  const totalStudents = filteredStudents.length;
+  const avgScore      = totalStudents > 0
+    ? filteredStudents.reduce((acc, s) => acc + (Number(s.total) || 0), 0) / totalStudents
+    : 0;
+  const scores        = filteredStudents.map(s => Number(s.total) || 0);
+  const highestScore  = totalStudents > 0 ? Math.max(...scores) : 0;
+  const lowestScore   = totalStudents > 0 ? Math.min(...scores) : 0;
+  const passRate      = totalStudents > 0
+    ? (filteredStudents.filter(s => (Number(s.total) || 0) >= 60).length / totalStudents) * 100
+    : 0;
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const getLevelColor = (level: string) => {
     switch (level) {
-      case 'Advanced': return 'bg-green-100 text-green-700 border-green-200';
+      case 'Advanced':     return 'bg-green-100 text-green-700 border-green-200';
       case 'Intermediate': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Beginner': return 'bg-orange-100 text-orange-700 border-orange-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'Beginner':     return 'bg-orange-100 text-orange-700 border-orange-200';
+      default:             return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   const getGradeColor = (grade: string) => {
+    if (!grade) return 'bg-gray-100 text-gray-800 border-gray-300';
     if (grade.startsWith('A')) return 'bg-green-100 text-green-800 border-green-300';
     if (grade.startsWith('B')) return 'bg-blue-100 text-blue-800 border-blue-300';
     if (grade.startsWith('C')) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
@@ -123,6 +163,29 @@ export function SubjectMarks() {
     return 'bg-red-100 text-red-800 border-red-300';
   };
 
+  const handleExport = () => {
+    if (filteredStudents.length === 0) return;
+    const headers = ['Name', 'StudentID', 'Level', 'Midterm', 'Final', 'Assignments', 'Quiz Avg', 'Total', 'Grade', 'Attendance'];
+    const rows    = filteredStudents.map(s => [
+      `"${s.name}"`, s.studentId || '', s.level,
+      s.midterm, s.final, s.assignments, s.quizAvg, s.total, s.grade, `${s.attendance}%`
+    ]);
+    const csv  = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'subject_marks.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const switchViewMode = (mode: 'my-subjects' | 'all-subjects') => {
+    setViewMode(mode);
+    setStudentsData([]);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -137,10 +200,7 @@ export function SubjectMarks() {
             <span className="text-sm font-medium text-gray-700">View Mode:</span>
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setViewMode('my-subjects');
-                  setSelectedSubject(mySubjects[0]);
-                }}
+                onClick={() => switchViewMode('my-subjects')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   viewMode === 'my-subjects'
                     ? 'bg-green-600 text-white'
@@ -153,10 +213,7 @@ export function SubjectMarks() {
                 </div>
               </button>
               <button
-                onClick={() => {
-                  setViewMode('all-subjects');
-                  setSelectedSubject(subjectsData[0].name);
-                }}
+                onClick={() => switchViewMode('all-subjects')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   viewMode === 'all-subjects'
                     ? 'bg-blue-600 text-white'
@@ -172,16 +229,12 @@ export function SubjectMarks() {
           </div>
           {viewMode === 'my-subjects' && (
             <div className="bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg">
-              <p className="text-xs text-green-700 font-medium">
-                ✓ You have edit access to your subjects
-              </p>
+              <p className="text-xs text-green-700 font-medium">✓ You have edit access to your subjects</p>
             </div>
           )}
           {viewMode === 'all-subjects' && (
             <div className="bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg">
-              <p className="text-xs text-blue-700 font-medium">
-                👁 View-only mode for other subjects
-              </p>
+              <p className="text-xs text-blue-700 font-medium">👁 View-only mode for other subjects</p>
             </div>
           )}
         </div>
@@ -192,23 +245,34 @@ export function SubjectMarks() {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Subject:</label>
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {availableSubjects.map((subject) => {
-                const count = studentsData.filter((stu) =>
-                  (stu.courses || []).some((c: any) => (c.courseName||c.courseCode) === subject.name)
-                ).length;
-                return (
-                  <option key={subject.id} value={subject.name}>
-                    {subject.name} ({count} students)
-                    {viewMode === 'my-subjects' ? ' - My Subject' : ` - ${subject.teacher}`}
-                  </option>
-                );
-              })}
-            </select>
+            {coursesLoading ? (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm">
+                Loading subjects...
+              </div>
+            ) : availableCourses.length === 0 ? (
+              <div className="w-full px-4 py-2 border border-orange-300 rounded-lg bg-orange-50 text-orange-700 text-sm">
+                {viewMode === 'my-subjects'
+                  ? 'No subjects assigned to you yet. Ask admin to assign courses to your account.'
+                  : 'No courses found in the system.'}
+              </div>
+            ) : (
+              <select
+                value={selectedCourseId}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableCourses.map((course: any) => {
+                  const count = Array.isArray(course.enrolledStudents)
+                    ? course.enrolledStudents.length
+                    : 0;
+                  return (
+                    <option key={String(course._id)} value={String(course._id)}>
+                      {course.courseName} ({course.courseCode}) — {count} student{count !== 1 ? 's' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
           </div>
         </div>
       </div>
@@ -220,39 +284,35 @@ export function SubjectMarks() {
             <Users className="w-5 h-5" />
             <p className="text-sm opacity-90">Total Students</p>
           </div>
-          <p className="text-3xl font-bold">{subjectStats.totalStudents}</p>
+          <p className="text-3xl font-bold">{totalStudents}</p>
         </div>
-
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
             <BarChart2 className="w-5 h-5" />
             <p className="text-sm opacity-90">Average Score</p>
           </div>
-          <p className="text-3xl font-bold">{subjectStats.avgScore.toFixed(1)}%</p>
+          <p className="text-3xl font-bold">{avgScore.toFixed(1)}%</p>
         </div>
-
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-5 h-5" />
             <p className="text-sm opacity-90">Highest Score</p>
           </div>
-          <p className="text-3xl font-bold">{subjectStats.highestScore}%</p>
+          <p className="text-3xl font-bold">{totalStudents > 0 ? `${highestScore}%` : 'N/A'}</p>
         </div>
-
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown className="w-5 h-5" />
             <p className="text-sm opacity-90">Lowest Score</p>
           </div>
-          <p className="text-3xl font-bold">{subjectStats.lowestScore}%</p>
+          <p className="text-3xl font-bold">{totalStudents > 0 ? `${lowestScore}%` : 'N/A'}</p>
         </div>
-
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
             <Award className="w-5 h-5" />
             <p className="text-sm opacity-90">Pass Rate</p>
           </div>
-          <p className="text-3xl font-bold">{subjectStats.passRate.toFixed(0)}%</p>
+          <p className="text-3xl font-bold">{passRate.toFixed(0)}%</p>
         </div>
       </div>
 
@@ -280,7 +340,11 @@ export function SubjectMarks() {
               <option value="Intermediate">Intermediate</option>
               <option value="Beginner">Beginner</option>
             </select>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={handleExport}
+              disabled={filteredStudents.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Download className="w-4 h-4" />
               Export
             </button>
@@ -307,8 +371,15 @@ export function SubjectMarks() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredStudents.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+              {loadingStudents && (
+                <tr>
+                  <td colSpan={10} className="text-center py-12 text-gray-500">
+                    Loading students...
+                  </td>
+                </tr>
+              )}
+              {!loadingStudents && filteredStudents.map((student) => (
+                <tr key={String(student.id)} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -316,13 +387,16 @@ export function SubjectMarks() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{student.name}</p>
+                        {student.studentId && (
+                          <p className="text-xs text-gray-500">{student.studentId}</p>
+                        )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getLevelColor(student.level)}`}>
                       {student.level === 'Advanced' && <Award className="w-3 h-3" />}
-                      {student.level}
+                      {student.level || 'Beginner'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -342,20 +416,23 @@ export function SubjectMarks() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getGradeColor(student.grade)}`}>
-                      {student.grade}
+                      {student.grade || 'F'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`text-sm font-medium ${student.attendance >= 90 ? 'text-green-600' : student.attendance >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    <span className={`text-sm font-medium ${
+                      student.attendance >= 90 ? 'text-green-600'
+                      : student.attendance >= 75 ? 'text-yellow-600'
+                      : 'text-red-600'
+                    }`}>
                       {student.attendance}%
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    {student.trend === 'up' ? (
-                      <TrendingUp className="w-5 h-5 text-green-500 mx-auto" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-red-500 mx-auto" />
-                    )}
+                    {student.trend === 'up'
+                      ? <TrendingUp  className="w-5 h-5 text-green-500 mx-auto" />
+                      : <TrendingDown className="w-5 h-5 text-red-500 mx-auto" />
+                    }
                   </td>
                 </tr>
               ))}
@@ -364,9 +441,15 @@ export function SubjectMarks() {
         </div>
       </div>
 
-      {filteredStudents.length === 0 && (
+      {!loadingStudents && filteredStudents.length === 0 && !coursesLoading && (
         <div className="text-center py-12 text-gray-500">
-          No students found matching your criteria.
+          {!selectedCourseId
+            ? 'Please select a subject to view student marks.'
+            : availableCourses.length === 0
+            ? viewMode === 'my-subjects'
+              ? 'No subjects are assigned to you. Contact admin to assign courses.'
+              : 'No courses exist in the system yet.'
+            : 'No students found matching your criteria.'}
         </div>
       )}
     </div>

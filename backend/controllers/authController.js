@@ -24,7 +24,7 @@ const buildTeacherPayload = (user) => ({
   phone: user.phone || null,
   // Return full assignedCourses array so frontend can show subject picker
   assignedCourses: (user.assignedCourses || []).map(c => ({
-    courseId: c.courseId,
+    courseId: String(c.courseId),
     courseCode: c.courseCode,
     courseName: c.courseName,
     semester: c.semester,

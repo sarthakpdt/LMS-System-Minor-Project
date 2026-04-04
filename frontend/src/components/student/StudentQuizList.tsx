@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Clock, FileText, CheckCircle, Lock, Play, Shield, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Clock, FileText, CheckCircle, Lock, Play, Shield, ShieldAlert, AlertTriangle, Award } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Quiz {
@@ -11,6 +11,7 @@ interface Quiz {
   totalMarks: number;
   isPublished: boolean;
   dueDate?: string;
+  difficulty?: 'Easy' | 'Medium' | 'Hard' | null;
   questions: { _id: string; questionText: string; type: string; options: string[]; marks: number }[];
 }
 
@@ -22,13 +23,25 @@ interface QuizResult {
   plagiarismEvents?: { type: string; severity: 'low' | 'medium' | 'high'; timestamp: string }[];
 }
 
+interface StudentBucket {
+  courseId: string;
+  bucket: 'Easy' | 'Medium' | 'Hard';
+}
+
 const API = 'http://localhost:5000';
+
+const BUCKET_BADGE: Record<string, string> = {
+  Easy:   'bg-green-100 text-green-700 border border-green-200',
+  Medium: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  Hard:   'bg-red-100 text-red-700 border border-red-200',
+};
 
 export function StudentQuizList() {
   const { user } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [buckets, setBuckets] = useState<StudentBucket[]>([]);  // NEW
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,13 +50,33 @@ export function StudentQuizList() {
 
   const loadData = async () => {
     try {
+      // 1. Courses for this student's semester
       const cRes = await fetch(`${API}/api/courses/semester/${user?.semester}`);
       const coursesData = await cRes.json();
       setCourses(coursesData);
 
+      // 2. Student buckets (NEW) — fetch once, all courses
+      let studentBuckets: StudentBucket[] = [];
+      try {
+        const bRes = await fetch(`${API}/api/buckets/student/${user?.id}`, {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        });
+        if (bRes.ok) {
+          const bData = await bRes.json();
+          studentBuckets = bData.map((b: any) => ({
+            courseId: b.courseId?._id || b.courseId,
+            bucket: b.bucket,
+          }));
+          setBuckets(studentBuckets);
+        }
+      } catch { /* bucket fetch optional */ }
+
+      // 3. Quizzes per course — pass student's bucket so backend filters by difficulty
       const allQuizzes: Quiz[] = [];
       for (const course of coursesData) {
-        const qRes = await fetch(`${API}/api/quizzes/course/${course._id}`);
+        const studentBucket = studentBuckets.find(b => b.courseId === course._id);
+        const bucketParam = studentBucket ? `?bucket=${studentBucket.bucket}` : '';
+        const qRes = await fetch(`${API}/api/quizzes/course/${course._id}${bucketParam}`);
         if (qRes.ok) {
           const qs: Quiz[] = await qRes.json();
           qs.filter(q => q.isPublished).forEach(q => allQuizzes.push(q));
@@ -51,6 +84,7 @@ export function StudentQuizList() {
       }
       setQuizzes(allQuizzes);
 
+      // 4. Results for attempted quizzes
       const allResults: QuizResult[] = [];
       for (const quiz of allQuizzes) {
         try {
@@ -82,15 +116,16 @@ export function StudentQuizList() {
     const c = courses.find(c => c._id === courseId);
     return c ? `${c.courseName} (${c.courseCode})` : 'Unknown Course';
   };
+  const getStudentBucketForCourse = (courseId: string) =>
+    buckets.find(b => b.courseId === courseId)?.bucket ?? null;
 
   const available = quizzes.filter(q => !isAttempted(q._id) && !isExpired(q));
   const attempted = quizzes.filter(q => isAttempted(q._id));
-  const expired = quizzes.filter(q => !isAttempted(q._id) && isExpired(q));
+  const expired  = quizzes.filter(q => !isAttempted(q._id) && isExpired(q));
 
-  // Proctoring helpers
   const getViolationSummary = (result: QuizResult) => {
     const events = result.plagiarismEvents || [];
-    const high = events.filter(e => e.severity === 'high').length;
+    const high   = events.filter(e => e.severity === 'high').length;
     const medium = events.filter(e => e.severity === 'medium').length;
     return { total: events.length, high, medium };
   };
@@ -102,152 +137,141 @@ export function StudentQuizList() {
     </div>
   );
 
+  const QuizCard = ({ quiz, mode }: { quiz: Quiz; mode: 'available' | 'attempted' | 'expired' }) => {
+    const result = getResult(quiz._id);
+    const bucket = getStudentBucketForCourse(quiz.courseId);
+    return (
+      <div className={`bg-white rounded-xl border p-5 shadow-sm hover:shadow-md transition-shadow ${
+        mode === 'expired' ? 'opacity-60' : ''
+      }`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="font-semibold text-gray-900">{quiz.title}</h3>
+              {quiz.difficulty && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BUCKET_BADGE[quiz.difficulty]}`}>
+                  {quiz.difficulty}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mb-2">{getCourseName(quiz.courseId)}</p>
+
+            {/* Student's current bucket for this course */}
+            {bucket && (
+              <p className="text-xs text-gray-400 mb-2">
+                Your level: <span className={`font-semibold ${BUCKET_BADGE[bucket]} px-1.5 py-0.5 rounded-full`}>{bucket}</span>
+              </p>
+            )}
+
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{quiz.timeLimit} min</span>
+              <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{quiz.questions?.length || 0} Qs</span>
+              <span className="flex items-center gap-1"><Award className="w-3 h-3" />{quiz.totalMarks} marks</span>
+              {quiz.dueDate && <span>Due: {new Date(quiz.dueDate).toLocaleDateString()}</span>}
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            {mode === 'available' && (
+              <Link
+                to={`/quiz/${quiz._id}`}
+                className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+              >
+                <Play className="w-4 h-4" /> Start
+              </Link>
+            )}
+            {mode === 'attempted' && result && (
+              <div className="text-right">
+                <div className={`text-lg font-bold ${
+                  result.percentage >= 80 ? 'text-green-600' :
+                  result.percentage >= 60 ? 'text-yellow-600' : 'text-red-500'
+                }`}>{result.percentage}%</div>
+                <div className="text-xs text-gray-500">{result.score}/{result.totalMarks}</div>
+                {getViolationSummary(result).total > 0 && (
+                  <div className={`mt-1 text-xs flex items-center gap-1 ${
+                    getViolationSummary(result).high > 0 ? 'text-red-600' : 'text-yellow-600'
+                  }`}>
+                    {getViolationSummary(result).high > 0
+                      ? <ShieldAlert className="w-3 h-3" />
+                      : <AlertTriangle className="w-3 h-3" />
+                    }
+                    {getViolationSummary(result).total} flag{getViolationSummary(result).total > 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+            )}
+            {mode === 'expired' && (
+              <Lock className="w-5 h-5 text-gray-400" />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="p-6 md:p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">My Quizzes & Tests</h2>
-        <p className="text-gray-600">Quizzes for your enrolled courses this semester.</p>
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">My Quizzes</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Quizzes are filtered to match your difficulty level per subject.
+        </p>
       </div>
 
-      {/* Proctoring notice */}
-      <div className="mb-6 flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
-        <Shield className="w-5 h-5 text-blue-500 flex-shrink-0" />
-        <span>All quizzes are AI-proctored. Camera access is required before starting. Violations are logged and reviewed by your instructor.</span>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {[
+          { label: 'Available', count: available.length, color: 'text-green-600 bg-green-50 border-green-200' },
+          { label: 'Completed', count: attempted.length, color: 'text-blue-600 bg-blue-50 border-blue-200' },
+          { label: 'Expired',   count: expired.length,   color: 'text-gray-500 bg-gray-50 border-gray-200' },
+        ].map(s => (
+          <div key={s.label} className={`rounded-xl border p-4 ${s.color}`}>
+            <p className="text-2xl font-bold">{s.count}</p>
+            <p className="text-xs font-medium mt-0.5">{s.label}</p>
+          </div>
+        ))}
       </div>
+
+      {/* Available quizzes */}
+      {available.length > 0 && (
+        <section className="mb-8">
+          <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Play className="w-4 h-4 text-green-600" /> Available ({available.length})
+          </h3>
+          <div className="space-y-3">
+            {available.map(q => <QuizCard key={q._id} quiz={q} mode="available" />)}
+          </div>
+        </section>
+      )}
+
+      {/* Completed */}
+      {attempted.length > 0 && (
+        <section className="mb-8">
+          <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-blue-600" /> Completed ({attempted.length})
+          </h3>
+          <div className="space-y-3">
+            {attempted.map(q => <QuizCard key={q._id} quiz={q} mode="attempted" />)}
+          </div>
+        </section>
+      )}
+
+      {/* Expired */}
+      {expired.length > 0 && (
+        <section className="mb-8">
+          <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Lock className="w-4 h-4 text-gray-400" /> Expired ({expired.length})
+          </h3>
+          <div className="space-y-3">
+            {expired.map(q => <QuizCard key={q._id} quiz={q} mode="expired" />)}
+          </div>
+        </section>
+      )}
 
       {quizzes.length === 0 && (
-        <div className="text-center py-16 text-gray-500">
-          <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p>No quizzes available yet. Check back later.</p>
-        </div>
-      )}
-
-      {/* ── Available ──────────────────────────────────────────────────────────── */}
-      {available.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Play className="w-5 h-5 text-green-600" /> Available Now ({available.length})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {available.map(quiz => (
-              <div key={quiz._id} className="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">{quiz.title}</h4>
-                <p className="text-sm text-gray-500 mb-4">{getCourseName(quiz.courseId)}</p>
-
-                <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <p className="text-xs text-gray-500">Questions</p>
-                    <p className="font-bold text-gray-900">{quiz.questions.length}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <p className="text-xs text-gray-500">Time</p>
-                    <p className="font-bold text-gray-900">{quiz.timeLimit}m</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <p className="text-xs text-gray-500">Marks</p>
-                    <p className="font-bold text-gray-900">{quiz.totalMarks}</p>
-                  </div>
-                </div>
-
-                {quiz.dueDate && (
-                  <p className="text-xs text-orange-600 mb-3 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Due: {new Date(quiz.dueDate).toLocaleString()}
-                  </p>
-                )}
-
-                {/* Proctoring requirement notice */}
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-4 bg-gray-50 rounded-lg px-3 py-2">
-                  <Shield className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                  Camera & proctoring required
-                </div>
-
-                <Link
-                  to={`/quiz/${quiz._id}`}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
-                >
-                  <Play className="w-4 h-4" /> Start Quiz
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Completed ──────────────────────────────────────────────────────────── */}
-      {attempted.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-blue-600" /> Completed ({attempted.length})
-          </h3>
-          <div className="space-y-3">
-            {attempted.map(quiz => {
-              const result = getResult(quiz._id)!;
-              const { total, high } = getViolationSummary(result);
-              return (
-                <div key={quiz._id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900">{quiz.title}</h4>
-                      <p className="text-sm text-gray-500 mt-0.5">{getCourseName(quiz.courseId)}</p>
-
-                      {/* Proctoring status badge */}
-                      {total === 0 ? (
-                        <div className="mt-2 inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
-                          <Shield className="w-3 h-3" />
-                          No violations
-                        </div>
-                      ) : (
-                        <div className={`mt-2 inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border ${
-                          high > 0
-                            ? 'text-red-700 bg-red-50 border-red-200'
-                            : 'text-orange-700 bg-orange-50 border-orange-200'
-                        }`}>
-                          {high > 0
-                            ? <ShieldAlert className="w-3 h-3" />
-                            : <AlertTriangle className="w-3 h-3" />}
-                          {total} violation{total > 1 ? 's' : ''} detected
-                          {high > 0 && ` (${high} high severity)`}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-2xl font-bold text-gray-900">
-                        {result.score}
-                        <span className="text-sm font-normal text-gray-500">/{result.totalMarks}</span>
-                      </p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        result.percentage >= 80 ? 'bg-green-100 text-green-700' :
-                        result.percentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {result.percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Expired ────────────────────────────────────────────────────────────── */}
-      {expired.length > 0 && (
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Lock className="w-5 h-5 text-gray-400" /> Expired ({expired.length})
-          </h3>
-          <div className="space-y-3">
-            {expired.map(quiz => (
-              <div key={quiz._id} className="bg-gray-50 border border-gray-200 rounded-xl p-5 opacity-60">
-                <h4 className="font-semibold text-gray-700">{quiz.title}</h4>
-                <p className="text-sm text-gray-500">{getCourseName(quiz.courseId)}</p>
-                <p className="text-xs text-red-500 mt-1">Expired: {new Date(quiz.dueDate!).toLocaleString()}</p>
-              </div>
-            ))}
-          </div>
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+          <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No quizzes available for your current level yet.</p>
         </div>
       )}
     </div>
