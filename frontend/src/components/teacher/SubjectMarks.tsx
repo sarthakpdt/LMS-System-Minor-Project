@@ -154,6 +154,20 @@ export function SubjectMarks() {
     }
   };
 
+  /**
+   * Maps a student's performance level to a star rating (out of 5).
+   * Beginner (Easy bucket)  → 1 star
+   * Intermediate (Medium)   → 3 stars
+   * Advanced (Hard bucket)  → 5 stars
+   */
+  const getStarsForLevel = (level: string): { count: number; label: string } => {
+    switch (level) {
+      case 'Advanced':     return { count: 5, label: '5/5' };
+      case 'Intermediate': return { count: 3, label: '3/5' };
+      default:             return { count: 1, label: '1/5' };  // Beginner or unset
+    }
+  };
+
   const getGradeColor = (grade: string) => {
     if (!grade) return 'bg-gray-100 text-gray-800 border-gray-300';
     if (grade.startsWith('A')) return 'bg-green-100 text-green-800 border-green-300';
@@ -165,11 +179,14 @@ export function SubjectMarks() {
 
   const handleExport = () => {
     if (filteredStudents.length === 0) return;
-    const headers = ['Name', 'StudentID', 'Level', 'Midterm', 'Final', 'Assignments', 'Quiz Avg', 'Total', 'Grade', 'Attendance'];
-    const rows    = filteredStudents.map(s => [
-      `"${s.name}"`, s.studentId || '', s.level,
-      s.midterm, s.final, s.assignments, s.quizAvg, s.total, s.grade, `${s.attendance}%`
-    ]);
+    const headers = ['Name', 'StudentID', 'Level', 'Stars', 'Midterm', 'Final', 'Assignments', 'Quiz Avg', 'Total', 'Grade', 'Attendance'];
+    const rows    = filteredStudents.map(s => {
+      const { count } = getStarsForLevel(s.level);
+      return [
+        `"${s.name}"`, s.studentId || '', s.level, `${count}/5`,
+        s.midterm, s.final, s.assignments, s.quizAvg, s.total, s.grade, `${s.attendance}%`
+      ];
+    });
     const csv  = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
@@ -360,6 +377,7 @@ export function SubjectMarks() {
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                 <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Stars</th>
                 <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Midterm</th>
                 <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Final</th>
                 <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Assignments</th>
@@ -398,6 +416,21 @@ export function SubjectMarks() {
                       {student.level === 'Advanced' && <Award className="w-3 h-3" />}
                       {student.level || 'Beginner'}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {(() => {
+                      const { count, label } = getStarsForLevel(student.level);
+                      return (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-amber-400 text-base"
+                          title={`${student.level || 'Beginner'} — ${label} stars`}
+                        >
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i} className={i < count ? 'text-amber-400' : 'text-gray-300'}>★</span>
+                          ))}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="text-sm font-medium text-gray-900">{student.midterm}%</span>

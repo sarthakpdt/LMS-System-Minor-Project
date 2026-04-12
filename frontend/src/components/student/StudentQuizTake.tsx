@@ -13,6 +13,7 @@ interface Question {
   type: 'mcq' | 'short';
   options: string[];
   marks: number;
+  level?: 'Beginner' | 'Medium' | 'Hard' | null;  // NEW: drives star display
 }
 interface Quiz {
   _id: string;
@@ -22,6 +23,25 @@ interface Quiz {
   totalMarks: number;
   questions: Question[];
   dueDate?: string;
+  negativeMarking?: { enabled: boolean; marksPerQuestion: number }; // NEW
+}
+
+// ── Star helper (shown per question) ─────────────────────────────────────────
+function QuestionStars({ level }: { level?: 'Beginner' | 'Medium' | 'Hard' | null }) {
+  if (!level) return null;
+  const count = level === 'Beginner' ? 1 : level === 'Medium' ? 3 : 5;
+  const label = level === 'Beginner' ? 'Easy' : level === 'Medium' ? 'Medium' : 'Hard';
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-medium text-amber-500 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5"
+      title={`${label} – ${count}/5 stars`}
+    >
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < count ? 'text-amber-400' : 'text-gray-300'}>★</span>
+      ))}
+      <span className="text-gray-500 ml-0.5">{label}</span>
+    </span>
+  );
 }
 interface GradedAnswer {
   questionId: string;
@@ -308,6 +328,27 @@ export function StudentQuizTake() {
           </p>
         </div>
 
+        {/* Quiz meta info */}
+        <div className="flex items-center justify-center gap-4 mb-4 text-sm text-gray-600">
+          <span className="flex items-center gap-1"><Clock className="w-4 h-4 text-blue-500" />{quiz.timeLimit} min</span>
+          <span className="flex items-center gap-1">📝 {quiz.questions.length} questions</span>
+          <span className="flex items-center gap-1">🏅 {quiz.totalMarks} marks</span>
+        </div>
+
+        {/* Negative Marking Warning */}
+        {quiz.negativeMarking?.enabled && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-800">Negative Marking Enabled</p>
+              <p className="text-xs text-red-700 mt-0.5">
+                <strong>–{quiz.negativeMarking.marksPerQuestion} mark{quiz.negativeMarking.marksPerQuestion !== 1 ? 's' : ''}</strong> will be deducted for each wrong answer.
+                Skipped questions are <strong>not penalised</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+
         <ul className="text-sm text-gray-600 space-y-2 mb-6 bg-gray-50 rounded-xl p-4">
           <li className="flex items-center gap-2"><Shield className="w-4 h-4 text-green-500 flex-shrink-0" /> Keep your face visible at all times</li>
           <li className="flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-orange-500 flex-shrink-0" /> Multiple faces will trigger an alert</li>
@@ -421,6 +462,7 @@ export function StudentQuizTake() {
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 mb-2">Q{qi+1}. {q.questionText}
                           <span className="ml-2 text-xs text-gray-400">({q.marks} mark{q.marks>1?'s':''})</span>
+                          {q.level && <span className="ml-2 inline-flex"><QuestionStars level={q.level} /></span>}
                         </p>
                         <div className="text-sm space-y-1">
                           <p><span className="text-gray-500">Your answer: </span>
@@ -574,10 +616,21 @@ export function StudentQuizTake() {
         {/* Question Card */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-gray-500">Question {currentQ + 1} of {totalQ}</span>
-            <span className="text-sm px-2.5 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-              {question.marks} mark{question.marks > 1 ? 's' : ''}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-gray-500">Question {currentQ + 1} of {totalQ}</span>
+              {/* Per-question difficulty stars */}
+              {question.level && <QuestionStars level={question.level} />}
+            </div>
+            <div className="flex items-center gap-2">
+              {quiz.negativeMarking?.enabled && (
+                <span className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 font-medium">
+                  –{quiz.negativeMarking.marksPerQuestion} if wrong
+                </span>
+              )}
+              <span className="text-sm px-2.5 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                {question.marks} mark{question.marks > 1 ? 's' : ''}
+              </span>
+            </div>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-5">{question.questionText}</h3>
           {question.type === 'mcq' ? (

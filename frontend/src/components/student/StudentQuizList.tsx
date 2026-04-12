@@ -148,6 +148,19 @@ export function StudentQuizList() {
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h3 className="font-semibold text-gray-900">{quiz.title}</h3>
+              {quiz.difficulty && (() => {
+                const starCount = quiz.difficulty === 'Easy' ? 1 : quiz.difficulty === 'Medium' ? 3 : 5;
+                return (
+                  <span
+                    className="inline-flex items-center gap-0.5 text-amber-400 text-sm"
+                    title={`${quiz.difficulty} – ${starCount}/5 stars`}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i}>{i < starCount ? '★' : '☆'}</span>
+                    ))}
+                  </span>
+                );
+              })()}
               {quiz.difficulty && (
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BUCKET_BADGE[quiz.difficulty]}`}>
                   {quiz.difficulty}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Trash2, Clock, Users, Shield, Award, Send, ChevronDown, X } from 'lucide-react';
+import { Plus, Search, Trash2, Clock, Award, Send, ChevronDown, X, Sparkles, Shield, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { AIQuizGenerator } from './AIQuizGenerator';
 
 interface Question {
   questionText: string;
@@ -263,6 +264,7 @@ export function TeacherQuizManagement() {
   const [loading, setLoading]               = useState(true);
   const [searchTerm, setSearchTerm]         = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAIModal, setShowAIModal]         = useState(false);
 
   // Form state
   const [title, setTitle]           = useState('');
@@ -273,6 +275,9 @@ export function TeacherQuizManagement() {
   const [questions, setQuestions]   = useState<Question[]>([
     { questionText: '', type: 'mcq', options: ['', '', '', ''], correctAnswer: '', marks: 1 },
   ]);
+  // Negative marking form state
+  const [negEnabled, setNegEnabled] = useState(false);
+  const [negMarks, setNegMarks]     = useState(0.25);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
@@ -373,6 +378,7 @@ export function TeacherQuizManagement() {
           timeLimit,
           dueDate: dueDate || undefined,
           difficulty: difficulty || null,
+          negativeMarking: { enabled: negEnabled, marksPerQuestion: negMarks },
         }),
       });
       const data = await res.json();
@@ -404,7 +410,7 @@ export function TeacherQuizManagement() {
 
   const resetForm = () => {
     setTitle(''); setCourseId(''); setTimeLimit(30); setDueDate('');
-    setDifficulty(''); setError('');
+    setDifficulty(''); setError(''); setNegEnabled(false); setNegMarks(0.25);
     setQuestions([{ questionText: '', type: 'mcq', options: ['', '', '', ''], correctAnswer: '', marks: 1 }]);
   };
 
@@ -416,9 +422,31 @@ export function TeacherQuizManagement() {
     );
   });
 
+  /** Returns star string for a quiz based on its difficulty field */
+  const quizStars = (diff?: string | null) => {
+    if (diff === 'Easy')   return { stars: '★☆☆☆☆', label: 'Beginner', color: 'text-amber-400' };
+    if (diff === 'Medium') return { stars: '★★★☆☆', label: 'Medium',   color: 'text-amber-400' };
+    if (diff === 'Hard')   return { stars: '★★★★★', label: 'Hard',     color: 'text-amber-500' };
+    return null;
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="p-8">
+
+      {/* AI Quiz Generator full-screen modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl" style={{height:"90vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <AIQuizGenerator
+              courses={courses}
+              onClose={() => setShowAIModal(false)}
+              onSaved={() => { setShowAIModal(false); fetchTeacherCourses(); }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
@@ -432,13 +460,22 @@ export function TeacherQuizManagement() {
             )}
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          disabled={courses.length === 0}
-          className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-5 h-5" /> Create Quiz
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowAIModal(true)}
+            disabled={courses.length === 0}
+            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Sparkles className="w-5 h-5" /> AI Generate
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            disabled={courses.length === 0}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-5 h-5" /> Create Quiz
+          </button>
+        </div>
       </div>
 
       {/* No courses warning */}
@@ -517,6 +554,12 @@ export function TeacherQuizManagement() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h3 className="font-semibold text-gray-900 text-lg">{quiz.title}</h3>
+                      {quiz.difficulty && (() => {
+                        const s = quizStars(quiz.difficulty);
+                        return s ? (
+                          <span className={`text-sm font-medium ${s.color}`} title={`${s.label} level`}>{s.stars}</span>
+                        ) : null;
+                      })()}
                       {quiz.difficulty && (
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${DIFFICULTY_COLORS[quiz.difficulty]}`}>
                           {quiz.difficulty}
@@ -771,12 +814,45 @@ export function TeacherQuizManagement() {
                 </div>
               </div>
 
+              {/* Negative Marking */}
+              <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Negative Marking</p>
+                    <p className="text-xs text-gray-500">Deduct marks for wrong answers</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNegEnabled(v => !v)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                      negEnabled ? 'bg-red-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      negEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+                {negEnabled && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <label className="text-sm text-gray-700 whitespace-nowrap">Marks deducted per wrong answer:</label>
+                    <input
+                      type="number" min={0.25} step={0.25} value={negMarks}
+                      onChange={e => setNegMarks(Math.max(0.25, Number(e.target.value)))}
+                      className="w-24 px-3 py-1.5 border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 text-sm font-semibold text-red-700"
+                    />
+                    <span className="text-xs text-gray-500">(skipped questions not penalised)</span>
+                  </div>
+                )}
+              </div>
+
               {/* Summary bar */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-sm text-green-800">
                 Total Marks: <strong>{questions.reduce((s, q) => s + q.marks, 0)}</strong> |
                 Questions: <strong>{questions.length}</strong> |
                 Time Limit: <strong>{timeLimit} min</strong>
                 {difficulty && <> | Target Bucket: <strong>{difficulty}</strong></>}
+                {negEnabled && <> | <span className="text-red-700 font-semibold">–{negMarks} per wrong answer</span></>}
               </div>
             </div>
 
