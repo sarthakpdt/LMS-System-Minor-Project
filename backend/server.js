@@ -25,7 +25,7 @@ const teacherRoutes      = require('./routes/teacherRoutes'); // ✅ FIX: new ro
 
 // ── Route registration ─────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
-app.use('/api/quizzes',       quizRoutes);        // ✅ FIX: was /api/quiz — frontend uses /api/quizzes
+app.use('/api/quizzes',       quizRoutes);     
 app.use('/api/admin',         adminRoutes);
 app.use('/api/materials',     materialRoutes);
 app.use('/api/attendance',    attendanceRoutes);

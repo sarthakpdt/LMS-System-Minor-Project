@@ -8,13 +8,12 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
-import StudyMaterials from './teacher/StudyMaterials';
-import AttendanceManager from '../components/teacher/AttendanceManager';
-import NotificationsPanel from '../components/teacher/NotificationsPanel';
-import StudentMaterials from '../components/student/StudentMaterials';
-import StudentAttendance from '../components/student/StudentAttendance';
-import Analytics from '../components/admin/Analytics';
-import TimetableManager from '../components/admin/TimetableManager';
+import { StudyMaterials } from './StudyMaterials';
+import AttendanceManager from './teacher/AttendanceManager';
+import NotificationsPanel from './teacher/NotificationsPanel';
+import StudentAttendance from './student/StudentAttendance';
+import Analytics from './admin/Analytics';
+import TimetableManager from './admin/TimetableManager';
 
 const BASE = 'http://localhost:5000/api/admin';
 
@@ -150,10 +149,10 @@ function StudentDashboard() {
         </>
       )}
 
-      {activeTab === 'materials' && <StudentMaterials />}
-       {activeTab === 'attendance' && <StudentAttendance studentId={user?.id} />}
+      {activeTab === 'materials' && <StudyMaterials />}
+      {activeTab === 'attendance' && <StudentAttendance studentId={user?.id} />}
       {/* Students get NotificationsPanel in read-only mode (no canCreate role) */}
-       {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="student" userName={user?.name} />}
+      {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="student" userName={user?.name} />}
     </div>
   );
 }
@@ -340,7 +339,7 @@ function TeacherDashboard() {
         </>
       )}
 
-      {activeTab === 'materials' && <StudyMaterials teacherId={user?.id} teacherName={user?.name} />}
+      {activeTab === 'materials' && <StudyMaterials />}
       {activeTab === 'attendance' && <AttendanceManager teacherId={user?.id} teacherName={user?.name} />}
       {/* ✅ FIX: teachers can now also create notifications for students */}
       {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="teacher" userName={user?.name} />}
@@ -521,7 +520,6 @@ function AdminDashboard() {
       {activeTab === 'timetable' && <TimetableManager />}
       {/* ✅ FIX: Admin notification panel with isAdmin flag for delete ability */}
       {activeTab === 'notifications' && <NotificationsPanel userId={user?.id} role="admin" userName={user?.name} isAdmin />}
-
     </div>
   );
 }
