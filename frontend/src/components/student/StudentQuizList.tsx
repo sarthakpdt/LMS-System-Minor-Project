@@ -36,6 +36,31 @@ const BUCKET_BADGE: Record<string, string> = {
   Hard:   'bg-red-100 text-red-700 border border-red-200',
 };
 
+
+// ── FEATURE 5: Star rating based on score percentage ─────────────────────────
+// 0–20 → 1 star | 21–40 → 2 stars | 41–60 → 3 stars | 61–80 → 4 stars | 81–100 → 5 stars
+function getStarsFromPercentage(percentage: number): number {
+  if (percentage <= 20) return 1;
+  if (percentage <= 40) return 2;
+  if (percentage <= 60) return 3;
+  if (percentage <= 80) return 4;
+  return 5;
+}
+
+function StarRating({ percentage, size = 'md' }: { percentage: number; size?: 'sm' | 'md' | 'lg' }) {
+  const stars  = getStarsFromPercentage(percentage);
+  const colors = ['', 'text-red-400', 'text-orange-400', 'text-yellow-400', 'text-blue-400', 'text-green-500'];
+  const labels = ['', '1 star', '2 stars', '3 stars', '4 stars', '5 stars'];
+  const sizes  = { sm: 'text-sm', md: 'text-base', lg: 'text-xl' };
+  return (
+    <div className={`flex items-center gap-0.5 ${colors[stars]} ${sizes[size]}`} title={`${labels[stars]} (${percentage.toFixed(1)}%)`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < stars ? colors[stars] : 'text-gray-300'}>{i < stars ? '★' : '☆'}</span>
+      ))}
+    </div>
+  );
+}
+
 export function StudentQuizList() {
   const { user } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -195,10 +220,12 @@ export function StudentQuizList() {
             )}
             {mode === 'attempted' && result && (
               <div className="text-right">
-                <div className={`text-lg font-bold ${
+                {/* FEATURE 5: Dynamic star rating based on percentage */}
+                <StarRating percentage={result.percentage} size="md" />
+                <div className={`text-sm font-bold mt-0.5 ${
                   result.percentage >= 80 ? 'text-green-600' :
                   result.percentage >= 60 ? 'text-yellow-600' : 'text-red-500'
-                }`}>{result.percentage}%</div>
+                }`}>{result.percentage.toFixed(1)}%</div>
                 <div className="text-xs text-gray-500">{result.score}/{result.totalMarks}</div>
                 {getViolationSummary(result).total > 0 && (
                   <div className={`mt-1 text-xs flex items-center gap-1 ${

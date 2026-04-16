@@ -52,6 +52,27 @@ const BUCKET_CONFIG = {
   },
 };
 
+// ── FEATURE 5: Star rating helper ────────────────────────────────────────────
+function getStars(percentage: number): number {
+  if (percentage <= 20) return 1;
+  if (percentage <= 40) return 2;
+  if (percentage <= 60) return 3;
+  if (percentage <= 80) return 4;
+  return 5;
+}
+
+function StarRow({ percentage }: { percentage: number }) {
+  const stars = getStars(percentage);
+  const colors = ['','text-red-400','text-orange-400','text-yellow-400','text-blue-400','text-green-500'];
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-sm ${colors[stars]}`} title={`${stars}/5 stars`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i}>{i < stars ? '★' : '☆'}</span>
+      ))}
+    </span>
+  );
+}
+
 export function StudentBucketProgress() {
   const { user } = useAuth();
   const [performance, setPerformance] = useState<CoursePerformance[]>([]);

@@ -41,6 +41,8 @@ export function StudentPortal() {
   const { user } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  // FEATURE 5: Quiz star summary for dashboard
+  const [quizStarSummary, setQuizStarSummary] = useState<{total: number; avgStars: number; breakdown: number[]}>({total: 0, avgStars: 0, breakdown: [0,0,0,0,0]});
 
   const getInitials = (name?: string) => {
     if (!name) return 'ST';
@@ -87,7 +89,46 @@ export function StudentPortal() {
       }
     };
 
+    // FEATURE 5: Fetch quiz results and compute star breakdown
+    const fetchQuizStars = async () => {
+      if (!user?.id) return;
+      try {
+        const cRes = await fetch(`http://localhost:5000/api/courses/semester/${user?.semester}`);
+        if (!cRes.ok) return;
+        const courses = await cRes.json();
+        let allResults: any[] = [];
+        for (const course of courses) {
+          try {
+            const qRes = await fetch(`http://localhost:5000/api/quizzes/course/${course._id}`);
+            if (!qRes.ok) continue;
+            const quizzes = await qRes.json();
+            for (const quiz of quizzes.filter((q: any) => q.isPublished)) {
+              try {
+                const rRes = await fetch(`http://localhost:5000/api/quizzes/${quiz._id}/result/${user.id}`);
+                if (rRes.ok) { const r = await rRes.json(); allResults.push(r); }
+              } catch { /* not attempted */ }
+            }
+          } catch { /* skip */ }
+        }
+        if (allResults.length === 0) return;
+        const breakdown = [0,0,0,0,0];
+        let totalStars = 0;
+        allResults.forEach(r => {
+          const pct = r.percentage || 0;
+          const stars = pct <= 20 ? 1 : pct <= 40 ? 2 : pct <= 60 ? 3 : pct <= 80 ? 4 : 5;
+          breakdown[stars - 1]++;
+          totalStars += stars;
+        });
+        setQuizStarSummary({
+          total: allResults.length,
+          avgStars: parseFloat((totalStars / allResults.length).toFixed(1)),
+          breakdown,
+        });
+      } catch { /* ignore */ }
+    };
+
     fetchEnrolledCourses();
+    fetchQuizStars();
   }, [user?.id]);
 
   const avgScore = enrolledCourses.length > 0
@@ -151,7 +192,48 @@ export function StudentPortal() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Performance Trend */}
+  
+      {/* FEATURE 5: Quiz Star Rating Summary Card */}
+      {quizStarSummary.total > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Quiz Performance Stars</h3>
+              <p className="text-sm text-gray-500">{quizStarSummary.total} quiz{quizStarSummary.total !== 1 ? 'zes' : ''} completed</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-black text-amber-400">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <span key={i} className={i < Math.round(quizStarSummary.avgStars) ? 'text-amber-400' : 'text-gray-200'}>★</span>
+                ))}
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Avg {quizStarSummary.avgStars} / 5 stars</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {[5,4,3,2,1].map(star => {
+              const count = quizStarSummary.breakdown[star - 1];
+              const pct   = quizStarSummary.total > 0 ? Math.round((count / quizStarSummary.total) * 100) : 0;
+              const colors: Record<number,string> = {5:'bg-green-500',4:'bg-blue-400',3:'bg-yellow-400',2:'bg-orange-400',1:'bg-red-400'};
+              const labels: Record<number,string> = {5:'81–100%',4:'61–80%',3:'41–60%',2:'21–40%',1:'0–20%'};
+              return (
+                <div key={star} className="flex items-center gap-3">
+                  <span className="text-amber-400 text-sm w-20 flex-shrink-0 font-medium">
+                    {Array.from({ length: 5 }, (_, i) => <span key={i}>{i < star ? '★' : '☆'}</span>)}
+                  </span>
+                  <span className="text-xs text-gray-400 w-16 flex-shrink-0">{labels[star]}</span>
+                  <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${colors[star]}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-xs text-gray-500 w-8 text-right">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Trend */}
         <div className="lg:col-span-2 bg-white rounded-lg p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">My Performance Trend</h3>
           <ResponsiveContainer width="100%" height={250}>

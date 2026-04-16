@@ -155,17 +155,19 @@ export function SubjectMarks() {
   };
 
   /**
-   * Maps a student's performance level to a star rating (out of 5).
-   * Beginner (Easy bucket)  → 1 star
-   * Intermediate (Medium)   → 3 stars
-   * Advanced (Hard bucket)  → 5 stars
+   * Maps a student's total% to a star rating (out of 5).
+   * 0%–20%   → 1 star
+   * 21%–40%  → 2 stars
+   * 41%–60%  → 3 stars
+   * 61%–80%  → 4 stars
+   * 81%–100% → 5 stars
    */
-  const getStarsForLevel = (level: string): { count: number; label: string } => {
-    switch (level) {
-      case 'Advanced':     return { count: 5, label: '5/5' };
-      case 'Intermediate': return { count: 3, label: '3/5' };
-      default:             return { count: 1, label: '1/5' };  // Beginner or unset
-    }
+  const getStarsForTotal = (total: number): number => {
+    if (total <= 20) return 1;
+    if (total <= 40) return 2;
+    if (total <= 60) return 3;
+    if (total <= 80) return 4;
+    return 5;
   };
 
   const getGradeColor = (grade: string) => {
@@ -181,9 +183,9 @@ export function SubjectMarks() {
     if (filteredStudents.length === 0) return;
     const headers = ['Name', 'StudentID', 'Level', 'Stars', 'Midterm', 'Final', 'Assignments', 'Quiz Avg', 'Total', 'Grade', 'Attendance'];
     const rows    = filteredStudents.map(s => {
-      const { count } = getStarsForLevel(s.level);
+      const stars = getStarsForTotal(Number(s.total) || 0);
       return [
-        `"${s.name}"`, s.studentId || '', s.level, `${count}/5`,
+        `"${s.name}"`, s.studentId || '', s.level, `${stars}/5`,
         s.midterm, s.final, s.assignments, s.quizAvg, s.total, s.grade, `${s.attendance}%`
       ];
     });
@@ -419,11 +421,11 @@ export function SubjectMarks() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     {(() => {
-                      const { count, label } = getStarsForLevel(student.level);
+                      const count = getStarsForTotal(Number(student.total) || 0);
                       return (
                         <span
                           className="inline-flex items-center gap-0.5 text-amber-400 text-base"
-                          title={`${student.level || 'Beginner'} — ${label} stars`}
+                          title={`${student.total}% total — ${count}/5 stars`}
                         >
                           {Array.from({ length: 5 }, (_, i) => (
                             <span key={i} className={i < count ? 'text-amber-400' : 'text-gray-300'}>★</span>

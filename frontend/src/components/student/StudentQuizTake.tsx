@@ -391,6 +391,23 @@ export function StudentQuizTake() {
             result.percentage >= 60 ? 'bg-gradient-to-br from-yellow-500 to-orange-500' :
             'bg-gradient-to-br from-red-500 to-red-700'
           }`}>
+            {/* FEATURE 5: Star rating hero — shown prominently on result screen */}
+            {(() => {
+              const stars = result.percentage <= 20 ? 1 : result.percentage <= 40 ? 2 : result.percentage <= 60 ? 3 : result.percentage <= 80 ? 4 : 5;
+              const starLabels = ['', 'Keep practicing!', 'Good effort!', 'Not bad!', 'Well done!', 'Excellent!'];
+              return (
+                <div className="mb-3">
+                  <div className="flex justify-center items-center gap-1 text-4xl mb-1">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i} className={`transition-all ${i < stars ? 'text-yellow-300 drop-shadow-md scale-110' : 'text-white/30'}`} style={{ animationDelay: `${i * 0.1}s` }}>
+                        {i < stars ? '★' : '☆'}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-white/90 text-sm font-medium">{starLabels[stars]}</p>
+                </div>
+              );
+            })()}
             <div className="text-6xl mb-2">{result.percentage >= 80 ? '🏆' : result.percentage >= 60 ? '✅' : '❌'}</div>
             <h2 className="text-3xl font-bold mb-1">{quiz.title}</h2>
             <p className="text-white/80 mb-6">Quiz Completed</p>
