@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { Search, Plus, Users, BookOpen, X, ChevronDown, ChevronUp, Loader2, UserCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ export function Courses() {
   const isAdmin = user?.role === 'admin';
   const isTeacher = user?.role === 'teacher';
   const isStudent = user?.role === 'student';
+  const navigate = useNavigate();
 
   const [courses, setCourses] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -255,6 +257,16 @@ export function Courses() {
                     <p className="text-2xl font-bold text-gray-900">{course.enrolledStudents?.length || 0}</p>
                     <p className="text-xs text-gray-400">enrolled</p>
                   </div>
+                  {isStudent && (
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => navigate(`/assignments?courseId=${course._id}`)}
+                        className="mt-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
+                      >
+                        View Assignments
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

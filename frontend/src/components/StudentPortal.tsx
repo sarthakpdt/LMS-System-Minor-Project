@@ -1,9 +1,14 @@
 import { useAuth } from '../contexts/AuthContext';
-import { useState, useEffect } from 'react';
-import { BookOpen, Award, AlertCircle, Clock, Target, Lightbulb } from 'lucide-react';
-import { LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
+import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X } from 'lucide-react';
+import {
+  LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
-const BASE = 'http://localhost:5000/api/admin';
+const BASE     = 'http://localhost:5000/api/admin';
+const API      = 'http://localhost:5000/api';
 
 const performanceTrend = [
   { month: 'Jan', score: 82 }, { month: 'Feb', score: 85 },
@@ -12,50 +17,132 @@ const performanceTrend = [
 ];
 
 const skillsRadar = [
-  { skill: 'Problem Solving', current: 88, target: 95 },
+  { skill: 'Problem Solving',  current: 88, target: 95 },
   { skill: 'Critical Thinking', current: 75, target: 85 },
-  { skill: 'Programming', current: 92, target: 95 },
-  { skill: 'Communication', current: 80, target: 90 },
-  { skill: 'Collaboration', current: 85, target: 90 },
+  { skill: 'Programming',      current: 92, target: 95 },
+  { skill: 'Communication',    current: 80, target: 90 },
+  { skill: 'Collaboration',    current: 85, target: 90 },
 ];
 
 const weakAreas = [
-  { subject: 'Physics - Mechanics', currentScore: 68, targetScore: 80, improvement: '+5%' },
-  { subject: 'Math - Integration', currentScore: 72, targetScore: 85, improvement: '+3%' },
-  { subject: 'English - Essay Writing', currentScore: 76, targetScore: 85, improvement: '+8%' },
+  { subject: 'Physics - Mechanics',      currentScore: 68, targetScore: 80, improvement: '+5%' },
+  { subject: 'Math - Integration',       currentScore: 72, targetScore: 85, improvement: '+3%' },
+  { subject: 'English - Essay Writing',  currentScore: 76, targetScore: 85, improvement: '+8%' },
 ];
 
 const recommendations = [
-  { icon: Lightbulb, title: 'Focus on Physics Mechanics', description: 'Your scores in mechanics are below average. Watch additional video lectures.', priority: 'high', color: 'bg-red-100 text-red-600' },
-  { icon: BookOpen, title: 'Practice More Integration Problems', description: 'Complete extra problem sets to improve your integration skills.', priority: 'medium', color: 'bg-yellow-100 text-yellow-600' },
-  { icon: Target, title: 'Maintain Programming Excellence', description: "You're excelling in CS! Keep up the great work.", priority: 'low', color: 'bg-green-100 text-green-600' },
+  { icon: Lightbulb, title: 'Focus on Physics Mechanics',         description: 'Your scores in mechanics are below average. Watch additional video lectures.',     priority: 'high',   color: 'bg-red-100 text-red-600'    },
+  { icon: BookOpen,  title: 'Practice More Integration Problems',  description: 'Complete extra problem sets to improve your integration skills.',                 priority: 'medium', color: 'bg-yellow-100 text-yellow-600' },
+  { icon: Target,    title: 'Maintain Programming Excellence',     description: "You're excelling in CS! Keep up the great work.",                                  priority: 'low',    color: 'bg-green-100 text-green-600'  },
 ];
 
-const upcomingAssignments = [
-  { title: 'Physics Lab Report', course: 'Physics 202', dueDate: '2026-02-03', status: 'pending' },
-  { title: 'Calculus Problem Set 3', course: 'Mathematics 101', dueDate: '2026-02-05', status: 'pending' },
-  { title: 'Python Programming Project', course: 'Computer Science 101', dueDate: '2026-02-10', status: 'in-progress' },
-];
+// Load AI recommendations from localStorage
+const getAIRecommendations = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('aiRecommendations') || '[]');
+    return stored.flatMap((item: any) => item.recommendations.map((rec: string) => ({
+      icon: Sparkles,
+      title: `From ${item.assignment}`,
+      description: rec,
+      priority: 'medium',
+      color: 'bg-indigo-100 text-indigo-600'
+    })));
+  } catch {
+    return [];
+  }
+};
 
+// ── Deadline alarm banner ─────────────────────────────────────
+function DeadlineAlarm({ assignments, onDismiss }: {
+  assignments: any[];
+  onDismiss: (id: string) => void;
+}) {
+  const now          = new Date();
+  const in24h        = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const urgent       = assignments.filter(a => {
+    const due = new Date(a.dueDate);
+    return due > now && due <= in24h;
+  });
+
+  if (urgent.length === 0) return null;
+
+  return (
+    <div className="mb-6 space-y-2">
+      {urgent.map(a => (
+        <div key={a._id}
+          className="flex items-start gap-3 bg-red-50 border border-red-300 rounded-xl px-4 py-3 shadow-sm animate-pulse">
+          <Bell className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-red-800">⏰ Deadline in less than 24 hours!</p>
+            <p className="text-sm text-red-700 truncate">
+              <span className="font-semibold">{a.title}</span>
+              {a.courseId?.courseName && <span className="text-red-500"> · {a.courseId.courseName}</span>}
+            </p>
+            <p className="text-xs text-red-500 mt-0.5">
+              Due: {new Date(a.dueDate).toLocaleString('en-IN', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+              })}
+            </p>
+          </div>
+          <button onClick={() => onDismiss(a._id)}
+            className="text-red-400 hover:text-red-600 flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Deadline status badge ─────────────────────────────────────
+function DeadlineBadge({ dueDate }: { dueDate: string }) {
+  const now   = new Date();
+  const due   = new Date(dueDate);
+  const diffH = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  if (diffH < 0)   return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Expired</span>;
+  if (diffH < 24)  return <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold animate-pulse">🔴 Due Soon!</span>;
+  if (diffH < 72)  return <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">⚠ Due Soon</span>;
+  return               <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Upcoming</span>;
+}
+
+// ─────────────────────────────────────────────────────────────
 export function StudentPortal() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
-  // FEATURE 5: Quiz star summary for dashboard
-  const [quizStarSummary, setQuizStarSummary] = useState<{total: number; avgStars: number; breakdown: number[]}>({total: 0, avgStars: 0, breakdown: [0,0,0,0,0]});
+  const [loadingCourses,  setLoadingCourses]  = useState(true);
+
+  // Real assignments from backend
+  const [assignments,     setAssignments]     = useState<any[]>([]);
+  const [loadingAssign,   setLoadingAssign]   = useState(true);
+
+  // Dismissed alarm IDs
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  // Quiz star summary
+  const [quizStarSummary, setQuizStarSummary] = useState<{
+    total: number; avgStars: number; breakdown: number[]
+  }>({ total: 0, avgStars: 0, breakdown: [0, 0, 0, 0, 0] });
+
+  // AI Recommendations
+  const [aiRecs, setAiRecs] = useState<any[]>([]);
+
+  // Alarm sound via AudioContext
+  const alarmFiredRef = useRef(false);
 
   const getInitials = (name?: string) => {
     if (!name) return 'ST';
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // ✅ FIXED: use the same working API as Courses.tsx
+  // ── Fetch enrolled courses ──────────────────────────────────
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       if (!user?.id) { setLoadingCourses(false); return; }
       try {
-        // Step 1: get student's enrolledCourses list (courseIds)
-        const studentRes = await fetch(`${BASE}/students/${user.id}`);
+        const studentRes  = await fetch(`${BASE}/students/${user.id}`);
         const studentJson = await studentRes.json();
         const enrolledList: any[] = studentJson.data?.enrolledCourses || [];
 
@@ -65,19 +152,17 @@ export function StudentPortal() {
           return;
         }
 
-        // Step 2: get all courses with teacher populated
-        const coursesRes = await fetch(`${BASE}/courses`);
+        const coursesRes  = await fetch(`${BASE}/courses`);
         const coursesJson = await coursesRes.json();
         const allCourses: any[] = coursesJson.data || [];
 
-        // Step 3: filter to only this student's enrolled courses
         const enrolledIds = new Set(enrolledList.map((c: any) => String(c.courseId)));
         const myCourses = allCourses
           .filter((c: any) => enrolledIds.has(String(c._id)))
           .map((c: any) => ({
             ...c,
             title: c.courseName,
-            name: c.courseName,
+            name:  c.courseName,
             instructor: c.teacher ? { name: c.teacher.name } : null,
           }));
 
@@ -88,56 +173,150 @@ export function StudentPortal() {
         setLoadingCourses(false);
       }
     };
+    fetchEnrolledCourses();
+  }, [user?.id]);
 
-    // FEATURE 5: Fetch quiz results and compute star breakdown
+  // ── Load AI recommendations ─────────────────────────────────
+  useEffect(() => {
+    setAiRecs(getAIRecommendations());
+  }, []);
+
+  // ── Fetch real assignments for this student ─────────────────
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      if (!user?.id) { setLoadingAssign(false); return; }
+      setLoadingAssign(true);
+      try {
+        // Get all courses, collect published assignments
+        const cRes  = await fetch(`${BASE}/courses`);
+        const cJson = await cRes.json();
+        const allCourses: any[] = cJson.data || [];
+
+        // Get this student's enrolled course IDs
+        const sRes   = await fetch(`${BASE}/students/${user.id}`);
+        const sJson  = await sRes.json();
+        const enrolled: any[] = sJson.data?.enrolledCourses || [];
+        const enrolledIds = new Set(enrolled.map((c: any) => String(c.courseId)));
+
+        const myCourses = allCourses.filter((c: any) => enrolledIds.has(String(c._id)));
+
+        const all: any[] = [];
+        for (const course of myCourses) {
+          try {
+            const aRes  = await fetch(`${API}/assignments/course/${course._id}`);
+            const aData = await aRes.json();
+            if (aData.success && Array.isArray(aData.assignments)) {
+              aData.assignments
+                .filter((a: any) => a.isPublished)
+                .forEach((a: any) => all.push({ ...a, courseId: course }));
+            }
+          } catch { /* skip */ }
+        }
+
+        // Sort by due date ascending
+        all.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        setAssignments(all);
+
+        // ── Trigger alarm if any due within 24h ──────────────
+        const now   = new Date();
+        const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const urgent = all.filter(a => {
+          const due = new Date(a.dueDate);
+          return due > now && due <= in24h;
+        });
+
+        if (urgent.length > 0 && !alarmFiredRef.current) {
+          alarmFiredRef.current = true;
+          playAlarm();
+        }
+      } catch (err) {
+        console.warn('Could not fetch assignments:', err);
+      } finally {
+        setLoadingAssign(false);
+      }
+    };
+    fetchAssignments();
+  }, [user?.id]);
+
+  // ── Quiz stars ──────────────────────────────────────────────
+  useEffect(() => {
     const fetchQuizStars = async () => {
       if (!user?.id) return;
       try {
-        const cRes = await fetch(`http://localhost:5000/api/courses/semester/${user?.semester}`);
+        const cRes = await fetch(`${API}/courses/semester/${user?.semester}`);
         if (!cRes.ok) return;
         const courses = await cRes.json();
         let allResults: any[] = [];
         for (const course of courses) {
           try {
-            const qRes = await fetch(`http://localhost:5000/api/quizzes/course/${course._id}`);
+            const qRes = await fetch(`${API}/quizzes/course/${course._id}`);
             if (!qRes.ok) continue;
             const quizzes = await qRes.json();
             for (const quiz of quizzes.filter((q: any) => q.isPublished)) {
               try {
-                const rRes = await fetch(`http://localhost:5000/api/quizzes/${quiz._id}/result/${user.id}`);
+                const rRes = await fetch(`${API}/quizzes/${quiz._id}/result/${user.id}`);
                 if (rRes.ok) { const r = await rRes.json(); allResults.push(r); }
               } catch { /* not attempted */ }
             }
           } catch { /* skip */ }
         }
         if (allResults.length === 0) return;
-        const breakdown = [0,0,0,0,0];
+        const breakdown = [0, 0, 0, 0, 0];
         let totalStars = 0;
         allResults.forEach(r => {
-          const pct = r.percentage || 0;
+          const pct   = r.percentage || 0;
           const stars = pct <= 20 ? 1 : pct <= 40 ? 2 : pct <= 60 ? 3 : pct <= 80 ? 4 : 5;
           breakdown[stars - 1]++;
           totalStars += stars;
         });
         setQuizStarSummary({
-          total: allResults.length,
+          total:    allResults.length,
           avgStars: parseFloat((totalStars / allResults.length).toFixed(1)),
           breakdown,
         });
       } catch { /* ignore */ }
     };
-
-    fetchEnrolledCourses();
     fetchQuizStars();
   }, [user?.id]);
 
-  const avgScore = enrolledCourses.length > 0
-    ? (enrolledCourses.reduce((sum, c) => sum + (c.grade || 0), 0) / enrolledCourses.length).toFixed(1)
+  // ── Play a simple beep alarm via Web Audio API ──────────────
+  const playAlarm = () => {
+    try {
+      const ctx  = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const beep = (start: number) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type      = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.5, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + 0.4);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + 0.5);
+      };
+      beep(0); beep(0.6); beep(1.2);
+    } catch { /* browser may block audio without user interaction */ }
+  };
+
+  const handleDismiss = (id: string) =>
+    setDismissed(prev => new Set([...prev, id]));
+
+  // Filter out dismissed alarms
+  const visibleAssignments = assignments.filter(a => !dismissed.has(a._id));
+
+  // Upcoming = not expired, limit to 5
+  const upcomingAssignments = visibleAssignments
+    .filter(a => new Date(a.dueDate) > new Date())
+    .slice(0, 5);
+
+  const avgScore      = enrolledCourses.length > 0
+    ? (enrolledCourses.reduce((s, c) => s + (c.grade || 0), 0) / enrolledCourses.length).toFixed(1)
     : '—';
   const avgAttendance = enrolledCourses.length > 0
-    ? (enrolledCourses.reduce((sum, c) => sum + (c.attendance || 0), 0) / enrolledCourses.length).toFixed(1)
+    ? (enrolledCourses.reduce((s, c) => s + (c.attendance || 0), 0) / enrolledCourses.length).toFixed(1)
     : '—';
-  const totalCredits = enrolledCourses.reduce((sum, c) => sum + (c.credits || 0), 0);
+  const totalCredits  = enrolledCourses.reduce((s, c) => s + (c.credits || 0), 0);
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -146,7 +325,13 @@ export function StudentPortal() {
         <p className="text-gray-600">Personalized dashboard with performance insights and learning recommendations.</p>
       </div>
 
-      {/* Student Profile Card */}
+      {/* ── Deadline Alarm Banners ── */}
+      <DeadlineAlarm
+        assignments={visibleAssignments}
+        onDismiss={handleDismiss}
+      />
+
+      {/* ── Student Profile Card ── */}
       <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-8 mb-6 text-white">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -155,26 +340,21 @@ export function StudentPortal() {
             </div>
             <div>
               <h3 className="text-2xl font-bold mb-1">{user?.name ?? 'Student'}</h3>
-              <p className="text-sm opacity-90">{user?.studentId ?? 'N/A'} • {user?.email}</p>
-              <p className="text-sm opacity-75">{user?.department ?? 'Department'} • Semester {user?.semester ?? '—'}</p>
+              <p className="text-sm opacity-90">{user?.studentId ?? 'N/A'} · {user?.email}</p>
+              <p className="text-sm opacity-75">{user?.department ?? 'Department'} · Semester {user?.semester ?? '—'}</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="mb-2">
-              <p className="text-sm opacity-75">Current GPA</p>
-              <p className="text-3xl font-bold">—</p>
-            </div>
+            <p className="text-sm opacity-75">Current GPA</p>
+            <p className="text-3xl font-bold">—</p>
             <p className="text-xs opacity-75">Rank: —</p>
           </div>
         </div>
 
-        {/* ✅ enrolledCourses.length now shows correct count */}
         <div className="grid grid-cols-4 gap-4 pt-6 border-t border-white/20">
           <div>
             <p className="text-sm opacity-75 mb-1">Enrolled Courses</p>
-            <p className="text-2xl font-bold">
-              {loadingCourses ? '…' : enrolledCourses.length}
-            </p>
+            <p className="text-2xl font-bold">{loadingCourses ? '…' : enrolledCourses.length}</p>
           </div>
           <div>
             <p className="text-sm opacity-75 mb-1">Avg Score</p>
@@ -192,48 +372,50 @@ export function StudentPortal() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-  
-      {/* FEATURE 5: Quiz Star Rating Summary Card */}
-      {quizStarSummary.total > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Quiz Performance Stars</h3>
-              <p className="text-sm text-gray-500">{quizStarSummary.total} quiz{quizStarSummary.total !== 1 ? 'zes' : ''} completed</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-black text-amber-400">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <span key={i} className={i < Math.round(quizStarSummary.avgStars) ? 'text-amber-400' : 'text-gray-200'}>★</span>
-                ))}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">Avg {quizStarSummary.avgStars} / 5 stars</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            {[5,4,3,2,1].map(star => {
-              const count = quizStarSummary.breakdown[star - 1];
-              const pct   = quizStarSummary.total > 0 ? Math.round((count / quizStarSummary.total) * 100) : 0;
-              const colors: Record<number,string> = {5:'bg-green-500',4:'bg-blue-400',3:'bg-yellow-400',2:'bg-orange-400',1:'bg-red-400'};
-              const labels: Record<number,string> = {5:'81–100%',4:'61–80%',3:'41–60%',2:'21–40%',1:'0–20%'};
-              return (
-                <div key={star} className="flex items-center gap-3">
-                  <span className="text-amber-400 text-sm w-20 flex-shrink-0 font-medium">
-                    {Array.from({ length: 5 }, (_, i) => <span key={i}>{i < star ? '★' : '☆'}</span>)}
-                  </span>
-                  <span className="text-xs text-gray-400 w-16 flex-shrink-0">{labels[star]}</span>
-                  <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${colors[star]}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-xs text-gray-500 w-8 text-right">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
-      {/* Performance Trend */}
+        {/* Quiz Star Summary */}
+        {quizStarSummary.total > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Quiz Performance Stars</h3>
+                <p className="text-sm text-gray-500">
+                  {quizStarSummary.total} quiz{quizStarSummary.total !== 1 ? 'zes' : ''} completed
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-black text-amber-400">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <span key={i} className={i < Math.round(quizStarSummary.avgStars) ? 'text-amber-400' : 'text-gray-200'}>★</span>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 mt-1">Avg {quizStarSummary.avgStars} / 5 stars</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {[5, 4, 3, 2, 1].map(star => {
+                const count  = quizStarSummary.breakdown[star - 1];
+                const pct    = quizStarSummary.total > 0 ? Math.round((count / quizStarSummary.total) * 100) : 0;
+                const colors: Record<number, string> = { 5: 'bg-green-500', 4: 'bg-blue-400', 3: 'bg-yellow-400', 2: 'bg-orange-400', 1: 'bg-red-400' };
+                const labels: Record<number, string> = { 5: '81–100%', 4: '61–80%', 3: '41–60%', 2: '21–40%', 1: '0–20%' };
+                return (
+                  <div key={star} className="flex items-center gap-3">
+                    <span className="text-amber-400 text-sm w-20 flex-shrink-0 font-medium">
+                      {Array.from({ length: 5 }, (_, i) => <span key={i}>{i < star ? '★' : '☆'}</span>)}
+                    </span>
+                    <span className="text-xs text-gray-400 w-16 flex-shrink-0">{labels[star]}</span>
+                    <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${colors[star]}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs text-gray-500 w-8 text-right">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Performance Trend */}
         <div className="lg:col-span-2 bg-white rounded-lg p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">My Performance Trend</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -247,26 +429,55 @@ export function StudentPortal() {
           </ResponsiveContainer>
         </div>
 
-        {/* Upcoming Deadlines */}
+        {/* ── Upcoming Deadlines — REAL DATA ── */}
         <div className="bg-white rounded-lg p-6 border border-gray-200">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
           </div>
-          <div className="space-y-3">
-            {upcomingAssignments.map((assignment, index) => (
-              <div key={index} className="pb-3 border-b border-gray-100 last:border-0">
-                <p className="text-sm font-medium text-gray-900">{assignment.title}</p>
-                <p className="text-xs text-gray-500 mb-1">{assignment.course}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${assignment.status === 'pending' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {assignment.status === 'pending' ? 'Not Started' : 'In Progress'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {loadingAssign ? (
+            <p className="text-sm text-gray-400 text-center py-6">Loading assignments...</p>
+          ) : upcomingAssignments.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No upcoming deadlines 🎉</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingAssignments.map(a => {
+                const course = typeof a.courseId === 'object' ? a.courseId : null;
+                const due    = new Date(a.dueDate);
+                const diffH  = (due.getTime() - Date.now()) / (1000 * 60 * 60);
+                return (
+                  <div key={a._id}
+                    className={`pb-3 border-b border-gray-100 last:border-0 rounded-lg px-2 py-2 transition ${
+                      diffH < 24 ? 'bg-red-50 border border-red-100' : ''
+                    }`}>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{a.title}</p>
+                    {course && (
+                      <p className="text-xs text-indigo-600 mb-1 truncate">
+                        {course.courseName} {course.courseCode ? `(${course.courseCode})` : ''}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <span className="text-xs text-gray-500">
+                        Due: {due.toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'short', year: 'numeric'
+                        })}
+                      </span>
+                      <DeadlineBadge dueDate={a.dueDate} />
+                    </div>
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      <span className="text-xs text-gray-400">
+                        {a.questions?.length || 0} questions · {a.totalMarks} marks
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -277,17 +488,17 @@ export function StudentPortal() {
           <h3 className="text-lg font-semibold text-gray-900">Personalized Learning Recommendations</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {recommendations.map((rec, index) => (
-            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6">
+          {[...recommendations, ...aiRecs].map((rec, i) => (
+            <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
               <div className={`w-12 h-12 ${rec.color} rounded-lg flex items-center justify-center mb-4`}>
                 <rec.icon className="w-6 h-6" />
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">{rec.title}</h4>
               <p className="text-sm text-gray-600 mb-3">{rec.description}</p>
               <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${
-                rec.priority === 'high' ? 'bg-red-100 text-red-700' :
+                rec.priority === 'high'   ? 'bg-red-100 text-red-700'    :
                 rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-green-100 text-green-700'
+                                            'bg-green-100 text-green-700'
               }`}>
                 {rec.priority.toUpperCase()} Priority
               </span>
@@ -306,7 +517,7 @@ export function StudentPortal() {
               <PolarAngleAxis dataKey="skill" stroke="#6b7280" />
               <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#6b7280" />
               <Radar name="Current Level" dataKey="current" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-              <Radar name="Target Level" dataKey="target" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+              <Radar name="Target Level"  dataKey="target"  stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
               <Legend /><Tooltip />
             </RadarChart>
           </ResponsiveContainer>
@@ -319,8 +530,8 @@ export function StudentPortal() {
             <h3 className="text-lg font-semibold text-gray-900">Areas Requiring Improvement</h3>
           </div>
           <div className="space-y-4">
-            {weakAreas.map((area, index) => (
-              <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
+            {weakAreas.map((area, i) => (
+              <div key={i} className="pb-4 border-b border-gray-100 last:border-0">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-medium text-gray-900">{area.subject}</p>
@@ -333,8 +544,10 @@ export function StudentPortal() {
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
                     <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${area.currentScore >= 75 ? 'bg-green-500' : area.currentScore >= 65 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${area.currentScore}%` }} />
+                      <div className={`h-full rounded-full ${
+                        area.currentScore >= 75 ? 'bg-green-500' :
+                        area.currentScore >= 65 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`} style={{ width: `${area.currentScore}%` }} />
                     </div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 min-w-[50px]">{area.currentScore}%</span>
@@ -358,8 +571,8 @@ export function StudentPortal() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {enrolledCourses.map((course, index) => (
-              <div key={course._id || index} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+            {enrolledCourses.map((course, i) => (
+              <div key={course._id || i} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 mb-1 truncate">{course.courseName}</h4>
@@ -390,6 +603,12 @@ export function StudentPortal() {
                     <p className="text-sm font-medium text-gray-900">{course.enrolledStudents?.length ?? 0}</p>
                   </div>
                 </div>
+                <button
+                  onClick={() => navigate(`/assignments?courseId=${course._id}`)}
+                  className="mt-4 w-full px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
+                >
+                  View Assignments
+                </button>
               </div>
             ))}
           </div>

@@ -28,6 +28,7 @@ import { TeacherAuth } from "./components/auth/TeacherAuth";
 // NEW imports
 import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
+import AIAgent from "./components/student/AIAgent";
 
 function ProtectedStudentLayout() {
   return (
@@ -58,12 +59,14 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         children: [
           { index: true, Component: StudentPortal },
           { path: "courses", Component: Courses },
-          { path: "materials", Component: StudyMaterials },
-          { path: "quizzes", Component: StudentQuizList },
-          { path: "quiz/:id", Component: StudentQuizTake },
-          // NEW: student progress page
-          { path: "my-progress", Component: StudentBucketProgress },
-          { path: "*", Component: NotFound },
+        { path: "assignments", Component: Assignments },
+        { path: "materials", Component: StudyMaterials },
+        { path: "quizzes", Component: StudentQuizList },
+        { path: "quiz/:id", Component: StudentQuizTake },
+        // NEW: student progress page
+        { path: "my-progress", Component: StudentBucketProgress },
+        { path: "ai-assistant", Component: AIAgent },
+        { path: "*", Component: NotFound },
         ],
       },
     ]);

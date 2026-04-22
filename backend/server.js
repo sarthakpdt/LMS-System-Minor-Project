@@ -20,8 +20,9 @@ const attendanceRoutes   = require('./routes/attendance1');
 const notificationRoutes = require('./routes/notifications');
 const timetableRoutes    = require('./routes/timetable');
 const bucketRoutes       = require('./routes/bucketRoutes');
-const courseRoutes       = require('./routes/courseRoutes');   // ✅ FIX: was missing
-const teacherRoutes      = require('./routes/teacherRoutes'); // ✅ FIX: new route
+const courseRoutes       = require('./routes/courseRoutes');   
+const teacherRoutes      = require('./routes/teacherRoutes'); 
+const assignmentRoutes   = require('./routes/assignmentRoutes');
 
 // ── Route registration ─────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
@@ -32,8 +33,9 @@ app.use('/api/attendance',    attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/timetable',     timetableRoutes);
 app.use('/api/buckets',       bucketRoutes);
-app.use('/api/courses',       courseRoutes);      // ✅ FIX: was missing entirely
-app.use('/api/teachers',      teacherRoutes);     // ✅ FIX: new — teacher self-profile
+app.use('/api/courses',       courseRoutes);    
+app.use('/api/teachers',      teacherRoutes);     
+app.use('/api/assignments',   assignmentRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

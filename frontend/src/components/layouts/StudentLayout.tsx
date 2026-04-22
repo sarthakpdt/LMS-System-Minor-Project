@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp } from 'lucide-react';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Bot } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,9 +10,11 @@ export function StudentLayout() {
   const navItems = [
     { to: '/', icon: Home, label: 'My Dashboard', end: true },
     { to: '/courses', icon: BookOpen, label: 'My Courses' },
+    { to: '/assignments', icon: FileText, label: 'Assignments' },
     { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quizzes & Tests' },
     { to: '/my-progress', icon: ClipboardList, label: 'My Progress & Level' },
+    { to: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
   ];
 
   const handleLogout = () => {
