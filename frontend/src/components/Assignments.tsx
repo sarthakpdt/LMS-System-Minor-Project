@@ -114,12 +114,15 @@ export function Assignments() {
   const [questions,   setQuestions]   = useState<Question[]>([]);
   const [saving,      setSaving]      = useState(false);
 
-  // AI generation
-  const [aiTopic,   setAiTopic]   = useState('');
-  const [easyC,     setEasyC]     = useState(2);
-  const [medC,      setMedC]      = useState(3);
-  const [hardC,     setHardC]     = useState(2);
-  const [aiLoading, setAiLoading] = useState(false);
+  // Target bucket for publishing
+  const [targetBucket, setTargetBucket] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
+
+  // AI Variation Generator (base question → difficulty-specific variations)
+  const [baseQuestion,      setBaseQuestion]      = useState('');
+  const [aiDifficulty,      setAiDifficulty]      = useState<'easy' | 'medium' | 'hard' | 'all'>('all');
+  const [aiVariations,      setAiVariations]      = useState<{ easy: any[]; medium: any[]; hard: any[] }>({ easy: [], medium: [], hard: [] });
+  const [variationsLoading, setVariationsLoading] = useState(false);
+  const [showVariations,    setShowVariations]    = useState(false);
 
   // PDF upload for AI extraction
   const pdfRef = useRef<HTMLInputElement>(null);
@@ -183,28 +186,38 @@ export function Assignments() {
     }
   };
 
-  // ── AI generate questions ─────────────────────────────────
-  const handleGenerateAI = async () => {
-    if (!aiTopic.trim()) { setError('Enter a topic for AI generation'); return; }
-    setAiLoading(true); setError('');
+  // ── AI Variation Generator: base question → easy/medium/hard ─
+  const handleGenerateVariations = async () => {
+    if (!baseQuestion.trim()) { setError('Enter a base question to generate variations'); return; }
+    setVariationsLoading(true);
+    setShowVariations(false);
+    setAiVariations({ easy: [], medium: [], hard: [] });
+    setError('');
     try {
-      const res  = await fetch(`${API}/assignments/generate-ai`, {
+      const res  = await fetch(`${API}/assignments/generate-variations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: aiTopic,
-          courseName: courses.find(c => c._id === courseId)?.courseName || aiTopic,
-          easyCount: easyC, mediumCount: medC, hardCount: hardC
-        })
+          baseQuestion: baseQuestion.trim(),
+          difficulty:   aiDifficulty,
+          courseName:   courses.find(c => c._id === courseId)?.courseName || '',
+        }),
       });
       const data = await res.json();
       if (!data.success) { setError(data.message || 'AI generation failed'); return; }
-      setQuestions(prev => [...prev, ...data.questions]);
-      setSuccess(`✨ ${data.questions.length} questions generated!`);
-      setTimeout(() => setSuccess(''), 3000);
+      setAiVariations(data.variations);
+      setShowVariations(true);
+      setSuccess('✨ AI questions generated! Select the ones you want to add.');
+      setTimeout(() => setSuccess(''), 4000);
     } catch {
       setError('AI generation failed. Check GEMINI_API_KEY in .env');
-    } finally { setAiLoading(false); }
+    } finally { setVariationsLoading(false); }
+  };
+
+  const addVariationToAssignment = (q: any) => {
+    setQuestions(prev => [...prev, { ...q, source: 'ai' }]);
+    setSuccess(`Added question to assignment`);
+    setTimeout(() => setSuccess(''), 2000);
   };
 
   // ── PDF upload → AI extract questions ────────────────────
@@ -264,7 +277,8 @@ export function Assignments() {
           teacherId: user?.id,
           teacherName: user?.name,
           questions, dueDate,
-          creationMethod: questions.some(q => q.source === 'ai') ? 'mixed' : 'manual'
+          creationMethod: questions.some(q => q.source === 'ai') ? 'mixed' : 'manual',
+          targetBucket
         })
       });
       const data = await res.json();
@@ -319,7 +333,7 @@ export function Assignments() {
 
   const resetForm = () => {
     setTitle(''); setDesc(''); setCourseId(''); setDueDate('');
-    setQuestions([]); setAiTopic(''); setEasyC(2); setMedC(3); setHardC(2);
+    setQuestions([]); setBaseQuestion(''); setAiVariations({ easy: [], medium: [], hard: [] }); setShowVariations(false); setTargetBucket('All');
     setShowCreate(false); setError('');
   };
 
@@ -428,6 +442,27 @@ export function Assignments() {
               <input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Target Bucket</label>
+              <div className="flex gap-2">
+                {(['All', 'Easy', 'Medium', 'Hard'] as const).map(b => (
+                  <button key={b} type="button"
+                    onClick={() => setTargetBucket(b)}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${
+                      targetBucket === b
+                        ? b === 'Easy'   ? 'bg-green-500 text-white border-green-500'
+                        : b === 'Medium' ? 'bg-yellow-500 text-white border-yellow-500'
+                        : b === 'Hard'   ? 'bg-red-500 text-white border-red-500'
+                        :                  'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+                    }`}>
+                    {b === 'All' ? '👥 All Students' : b === 'Easy' ? '🟢 Easy Bucket' : b === 'Medium' ? '🟡 Medium Bucket' : '🔴 Hard Bucket'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Only students in the selected bucket will see this assignment after publishing.</p>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-gray-700 mb-1">Instructions for students</label>
               <textarea value={description} onChange={e => setDesc(e.target.value)} rows={2}
@@ -436,62 +471,168 @@ export function Assignments() {
             </div>
           </div>
 
-          {/* ── AI Generator ── */}
-          <div className="rounded-xl border border-indigo-200 p-5 mb-5" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)' }}>
-            <h4 className="font-bold text-indigo-900 mb-4 flex items-center gap-2 text-sm">
-              <Sparkles className="w-4 h-4 text-indigo-600" /> AI Question Generator (Gemini)
+          {/* ── Generate AI Questions ── */}
+          <div className="rounded-xl border-2 border-violet-300 p-5 mb-5 bg-gradient-to-br from-violet-50 to-indigo-50">
+            <h4 className="font-bold text-violet-900 mb-1 flex items-center gap-2 text-sm">
+              <Sparkles className="w-4 h-4 text-violet-600" /> Generate AI Questions
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-indigo-700 mb-1">Topic *</label>
-                <input value={aiTopic} onChange={e => setAiTopic(e.target.value)}
-                  placeholder="e.g. Binary Search Trees, Newton's Laws of Motion..."
-                  className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-              </div>
+            <p className="text-xs text-violet-600 mb-4">Enter a base question and select difficulty — AI generates targeted variations.</p>
+
+            {/* Base Question + Difficulty + Button */}
+            <div className="flex flex-col gap-3 mb-4">
               <div>
-                <label className="block text-xs font-medium text-indigo-700 mb-1">🟢 Easy Questions</label>
-                <input type="number" value={easyC} min={0} max={10} onChange={e => setEasyC(Number(e.target.value))}
-                  className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none" />
+                <label className="block text-xs font-semibold text-violet-700 mb-1">Base Question *</label>
+                <input
+                  value={baseQuestion}
+                  onChange={e => setBaseQuestion(e.target.value)}
+                  placeholder="e.g. Explain the concept of recursion in programming..."
+                  className="w-full border border-violet-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGenerateVariations(); }}}
+                />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-indigo-700 mb-1">🟡 Medium Questions</label>
-                <input type="number" value={medC} min={0} max={10} onChange={e => setMedC(Number(e.target.value))}
-                  className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-indigo-700 mb-1">🔴 Hard Questions</label>
-                <input type="number" value={hardC} min={0} max={10} onChange={e => setHardC(Number(e.target.value))}
-                  className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none" />
-              </div>
-              <div className="flex items-end">
+
+              <div className="flex flex-wrap items-end gap-3">
+                {/* Difficulty selector */}
+                <div className="flex-1 min-w-[180px]">
+                  <label className="block text-xs font-semibold text-violet-700 mb-1">Difficulty</label>
+                  <div className="flex gap-2">
+                    {(['all', 'easy', 'medium', 'hard'] as const).map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setAiDifficulty(d)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition capitalize ${
+                          aiDifficulty === d
+                            ? d === 'easy'   ? 'bg-green-500 text-white border-green-500'
+                            : d === 'medium' ? 'bg-yellow-500 text-white border-yellow-500'
+                            : d === 'hard'   ? 'bg-red-500 text-white border-red-500'
+                            :                  'bg-violet-600 text-white border-violet-600'
+                            : 'bg-white text-gray-600 border-gray-300 hover:border-violet-400'
+                        }`}
+                      >
+                        {d === 'all' ? '🎯 All' : d === 'easy' ? '🟢 Easy' : d === 'medium' ? '🟡 Medium' : '🔴 Hard'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Generate button — visible purple */}
                 <button
-                  onClick={handleGenerateAI}
-                  disabled={aiLoading}
-                  style={{ backgroundColor: aiLoading ? '#a5b4fc' : '#4f46e5' }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg text-sm font-bold transition disabled:cursor-not-allowed"
+                  onClick={handleGenerateVariations}
+                  disabled={variationsLoading || !baseQuestion.trim()}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white transition disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                  style={{ backgroundColor: variationsLoading ? '#7c3aed99' : '#7c3aed' }}
                 >
-                  {aiLoading ? (
-                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Generating...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" /> Generate with AI</>
-                  )}
+                  {variationsLoading
+                    ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Generating...</>
+                    : <><Sparkles className="w-4 h-4" /> Generate AI Questions</>}
                 </button>
               </div>
             </div>
 
+            {/* AI Generated Results */}
+            {showVariations && (
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-violet-200">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <p className="text-xs font-semibold text-gray-700">Click "+ Add" to add questions to your assignment</p>
+                </div>
+
+                {/* Easy */}
+                {aiVariations.easy.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-green-700 mb-2">🟢 Easy <span className="font-normal text-gray-400">(5 marks each)</span></p>
+                    <div className="space-y-2">
+                      {aiVariations.easy.map((q, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg hover:shadow-sm transition">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-800">{q.questionText}</p>
+                            {q.type === 'mcq' && q.options?.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {q.options.map((opt: string, oi: number) => (
+                                  <span key={oi} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{opt}</span>
+                                ))}
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">{q.type?.toUpperCase()} · Ans: {q.correctAnswer}</p>
+                          </div>
+                          <button onClick={() => addVariationToAssignment(q)}
+                            className="flex-shrink-0 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition">
+                            + Add
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Medium */}
+                {aiVariations.medium.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-yellow-700 mb-2">🟡 Medium <span className="font-normal text-gray-400">(10 marks each)</span></p>
+                    <div className="space-y-2">
+                      {aiVariations.medium.map((q, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-yellow-200 rounded-lg hover:shadow-sm transition">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-800">{q.questionText}</p>
+                            {q.type === 'mcq' && q.options?.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {q.options.map((opt: string, oi: number) => (
+                                  <span key={oi} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{opt}</span>
+                                ))}
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">{q.type?.toUpperCase()} · Ans: {q.correctAnswer}</p>
+                          </div>
+                          <button onClick={() => addVariationToAssignment(q)}
+                            className="flex-shrink-0 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs font-semibold transition">
+                            + Add
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Hard */}
+                {aiVariations.hard.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-red-700 mb-2">🔴 Hard <span className="font-normal text-gray-400">(15 marks each)</span></p>
+                    <div className="space-y-2">
+                      {aiVariations.hard.map((q, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-red-200 rounded-lg hover:shadow-sm transition">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-800">{q.questionText}</p>
+                            {q.type === 'mcq' && q.options?.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {q.options.map((opt: string, oi: number) => (
+                                  <span key={oi} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{opt}</span>
+                                ))}
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">{q.type?.toUpperCase()} · Ans: {q.correctAnswer}</p>
+                          </div>
+                          <button onClick={() => addVariationToAssignment(q)}
+                            className="flex-shrink-0 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition">
+                            + Add
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* PDF Upload */}
-            <div className="border-t border-indigo-200 pt-4">
-              <p className="text-xs font-semibold text-indigo-800 mb-2">📄 Or upload a question sheet (PDF) — AI will extract questions</p>
+            <div className={showVariations ? 'border-t border-violet-200 pt-4 mt-4' : ''}>
+              <p className="text-xs font-semibold text-violet-800 mb-2">📄 Or upload a PDF — AI will extract questions from it</p>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => pdfRef.current?.click()}
-                  disabled={pdfLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition disabled:opacity-50"
-                >
+                <button onClick={() => pdfRef.current?.click()} disabled={pdfLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-violet-300 text-violet-700 rounded-lg text-sm font-medium hover:bg-violet-50 transition disabled:opacity-50">
                   <Upload className="w-4 h-4" />
-                  {pdfLoading ? 'Extracting...' : 'Upload PDF'}
+                  {pdfLoading ? 'Extracting…' : 'Upload PDF'}
                 </button>
-                <span className="text-xs text-indigo-600">AI will read the PDF and create questions from it</span>
+                <span className="text-xs text-violet-500">AI reads the PDF and creates questions from it</span>
               </div>
               <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfUpload} />
             </div>
@@ -700,6 +841,13 @@ export function Assignments() {
                       }`}>
                         {a.isPublished ? '✅ Published' : '📝 Draft'}
                       </span>
+                      {a.targetBucket && a.targetBucket !== 'All' && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
+                          a.targetBucket === 'Easy' ? 'bg-green-50 text-green-700 border-green-200'
+                          : a.targetBucket === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                          : 'bg-red-50 text-red-700 border-red-200'
+                        }`}>🎯 {a.targetBucket} Bucket</span>
+                      )}
                       {isExpired && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 flex-shrink-0">
                           ⏰ Expired

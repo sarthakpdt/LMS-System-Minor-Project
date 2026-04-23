@@ -53,6 +53,7 @@ const assignmentSchema = new mongoose.Schema({
   mediumCount: { type: Number, default: 0 },
   hardCount:   { type: Number, default: 0 },
   isPublished:    { type: Boolean, default: false },
+  targetBucket:   { type: String, enum: ['Easy', 'Medium', 'Hard', 'All'], default: 'All' },
   allowQuizMode:  { type: Boolean, default: true },
   allowSolveMode: { type: Boolean, default: true },
   creationMethod: {

@@ -1,7 +1,8 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X } from 'lucide-react';
+import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain } from 'lucide-react';
+import AILearningAssistant from './student/AILearningAssistant';
 import {
   LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -120,6 +121,9 @@ export function StudentPortal() {
 
   // Dismissed alarm IDs
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  // AI Insights panel
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   // Quiz star summary
   const [quizStarSummary, setQuizStarSummary] = useState<{
@@ -344,10 +348,21 @@ export function StudentPortal() {
               <p className="text-sm opacity-75">{user?.department ?? 'Department'} · Semester {user?.semester ?? '—'}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm opacity-75">Current GPA</p>
-            <p className="text-3xl font-bold">—</p>
-            <p className="text-xs opacity-75">Rank: —</p>
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-right">
+              <p className="text-sm opacity-75">Current GPA</p>
+              <p className="text-3xl font-bold">—</p>
+              <p className="text-xs opacity-75">Rank: —</p>
+            </div>
+            {/* AI Insights icon */}
+            <button
+              onClick={() => setShowAIPanel(true)}
+              title="AI Performance Insights"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-lg text-xs font-medium transition-colors"
+            >
+              <Brain className="w-3.5 h-3.5" />
+              <span>AI Insights</span>
+            </button>
           </div>
         </div>
 
@@ -560,8 +575,7 @@ export function StudentPortal() {
 
       {/* Enrolled Courses */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">My Courses</h3>
-        {loadingCourses ? (
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">My Courses</h3>        {loadingCourses ? (
           <p className="text-gray-500 text-sm">Loading your courses...</p>
         ) : enrolledCourses.length === 0 ? (
           <div className="text-center py-10 text-gray-400">
@@ -614,6 +628,24 @@ export function StudentPortal() {
           </div>
         )}
       </div>
+
+      {/* ── AI Performance Insights Modal ── */}
+      {showAIPanel && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-white" />
+                <h3 className="text-white font-bold text-base">AI Performance Insights</h3>
+              </div>
+              <button onClick={() => setShowAIPanel(false)} className="text-white/80 hover:text-white text-xl leading-none">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <AILearningAssistant userId={user?.id || ''} userName={user?.name || 'Student'} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

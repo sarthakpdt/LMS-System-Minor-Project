@@ -107,9 +107,30 @@ function sanitiseQuestions(arr) {
 // ── GET /api/assignments/course/:courseId ─────────────────────
 exports.getByCourse = async (req, res) => {
   try {
-    const assignments = await Assignment.find({ courseId: req.params.courseId })
+    const { studentId } = req.query; // optional: filter by student bucket
+    let assignments = await Assignment.find({ courseId: req.params.courseId })
       .select('-submissions')
       .sort({ createdAt: -1 });
+
+    // Filter published assignments to only those matching the student's bucket
+    if (studentId) {
+      const StudentBucket = require('../models/StudentBucket');
+      const bucketRecord = await StudentBucket.findOne({
+        studentId,
+        courseId: req.params.courseId,
+      });
+      const studentBucket = bucketRecord?.bucket || 'Easy'; // default Easy
+      assignments = assignments.map(a => {
+        // If not published, return as-is (teacher view)
+        if (!a.isPublished) return a;
+        // If targetBucket is 'All', visible to everyone
+        if (!a.targetBucket || a.targetBucket === 'All') return a;
+        // If buckets match, visible
+        if (a.targetBucket === studentBucket) return a;
+        return null;
+      }).filter(Boolean);
+    }
+
     res.json({ success: true, assignments });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -131,7 +152,7 @@ exports.getById = async (req, res) => {
 exports.createAssignment = async (req, res) => {
   try {
     const { title, description, courseId, teacherId,
-            teacherName, questions, dueDate, creationMethod } = req.body;
+            teacherName, questions, dueDate, creationMethod, targetBucket } = req.body;
 
     if (!title || !courseId || !teacherId || !dueDate)
       return res.status(400).json({ success: false, message: 'title, courseId, teacherId, dueDate required' });
@@ -143,6 +164,7 @@ exports.createAssignment = async (req, res) => {
       teacherName: teacherName || '',
       questions, dueDate: new Date(dueDate),
       creationMethod: creationMethod || 'manual',
+      targetBucket: targetBucket || 'All',
     });
 
     await assignment.save();
@@ -156,9 +178,10 @@ exports.createAssignment = async (req, res) => {
 // ── PATCH /api/assignments/:id/publish ───────────────────────
 exports.publishAssignment = async (req, res) => {
   try {
-    const a = await Assignment.findByIdAndUpdate(
-      req.params.id, { isPublished: true }, { new: true }
-    ).select('-submissions');
+    const update = { isPublished: true };
+    // Optional: allow setting targetBucket at publish time
+    if (req.body && req.body.targetBucket) update.targetBucket = req.body.targetBucket;
+    const a = await Assignment.findByIdAndUpdate(req.params.id, update, { new: true }).select('-submissions');
     if (!a) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, assignment: a });
   } catch (err) {
@@ -435,3 +458,185 @@ PDF TEXT:\n${pdfText.slice(0, 6000)}`;
     }
   }
 ];
+// ── POST /api/assignments/generate-variations ─────────────────
+// Takes a base question, returns easy/medium/hard variations
+exports.generateVariations = async (req, res) => {
+  try {
+    const { baseQuestion, courseName, difficulty = 'all' } = req.body;
+    if (!baseQuestion || !baseQuestion.trim())
+      return res.status(400).json({ success: false, message: 'baseQuestion is required' });
+
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here')
+      return res.status(500).json({ success: false, message: 'GEMINI_API_KEY not set in .env' });
+
+    // Build difficulty-specific instructions
+    const diffMap = {
+      easy:   'Generate ONLY 5 easy questions (basic recall/definition, straightforward). Each worth 5 marks.',
+      medium: 'Generate ONLY 5 medium questions (application or analysis needed). Each worth 10 marks.',
+      hard:   'Generate ONLY 5 hard questions (synthesis, evaluation, complex problem-solving). Each worth 15 marks.',
+      all:    'Generate 3 easy (5 marks each), 3 medium (10 marks each), and 3 hard (15 marks each) questions.',
+    };
+    const diffInstruction = diffMap[difficulty] || diffMap.all;
+
+    const prompt = `You are an expert academic question designer.
+Given this base question: "${baseQuestion}"
+${courseName ? `Course: "${courseName}"` : ''}
+
+${diffInstruction}
+Rules:
+- All questions must be conceptually related to the base question
+- Questions must be non-duplicate
+- Mix MCQ and short-answer types where appropriate. MCQs must have exactly 4 options.
+
+Return ONLY valid JSON in this exact format (no markdown, no extra text):
+{
+  "easy":   [{"questionText": "...", "type": "mcq"|"short", "options": ["A","B","C","D"] or [], "correctAnswer": "...", "marks": 5,  "difficulty": "easy",   "source": "ai"}],
+  "medium": [{"questionText": "...", "type": "mcq"|"short", "options": [...] or [],           "correctAnswer": "...", "marks": 10, "difficulty": "medium", "source": "ai"}],
+  "hard":   [{"questionText": "...", "type": "short"|"long", "options": [],                    "correctAnswer": "...", "marks": 15, "difficulty": "hard",   "source": "ai"}]
+}
+${difficulty !== 'all' ? `Note: Only populate the "${difficulty}" array. Leave the other arrays empty ([]).` : ''}`;
+
+    const raw = await callGemini(prompt);
+    if (!raw) return res.status(502).json({ success: false, message: 'Gemini returned no response. Check GEMINI_API_KEY.' });
+
+    let parsed;
+    try {
+      let text = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const objMatch = text.match(/\{[\s\S]*\}/);
+      if (!objMatch) throw new Error('No JSON object found');
+      parsed = JSON.parse(objMatch[0]);
+    } catch (e) {
+      return res.status(502).json({ success: false, message: 'Could not parse AI response. Try again.' });
+    }
+
+    const sanitise = (arr, difficulty) =>
+      (Array.isArray(arr) ? arr : []).map(q => ({
+        questionText:  String(q.questionText || '').trim(),
+        type:          ['mcq','short','long'].includes(q.type) ? q.type : 'short',
+        options:       Array.isArray(q.options) ? q.options.slice(0, 4) : [],
+        correctAnswer: String(q.correctAnswer || ''),
+        marks:         difficulty === 'hard' ? 15 : difficulty === 'medium' ? 10 : 5,
+        difficulty,
+        source:        'ai',
+      })).filter(q => q.questionText !== '');
+
+    res.json({
+      success: true,
+      variations: {
+        easy:   sanitise(parsed.easy,   'easy'),
+        medium: sanitise(parsed.medium, 'medium'),
+        hard:   sanitise(parsed.hard,   'hard'),
+      }
+    });
+  } catch (err) {
+    console.error('[generateVariations]', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── POST /api/assignments/ai-performance ─────────────────────
+// Analyzes student quiz+assignment marks, returns structured feedback
+exports.analyzePerformance = async (req, res) => {
+  try {
+    const { quizResults = [], assignmentResults = [], studentName = 'Student' } = req.body;
+
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here')
+      return res.status(500).json({ success: false, message: 'GEMINI_API_KEY not set in .env' });
+
+    // Build performance summary
+    const allResults = [
+      ...quizResults.map(r => ({
+        subject: r.subject || r.quizTitle || 'Quiz',
+        scored:  r.scored  || r.obtainedMarks || 0,
+        total:   r.total   || r.totalMarks    || 100,
+        type:    'quiz',
+      })),
+      ...assignmentResults.map(r => ({
+        subject: r.subject || r.title || 'Assignment',
+        scored:  r.scored  || r.obtainedMarks || 0,
+        total:   r.total   || r.totalMarks    || 100,
+        type:    'assignment',
+      })),
+    ];
+
+    const performanceSummary = allResults.map(r => {
+      const pct = r.total > 0 ? Math.round((r.scored / r.total) * 100) : 0;
+      const status = pct < 50 ? 'Weak Area' : pct <= 75 ? 'Needs Improvement' : 'Strong Area';
+      return `${r.type.toUpperCase()}: "${r.subject}" — ${r.scored}/${r.total} (${pct}%) → ${status}`;
+    }).join('\n');
+
+    const prompt = `You are an academic performance analyst for a Learning Management System.
+Student: ${studentName}
+
+Performance data:
+${performanceSummary || 'No performance data available yet.'}
+
+Classification rules:
+- Marks < 50% → Weak Area
+- Marks 50-75% → Needs Improvement
+- Marks > 75% → Strong Area
+
+Analyze the performance and return ONLY valid JSON (no markdown, no extra text):
+{
+  "summary": "2-3 sentence overall summary of the student's performance",
+  "strengths": ["strength 1", "strength 2"],
+  "areasOfImprovement": ["area 1 with subject name and percentage", "area 2"],
+  "weakAreas": [{"subject": "...", "percentage": 0, "status": "Weak Area"|"Needs Improvement"|"Strong Area"}],
+  "suggestedTopics": ["topic1", "topic2"],
+  "improvementTips": ["actionable tip 1", "tip 2", "tip 3"],
+  "overallStatus": "Needs Attention"|"On Track"|"Excellent",
+  "priorityAction": "one key action for the student right now"
+}`;
+
+    const raw = await callGemini(prompt);
+
+    if (!raw) {
+      // Fallback: compute locally without AI
+      const analysed = allResults.map(r => {
+        const pct = r.total > 0 ? Math.round((r.scored / r.total) * 100) : 0;
+        return {
+          subject: r.subject,
+          percentage: pct,
+          status: pct < 50 ? 'Weak Area' : pct <= 75 ? 'Needs Improvement' : 'Strong Area',
+        };
+      });
+      return res.json({
+        success: true,
+        feedback: {
+          weakAreas:       analysed.filter(a => a.status !== 'Strong Area'),
+          suggestedTopics: analysed.filter(a => a.status !== 'Strong Area').map(a => `Review ${a.subject}`),
+          improvementTips: ['Practice consistently', 'Review lecture notes', 'Attempt more exercises'],
+          overallStatus:   analysed.some(a => a.status === 'Weak Area') ? 'Needs Attention' : 'On Track',
+          priorityAction:  'Focus on your weakest subjects first',
+        },
+        raw: null,
+      });
+    }
+
+    let feedback;
+    try {
+      let text = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const objMatch = text.match(/\{[\s\S]*\}/);
+      if (!objMatch) throw new Error('No JSON object');
+      feedback = JSON.parse(objMatch[0]);
+    } catch {
+      // Fallback to local analysis
+      const analysed = allResults.map(r => {
+        const pct = r.total > 0 ? Math.round((r.scored / r.total) * 100) : 0;
+        return { subject: r.subject, percentage: pct, status: pct < 50 ? 'Weak Area' : pct <= 75 ? 'Needs Improvement' : 'Strong Area' };
+      });
+      feedback = {
+        weakAreas: analysed,
+        suggestedTopics: analysed.map(a => `Review and practice ${a.subject}`),
+        improvementTips: ['Study weak areas daily', 'Take practice tests', 'Ask faculty for help'],
+        overallStatus: 'On Track',
+        priorityAction: 'Review your weakest subject this week',
+      };
+    }
+
+    res.json({ success: true, feedback });
+  } catch (err) {
+    console.error('[analyzePerformance]', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

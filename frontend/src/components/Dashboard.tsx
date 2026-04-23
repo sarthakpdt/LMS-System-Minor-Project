@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Users, BookOpen, FileText, TrendingUp, Award,
   ArrowUp, AlertCircle, ChevronDown, ChevronUp, Loader2,
-  Clock, Star, Send, CheckCircle, Sparkles, X,
+  Clock, Star, Send, CheckCircle, Brain,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -13,6 +13,7 @@ import { StudyMaterials }            from './StudyMaterials';
 import { DashboardImprovementCards } from './DashboardImprovementCards';
 import NotificationsPanel            from './teacher/NotificationsPanel';
 import { StudentReviewSheet }        from './StudentReviewSheet';
+import AILearningAssistant           from './student/AILearningAssistant';
 
 // ── lazy imports (may not exist yet) ─────────────────────────
 let AttendanceManager: any   = () => <div className="p-8 text-gray-400">Attendance Manager coming soon.</div>;
@@ -66,7 +67,7 @@ function StudentAssignmentsView() {
         const result: Record<string, any[]> = {};
         for (const course of myCourses) {
           try {
-            const aRes  = await fetch(`${API}/assignments/course/${course._id}`);
+            const aRes  = await fetch(`${API}/assignments/course/${course._id}?studentId=${user?.id || ''}`);
             const aData = await aRes.json();
             if (aData.success && Array.isArray(aData.assignments)) {
               const pub = aData.assignments
@@ -462,11 +463,8 @@ function StudentDashboard() {
   const [assignments,     setAssignments]     = useState<any[]>([]);
   const [activeTab,       setActiveTab]       = useState('home');
 
-  // AI Recommendations
-  const [showAIPanel,     setShowAIPanel]     = useState(false);
-  const [aiRecsLoading,   setAiRecsLoading]   = useState(false);
-  const [aiRecs,          setAiRecs]          = useState<string[]>([]);
-  const [aiRecsFetched,   setAiRecsFetched]   = useState(false);
+  // AI Performance Insights panel (inline icon → modal)
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -482,7 +480,7 @@ function StudentDashboard() {
         for (const ec of enrolled) {
           const courseId = ec.courseId || ec._id;
           try {
-            const aRes  = await fetch(`${API}/assignments/course/${courseId}`);
+            const aRes  = await fetch(`${API}/assignments/course/${courseId}?studentId=${user?.id || ''}`);
             const aData = await aRes.json();
             if (aData.success && Array.isArray(aData.assignments))
               allAssignments.push(...aData.assignments);
@@ -495,56 +493,6 @@ function StudentDashboard() {
     load();
   }, [user]);
 
-  // Fetch AI recommendations based on student performance
-  const fetchAIRecommendations = async () => {
-    setAiRecsLoading(true);
-    try {
-      // Gather submission data from localStorage + current assignments
-      const stored = JSON.parse(localStorage.getItem('aiRecommendations') || '[]');
-      const recentRecs = stored.slice(-3).map((r: any) => `Assignment: ${r.assignment} — ${r.recommendations?.join(', ')}`).join('\n');
-
-      const assignmentCount = assignments.length;
-      const publishedCount  = assignments.filter((a: any) => a.isPublished).length;
-
-      const prompt = `You are an academic advisor for a student.
-The student is enrolled in ${enrolledCourses.length} courses with ${assignmentCount} assignments (${publishedCount} published).
-${recentRecs ? `\nRecent performance notes:\n${recentRecs}` : ''}
-
-Provide 4-5 personalized, actionable academic recommendations to help this student improve. Each recommendation should be on a new line starting with a number. Be specific and motivational.`;
-
-      const res = await fetch(`${API}/assignments/gemini`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      const data = await res.json();
-      if (data.success && data.response) {
-        const lines = data.response.split('\n').filter((l: string) => l.trim());
-        setAiRecs(lines);
-      } else {
-        setAiRecs([
-          '1. Review your assignment submissions and focus on areas with low scores.',
-          '2. Practice consistently — aim for at least 30 minutes of study per subject daily.',
-          '3. Reach out to your teachers for clarification on difficult topics.',
-          '4. Use the study materials uploaded by your teachers for each subject.',
-          '5. Attempt quiz mode regularly to build speed and confidence.',
-        ]);
-      }
-      setAiRecsFetched(true);
-    } catch {
-      setAiRecs([
-        '1. Review your assignment submissions and focus on areas with low scores.',
-        '2. Practice consistently — aim for at least 30 minutes of study per subject daily.',
-        '3. Reach out to your teachers for clarification on difficult topics.',
-        '4. Use the study materials uploaded by your teachers for each subject.',
-        '5. Attempt quiz mode regularly to build speed and confidence.',
-      ]);
-      setAiRecsFetched(true);
-    } finally {
-      setAiRecsLoading(false);
-    }
-  };
-
   const tabs = [
     { id: 'home',        label: '🏠 Home' },
     { id: 'assignments', label: '📝 Assignments' },
@@ -554,81 +502,48 @@ Provide 4-5 personalized, actionable academic recommendations to help this stude
 
   return (
     <div className="p-8">
-      {/* Tab bar */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-white border border-b-white border-gray-200 text-indigo-600 -mb-px'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}>
-            {tab.label}
-          </button>
-        ))}
+      {/* Tab bar with AI Insights icon */}
+      <div className="flex items-center gap-2 mb-6 border-b border-gray-200">
+        <div className="flex gap-2 flex-1 overflow-x-auto">
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-white border border-b-white border-gray-200 text-indigo-600 -mb-px'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Small AI Insights button - top right of tab bar */}
+        <button
+          onClick={() => setShowAIPanel(true)}
+          title="AI Performance Insights"
+          className="flex items-center gap-1.5 px-3 py-1.5 mb-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-medium transition-colors flex-shrink-0"
+        >
+          <Brain className="w-3.5 h-3.5" />
+          <span>AI Insights</span>
+        </button>
       </div>
 
-      {/* AI Recommendations Panel */}
+      {/* ── AI Performance Modal ── */}
       {showAIPanel && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-white" />
-                <h3 className="text-white font-bold text-base">AI Study Recommendations</h3>
+                <Brain className="w-5 h-5 text-white" />
+                <h3 className="text-white font-bold text-base">AI Performance Insights</h3>
               </div>
-              <button onClick={() => setShowAIPanel(false)} className="text-white/80 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setShowAIPanel(false)} className="text-white/80 hover:text-white text-xl leading-none">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
-              {!aiRecsFetched ? (
-                <div className="text-center py-6">
-                  <p className="text-sm text-gray-500 mb-4">Get personalized AI recommendations based on your quiz and assignment performance.</p>
-                  <button
-                    onClick={fetchAIRecommendations}
-                    disabled={aiRecsLoading}
-                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold mx-auto hover:bg-indigo-700 disabled:opacity-60 transition"
-                  >
-                    {aiRecsLoading ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing your performance...</>
-                    ) : (
-                      <><Sparkles className="w-4 h-4" /> Generate Recommendations</>
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-xs text-gray-400 mb-3">Based on your enrolled courses and assignment performance:</p>
-                  {aiRecs.map((rec, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
-                      <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-white text-xs font-bold">{i + 1}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{rec.replace(/^\d+\.?\s*/, '')}</p>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => { setAiRecsFetched(false); setAiRecs([]); fetchAIRecommendations(); }}
-                    className="w-full mt-2 py-2 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition font-medium"
-                  >
-                    🔄 Refresh Recommendations
-                  </button>
-                </div>
-              )}
+            <div className="flex-1 overflow-y-auto">
+              <AILearningAssistant userId={user?.id || ''} userName={user?.name || 'Student'} />
             </div>
           </div>
         </div>
       )}
-
-      {/* Floating AI Circle Button */}
-      <button
-        onClick={() => setShowAIPanel(true)}
-        title="AI Study Recommendations"
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform animate-pulse"
-      >
-        <Sparkles className="w-6 h-6" />
-      </button>
 
       {/* Home tab */}
       {activeTab === 'home' && (
@@ -740,6 +655,7 @@ Provide 4-5 personalized, actionable academic recommendations to help this stude
       {activeTab === 'assignments'   && <StudentAssignmentsView />}
       {activeTab === 'materials'     && <StudyMaterials />}
       {activeTab === 'attendance'    && <StudentAttendance studentId={user?.id} />}
+
     </div>
   );
 }

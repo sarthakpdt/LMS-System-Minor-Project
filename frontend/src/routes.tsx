@@ -28,7 +28,7 @@ import { TeacherAuth } from "./components/auth/TeacherAuth";
 // NEW imports
 import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
-import AIAgent from "./components/student/AIAgent";
+// AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
 
 function ProtectedStudentLayout() {
   return (
@@ -65,7 +65,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "quiz/:id", Component: StudentQuizTake },
         // NEW: student progress page
         { path: "my-progress", Component: StudentBucketProgress },
-        { path: "ai-assistant", Component: AIAgent },
+        // ai-assistant route removed - now accessible via AI icon on Dashboard
         { path: "*", Component: NotFound },
         ],
       },

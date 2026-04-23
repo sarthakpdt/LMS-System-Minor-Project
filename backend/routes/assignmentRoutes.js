@@ -19,6 +19,8 @@ const submitUpload = multer({
 
 // Fixed-path routes FIRST (prevents /:id shadowing)
 router.post('/generate-ai',                ctrl.generateWithAI);
+router.post('/generate-variations',        ctrl.generateVariations);   // ← NEW: base question → easy/medium/hard
+router.post('/ai-performance',             ctrl.analyzePerformance);   // ← NEW: student performance analysis
 router.post('/extract-pdf',                ctrl.extractFromPdf);
 router.post('/gemini',                     ctrl.callGeminiDirect);  // ← for StudentReviewSheet AI tips
 router.patch('/submissions/:subId/review', ctrl.teacherReview);
