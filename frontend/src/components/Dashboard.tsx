@@ -10,21 +10,14 @@ import {
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { StudyMaterials }            from './StudyMaterials';
-import { DashboardImprovementCards } from './DashboardImprovementCards';
 import NotificationsPanel            from './teacher/NotificationsPanel';
 import { StudentReviewSheet }        from './StudentReviewSheet';
 import AILearningAssistant           from './student/AILearningAssistant';
-
-// ── lazy imports (may not exist yet) ─────────────────────────
-let AttendanceManager: any   = () => <div className="p-8 text-gray-400">Attendance Manager coming soon.</div>;
-let StudentAttendance: any   = () => <div className="p-8 text-gray-400">Attendance coming soon.</div>;
-let AnalyticsAdmin: any      = () => <div className="p-8 text-gray-400">Analytics coming soon.</div>;
-let TimetableManager: any    = () => <div className="p-8 text-gray-400">Timetable coming soon.</div>;
-
-try { AttendanceManager  = require('./teacher/AttendanceManager').default;  } catch {}
-try { StudentAttendance  = require('./student/StudentAttendance').default;   } catch {}
-try { AnalyticsAdmin     = require('./admin/Analytics').default;             } catch {}
-try { TimetableManager   = require('./admin/TimetableManager').default;      } catch {}
+import { Assignments }               from './Assignments';
+import AttendanceManager             from './teacher/AttendanceManager';
+import StudentAttendance             from './student/StudentAttendance';
+import AnalyticsAdmin                from './admin/Analytics';
+import TimetableManager              from './admin/TimetableManager';
 
 const BASE = 'http://localhost:5000/api/admin';
 const API  = 'http://localhost:5000/api';
@@ -586,6 +579,48 @@ function StudentDashboard() {
           {/* AI Improvement Cards */}
           <DashboardImprovementCards userId={user?.id || ''} assignments={assignments} />
 
+          {/* 2-Column: Upcoming Deadlines + Notifications */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Upcoming Deadlines */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-orange-500" /> Upcoming Deadlines
+                </h3>
+              </div>
+              <div className="p-6 space-y-4">
+                {[
+                  { course: 'DSA', title: 'Data Structures (CS201)', date: '24 Apr 2026', status: 'Due Soon!' },
+                  { course: 'COA', title: 'COA (CS301)', date: '25 Apr 2026', status: 'Due Soon' },
+                ].map((item, i) => (
+                  <div key={i} className={`p-4 rounded-lg border-l-4 ${i === 0 ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'}`}>
+                    <p className="font-semibold text-sm text-gray-900">{item.title}</p>
+                    <p className="text-xs text-gray-600 mt-1">📅 {item.date}</p>
+                    <span className={`inline-block text-xs font-bold mt-2 px-2 py-0.5 rounded ${i === 0 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      🔴 {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notifications Panel */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="text-lg">🔔</span>
+                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              </div>
+              <div className="p-5 max-h-[400px] overflow-y-auto">
+                <NotificationsPanel 
+                  userId={user?.id} 
+                  role="student" 
+                  userName={user?.name}
+                  isAdmin={false}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Enrolled courses */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
             <div className="px-6 py-4 border-b border-gray-100">
@@ -637,16 +672,6 @@ function StudentDashboard() {
             <div>
               <strong>View your Assignments</strong>
               <p className="text-xs text-indigo-600 mt-0.5">All published assignments grouped by subject</p>
-            </div>
-          </div>
-          {/* Notifications on Home page */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mt-6">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-              <span className="text-lg">🔔</span>
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-            </div>
-            <div className="p-5">
-              <NotificationsPanel userId={user?.id} role="student" userName={user?.name} />
             </div>
           </div>
         </>
@@ -773,7 +798,7 @@ function TeacherDashboard() {
         </>
       )}
 
-      {activeTab === 'assignments'   && (() => { const { Assignments } = require('./Assignments'); return <Assignments />; })()}
+      {activeTab === 'assignments'   && <Assignments />}
       {activeTab === 'materials'     && <StudyMaterials />}
       {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} />}
     </div>
@@ -832,7 +857,7 @@ function AdminDashboard() {
             <p className="text-gray-300 text-sm">System overview and management</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
               { label: 'Total Students', value: stats.totalStudents  || 0, icon: Users,    color: 'bg-blue-500'   },
               { label: 'Total Teachers', value: stats.totalTeachers  || 0, icon: Award,    color: 'bg-green-500'  },
@@ -848,13 +873,24 @@ function AdminDashboard() {
               </div>
             ))}
           </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+              <span className="text-lg">🔔</span>
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <span className="text-xs text-gray-400 ml-auto">Send announcements to your users</span>
+            </div>
+            <div className="p-5">
+              <NotificationsPanel userId={user?.id} role="admin" userName={user?.name} isAdmin />
+            </div>
+          </div>
         </>
       )}
 
       {activeTab === 'analytics'   && <AnalyticsAdmin />}
       {activeTab === 'timetable'   && <TimetableManager />}
       {activeTab === 'materials'   && <StudyMaterials />}
-      {activeTab === 'assignments' && (() => { const { Assignments } = require('./Assignments'); return <Assignments />; })()}
+      {activeTab === 'assignments' && <Assignments />}
     </div>
   );
 }

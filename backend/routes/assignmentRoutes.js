@@ -1,28 +1,28 @@
 const express = require('express');
 const router  = express.Router();
-const ctrl    = require('../controllers/assignmentController');
 const multer  = require('multer');
-const path    = require('path');
-const fs      = require('fs');
+const ctrl    = require('../controllers/assignmentController');
 
-// ── Multer for submission file uploads ───────────────────────
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files allowed'));
+  }
+});
 
 const submitUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, `sub_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`)
-  }),
-  limits: { fileSize: 20 * 1024 * 1024 }
-}).any();
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB total
+});
 
-// Fixed-path routes FIRST (prevents /:id shadowing)
+// Fixed-path routes FIRST
 router.post('/generate-ai',                ctrl.generateWithAI);
-router.post('/generate-variations',        ctrl.generateVariations);   // ← NEW: base question → easy/medium/hard
-router.post('/ai-performance',             ctrl.analyzePerformance);   // ← NEW: student performance analysis
-router.post('/extract-pdf',                ctrl.extractFromPdf);
-router.post('/gemini',                     ctrl.callGeminiDirect);  // ← for StudentReviewSheet AI tips
+router.post('/extract-pdf',  pdfUpload.single('pdf'), ctrl.extractFromPdf);
+router.post('/gemini',                     ctrl.geminiProxy);
+router.post('/ai-performance',             ctrl.aiPerformance);
+router.post('/generate-variations',        ctrl.generateVariations);
 router.patch('/submissions/:subId/review', ctrl.teacherReview);
 router.get('/course/:courseId',            ctrl.getByCourse);
 
@@ -32,8 +32,9 @@ router.post('/', ctrl.createAssignment);
 // /:id routes LAST
 router.get('/:id',                         ctrl.getById);
 router.delete('/:id',                      ctrl.deleteAssignment);
+router.patch('/:id',                       ctrl.updateAssignment);
 router.patch('/:id/publish',               ctrl.publishAssignment);
-router.post('/:id/submit',                 (req, res, next) => submitUpload(req, res, () => next()), ctrl.submit);
+router.post('/:id/submit',                 submitUpload.any(), ctrl.submit);
 router.get('/:id/submissions',             ctrl.getSubmissions);
 router.get('/:id/submission/:studentId',   ctrl.getStudentSubmission);
 

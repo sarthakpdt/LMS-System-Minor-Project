@@ -122,6 +122,8 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "quizzes", Component: AdminQuizDashboard },
         { path: "grading", Component: AutoGrading },
         { path: "performance-levels", Component: PerformanceLevels },
+        { path: "notifications", Component: TeacherNotifications },
+        { path: "notifications", Component: TeacherNotifications },
         { path: "analytics", Component: Analytics },
         { path: "*", Component: NotFound },
       ],

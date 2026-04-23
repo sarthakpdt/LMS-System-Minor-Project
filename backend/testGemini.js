@@ -11,14 +11,14 @@ async function run() {
   console.log('\n========== GEMINI DIAGNOSTIC ==========\n');
 
   // Step 1: Check key exists
-  if (!API_KEY || API_KEY === 'your_gemini_api_key_here' || API_KEY.trim() === '') {
-    console.error('❌ GEMINI_API_KEY is missing or still set to placeholder in your .env file.');
+  if (!API_KEY || API_KEY === '' || API_KEY.trim() === '') {
+    console.error(' GEMINI_API_KEY is missing or still set to placeholder in your .env file.');
     console.log('\nFix: Open your .env file and set:\n  GEMINI_API_KEY=AIzaSy...\n');
     console.log('Get a free key at: https://aistudio.google.com/app/apikey\n');
     process.exit(1);
   }
 
-  console.log('✅ Key found:', API_KEY.slice(0, 8) + '...' + API_KEY.slice(-4));
+  console.log(' Key found:', API_KEY.slice(0, 8) + '...' + API_KEY.slice(-4));
   console.log('   Key length:', API_KEY.length, '(should be ~39 chars)\n');
 
   if (API_KEY.length < 30) {
@@ -50,7 +50,7 @@ async function run() {
       .filter(m => m.name.includes('gemini'))
       .map(m => m.name.replace('models/', ''));
 
-    console.log('✅ Available Gemini models:');
+    console.log(' Available Gemini models:');
     models.forEach(m => console.log('   -', m));
     console.log();
   } catch (e) {

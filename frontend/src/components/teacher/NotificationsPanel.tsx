@@ -49,18 +49,29 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
   const canCreate = role === 'admin' || role === 'teacher';
 
   // ── Safe fetch — waits until userId is available ──────────────
-  const fetchNotifications = async (uid: string, r: string) => {
+  const fetchNotifications = async (uid?: string, r?: string) => {
+    const actualUid = uid || userId;
+    const actualRole = r || role;
+
+    if (!actualUid || !actualRole) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API}/notifications/${uid}/${r}`);
+      console.log(`[NotificationsPanel] Fetching notifications for ${actualUid} (${actualRole})`);
+      const res = await fetch(`${API}/notifications/${actualUid}/${actualRole}`);
       const json = await res.json();
+      console.log(`[NotificationsPanel] Response:`, json);
       if (json.success) {
         setNotifications(json.notifications || []);
       } else {
         setError(json.message || 'Could not load notifications.');
       }
-    } catch {
+    } catch (err) {
+      console.error(`[NotificationsPanel] Fetch error:`, err);
       setError('Network error. Is the backend running at localhost:5000?');
     } finally {
       setLoading(false);
@@ -71,6 +82,13 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
     // Only fetch when both userId and role are ready
     if (userId && role) {
       fetchNotifications(userId, role);
+      
+      // ── Auto-refresh every 10 seconds ──────────────
+      const interval = setInterval(() => {
+        fetchNotifications(userId, role);
+      }, 10000);
+      
+      return () => clearInterval(interval);
     } else {
       // userId not ready yet — wait a moment and retry
       const timer = setTimeout(() => {
@@ -92,24 +110,47 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
     setPosting(true);
     setError('');
     try {
+      const payload = {
+        ...form,
+        createdBy: userId,
+        createdByName: userName || role || 'Unknown',
+      };
+      console.log(`[NotificationsPanel] Creating notification:`, payload);
+      
       const res = await fetch(`${API}/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          createdBy: userId,
-          createdByName: userName || role || 'Unknown',
-        }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
+      console.log(`[NotificationsPanel] Create response:`, json);
+      
       if (json.success) {
+        const newNotification: Notification = {
+          _id: json.notification._id,
+          title: json.notification.title,
+          message: json.notification.message,
+          type: json.notification.type,
+          targetRole: json.notification.targetRole,
+          createdByName: json.notification.createdByName,
+          isRead: false,
+          isActive: true,
+          createdAt: json.notification.createdAt,
+        };
+
+        // ── Immediately add new notification to list (optimistic update) ──
+        setNotifications(prev => [newNotification, ...prev]);
+        
         setForm({ title: '', message: '', type: 'info', targetRole: role === 'teacher' ? 'student' : 'all' });
         setShowForm(false);
-        if (userId && role) fetchNotifications(userId, role);
+        setError('');
+        
+        console.log(`[NotificationsPanel] Notification added to state immediately`);
       } else {
         setError(json.message || 'Failed to send notification.');
       }
-    } catch {
+    } catch (err) {
+      console.error(`[NotificationsPanel] Create error:`, err);
       setError('Network error. Please try again.');
     } finally {
       setPosting(false);

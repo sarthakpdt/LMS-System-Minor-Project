@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { LayoutDashboard, Users, BookOpen, FileText, BarChart3, Shield, FolderOpen, ClipboardCheck, Sparkles, GraduationCap, UserCheck } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, FileText, BarChart3, Shield, FolderOpen, ClipboardCheck, Sparkles, GraduationCap, UserCheck, Bell } from 'lucide-react';
 import { RoleSwitcher } from '../RoleSwitcher';
 
 export function AdminLayout() {
@@ -14,6 +14,7 @@ export function AdminLayout() {
     { to: '/quizzes', icon: Shield, label: 'Quiz System' },
     { to: '/grading', icon: Sparkles, label: 'Auto Grading' },
     { to: '/performance-levels', icon: BarChart3, label: 'Performance Levels' },
+    { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   ];
 

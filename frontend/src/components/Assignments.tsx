@@ -89,6 +89,7 @@ export function Assignments() {
   const [courses,     setCourses]     = useState<Course[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [showCreate,  setShowCreate]  = useState(false);
+  const [editingId,   setEditingId]   = useState<string | null>(null);
   const [error,       setError]       = useState('');
   const [success,     setSuccess]     = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
@@ -258,7 +259,7 @@ export function Assignments() {
 
   const removeQ = (i: number) => setQuestions(questions.filter((_, idx) => idx !== i));
 
-  // ── Create assignment ─────────────────────────────────────
+  // ── Create or Edit assignment ─────────────────────────────────────
   const handleCreate = async () => {
     setError('');
     if (!title.trim())        { setError('Title is required'); return; }
@@ -269,8 +270,10 @@ export function Assignments() {
 
     setSaving(true);
     try {
-      const res  = await fetch(`${API}/assignments`, {
-        method: 'POST',
+      const url    = editingId ? `${API}/assignments/${editingId}` : `${API}/assignments`;
+      const method = editingId ? 'PATCH' : 'POST';
+      const res  = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title, description, courseId,
@@ -282,8 +285,8 @@ export function Assignments() {
         })
       });
       const data = await res.json();
-      if (!data.success) { setError(data.message || 'Failed to create'); return; }
-      setSuccess('✅ Assignment created! Click Publish to make it visible to students.');
+      if (!data.success) { setError(data.message || (editingId ? 'Failed to update' : 'Failed to create')); return; }
+      setSuccess(editingId ? '✅ Assignment updated successfully!' : '✅ Assignment created! Click Publish to make it visible to students.');
       resetForm(); loadData();
       setTimeout(() => setSuccess(''), 5000);
     } catch { setError('Server error. Is backend running?'); }
@@ -305,6 +308,18 @@ export function Assignments() {
       await fetch(`${API}/assignments/${id}`, { method: 'DELETE' });
       loadData();
     } catch { setError('Delete failed.'); }
+  };
+
+  const handleEditAssignment = (a: Assignment) => {
+    setTitle(a.title);
+    setDesc(a.description || '');
+    setCourseId(typeof a.courseId === 'object' ? a.courseId._id : a.courseId);
+    setDueDate(a.dueDate ? a.dueDate.slice(0, 10) : '');
+    setQuestions(a.questions || []);
+    setTargetBucket((a as any).targetBucket || 'All');
+    setEditingId(a._id);
+    setShowCreate(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const loadSubmissions = async (assignmentId: string) => {
@@ -334,7 +349,7 @@ export function Assignments() {
   const resetForm = () => {
     setTitle(''); setDesc(''); setCourseId(''); setDueDate('');
     setQuestions([]); setBaseQuestion(''); setAiVariations({ easy: [], medium: [], hard: [] }); setShowVariations(false); setTargetBucket('All');
-    setShowCreate(false); setError('');
+    setShowCreate(false); setError(''); setEditingId(null);
   };
 
   const totalM = questions.reduce((s, q) => s + (q.marks || 0), 0);
@@ -769,7 +784,7 @@ export function Assignments() {
               style={{ backgroundColor: saving ? '#a5b4fc' : '#4f46e5' }}
               className="flex items-center gap-2 px-6 py-2.5 text-white rounded-lg text-sm font-bold shadow-sm transition disabled:cursor-not-allowed"
             >
-              {saving ? 'Saving...' : '💾 Create Assignment'}
+              {saving ? 'Saving...' : editingId ? '💾 Update Assignment' : '💾 Create Assignment'}
             </button>
             <button onClick={resetForm}
               className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
@@ -905,6 +920,10 @@ export function Assignments() {
                           className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold hover:bg-indigo-100 transition">
                           <Users className="w-3.5 h-3.5" /> View Submissions
                         </button>
+                        <button onClick={() => handleEditAssignment(a)}
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold hover:bg-amber-100 transition">
+                          ✏️ Edit
+                        </button>
                         <button onClick={() => handleDelete(a._id)}
                           className="flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition">
                           <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -967,6 +986,10 @@ function AssignmentAttempt({
   const [error,      setError]      = useState('');
   const [timeLeft,   setTimeLeft]   = useState(mode === 'quiz' ? 30 * 60 : 0);
   const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [aiMotivation,    setAiMotivation]    = useState('');
+  const [studyPlan,       setStudyPlan]       = useState<{day: string; task: string}[]>([]);
+  const [showSolutions,   setShowSolutions]   = useState(false);
+  const [aiLoading,       setAiLoading]       = useState(false);
 
   const questions = assignment.questions;
   const total     = questions.length;
@@ -1018,25 +1041,54 @@ function AssignmentAttempt({
 
   const generateRecommendations = async (submission: any) => {
     try {
-      const weakAreas = submission.answers.filter((a: any) => !a.isCorrect).map((a: any) => {
+      const correctCount = submission.answers?.filter((a: any) => a.isCorrect).length || 0;
+      const totalCount = questions.length;
+      const weakAreas = (submission.answers || []).filter((a: any) => !a.isCorrect).map((a: any) => {
         const q = questions.find(qq => String(qq._id) === String(a.questionId));
         return q?.questionText || 'Unknown question';
       });
-      const prompt = `Based on the student's performance in assignment "${assignment.title}", they struggled with: ${weakAreas.join(', ')}. Provide 3-5 study recommendations.`;
-      // For now, simulate AI response
-      const recs = [
-        'Review basic concepts in the weak areas.',
-        'Practice similar questions.',
-        'Seek help from teacher or peers.',
-        'Use online resources for additional explanations.'
-      ];
-      setRecommendations(recs);
-      // Store in localStorage for dashboard
-      const existing = JSON.parse(localStorage.getItem('aiRecommendations') || '[]');
-      existing.push({ assignment: assignment.title, recommendations: recs, date: new Date().toISOString() });
-      localStorage.setItem('aiRecommendations', JSON.stringify(existing));
+      const prompt = `You are a helpful academic coach. A student just completed an assignment titled "${assignment.title}".
+Score: ${submission.totalScore}/${submission.totalMarks} (${submission.percentage?.toFixed(1)}%)
+Correct answers: ${correctCount}/${totalCount}
+Weak areas (questions they got wrong): ${weakAreas.length > 0 ? weakAreas.join('; ') : 'None - perfect score!'}
+
+Please provide:
+1. A short motivational message (1-2 sentences, warm and encouraging)
+2. 3-5 specific study recommendations to improve
+3. A simple 1-week study plan for this subject
+
+Format your response as JSON with keys: motivation, recommendations (array of strings), studyPlan (array of {day, task})`;
+
+      const res = await fetch(`${API}/assignments/gemini`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (data.success && data.response) {
+        try {
+          const clean = data.response.replace(/```json|```/g, '').trim();
+          const parsed = JSON.parse(clean);
+          setRecommendations(parsed.recommendations || []);
+          setAiMotivation(parsed.motivation || '');
+          setStudyPlan(parsed.studyPlan || []);
+        } catch {
+          // fallback: treat as plain text
+          setRecommendations([data.response]);
+        }
+      } else {
+        setRecommendations([
+          'Review the topics where you made mistakes.',
+          'Practice similar questions daily for 30 minutes.',
+          'Reach out to your teacher for clarification on difficult topics.',
+          'Use textbook examples and worked solutions to strengthen understanding.',
+        ]);
+        setAiMotivation('Keep going! Every mistake is a learning opportunity. 💪');
+      }
     } catch (err) {
       console.error('Failed to generate recommendations', err);
+      setRecommendations(['Review incorrect answers and practice similar problems.']);
+      setAiMotivation('Great effort! Keep practicing to improve.');
     }
   };
 
@@ -1103,25 +1155,109 @@ function AssignmentAttempt({
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
           <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm">
-            <Target className="w-4 h-4 text-indigo-500" /> AI Study Assistant
+            <Target className="w-4 h-4 text-indigo-500" /> 🤖 AI Quiz Analysis & Study Plan
           </h3>
-          <p className="text-sm text-gray-700 mb-3">Get personalized recommendations to improve your weak areas.</p>
-          <button onClick={() => generateRecommendations(result)}
-            className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
-            🤖 Get Recommendations
-          </button>
+          {!recommendations.length && !aiLoading && (
+            <>
+              <p className="text-sm text-gray-600 mb-3">Get a personalized AI analysis of your performance with a study plan.</p>
+              <button
+                onClick={async () => { setAiLoading(true); await generateRecommendations(result); setAiLoading(false); }}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+              >
+                <Sparkles className="w-4 h-4" /> Analyze My Performance
+              </button>
+            </>
+          )}
+          {aiLoading && (
+            <div className="flex items-center gap-2 text-indigo-600 text-sm py-2">
+              <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              AI is analyzing your performance…
+            </div>
+          )}
+          {aiMotivation && (
+            <div className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+              <p className="text-sm font-semibold text-indigo-800">💬 {aiMotivation}</p>
+            </div>
+          )}
           {recommendations.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm font-semibold text-gray-900 mb-2">Your Recommendations:</p>
-              <ul className="text-sm text-gray-700 space-y-1">
+            <div className="mb-4">
+              <p className="text-sm font-bold text-gray-900 mb-2">📚 Study Recommendations:</p>
+              <ul className="space-y-1.5">
                 {recommendations.map((rec, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-indigo-500 mt-0.5">•</span> {rec}
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                    <span className="text-indigo-500 font-bold mt-0.5">{i + 1}.</span> {rec}
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {studyPlan.length > 0 && (
+            <div>
+              <p className="text-sm font-bold text-gray-900 mb-2">📅 Your 1-Week Study Plan:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {studyPlan.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded flex-shrink-0">{item.day}</span>
+                    <span className="text-xs text-gray-700">{item.task}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Show Correct Answers / Solutions ── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" /> Correct Answers & Solutions
+            </h3>
+            <button
+              onClick={() => setShowSolutions(!showSolutions)}
+              className="text-xs px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg font-semibold hover:bg-green-100 transition"
+            >
+              {showSolutions ? '🙈 Hide Solutions' : '👁️ View Solutions'}
+            </button>
+          </div>
+          {showSolutions && (
+            <div className="space-y-3 mt-2">
+              {questions.map((q, qi) => {
+                const ans = result.answers?.find((a: any) => String(a.questionId) === String(q._id));
+                const isCorrect = ans?.isCorrect;
+                return (
+                  <div key={q._id} className={`rounded-lg p-3 border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className="text-xs font-semibold text-gray-500 mb-1">Q{qi + 1} · {q.difficulty} · {q.marks} marks</p>
+                    <p className="text-sm font-medium text-gray-900 mb-2">{q.questionText}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white rounded p-2 border border-gray-200">
+                        <p className="font-semibold text-gray-500 mb-0.5">Your Answer:</p>
+                        <p className={`font-medium ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                          {ans?.studentAnswer || '(no answer)'} {isCorrect ? '✅' : '❌'}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded p-2 border border-green-300">
+                        <p className="font-semibold text-gray-500 mb-0.5">Correct Answer:</p>
+                        <p className="font-medium text-green-800">{q.correctAnswer || '—'}</p>
+                      </div>
+                    </div>
+                    {q.type === 'mcq' && q.options?.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {q.options.filter(o => o.trim()).map((opt, oi) => (
+                          <span key={oi} className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                            opt === q.correctAnswer ? 'bg-green-100 border-green-400 text-green-800' :
+                            opt === ans?.studentAnswer && !isCorrect ? 'bg-red-100 border-red-400 text-red-800' :
+                            'bg-gray-100 border-gray-300 text-gray-600'
+                          }`}>
+                            {opt === q.correctAnswer && '✅ '}{opt}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1593,36 +1729,43 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
 
                     {/* Grading Options */}
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <p className="text-sm font-bold text-gray-900 mb-3">Grading Options</p>
-                      <div className="flex gap-3 flex-wrap">
+                      <p className="text-sm font-bold text-gray-900 mb-3">⚙️ Grading Options</p>
+                      <p className="text-xs text-gray-500 mb-3">AI auto-grades first. You can review and modify before sending to student.</p>
+                      <div className="flex gap-3 flex-wrap mb-3">
                         <button onClick={() => handleAutoGrade(sub._id)}
                           className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-sm font-semibold hover:bg-blue-100 transition">
-                          🔄 Auto Grade
+                          🔄 Auto Grade (Rule-Based)
                         </button>
                         <button onClick={() => handleAIGrade(sub._id)}
                           className="px-4 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-sm font-semibold hover:bg-purple-100 transition">
-                          🤖 AI Grade
+                          🤖 AI Grade + Feedback
                         </button>
                       </div>
+                      {sub.teacherScore !== null && sub.teacherScore !== undefined && (
+                        <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
+                          ✅ Current graded score: <strong>{sub.teacherScore}/{sub.totalMarks} marks ({((sub.teacherScore/sub.totalMarks)*100).toFixed(1)}%)</strong>
+                          {sub.teacherComment && <p className="mt-1 italic">Feedback: "{sub.teacherComment}"</p>}
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <p className="text-sm font-bold text-gray-900 mb-3">Your Review</p>
+                      <p className="text-sm font-bold text-gray-900 mb-3">✏️ Your Review (modify & send to student)</p>
                       {sub.teacherComment && (
                         <p className="text-xs text-gray-500 mb-3 italic bg-gray-50 p-2 rounded">
-                          Previous comment: "{sub.teacherComment}"
-                          {sub.teacherScore !== null ? ` · Override score: ${sub.teacherScore}/${sub.totalMarks}` : ''}
+                          Previous: "{sub.teacherComment}"
+                          {sub.teacherScore !== null ? ` · Score: ${sub.teacherScore}/${sub.totalMarks}` : ''}
                         </p>
                       )}
                       <textarea
-                        placeholder="Add your comments for this student..."
-                        value={comments[sub._id] ?? ''}
+                        placeholder="Add your comments or modify AI feedback for this student..."
+                        value={comments[sub._id] ?? (sub.teacherComment || '')}
                         onChange={e => setComments(p => ({...p, [sub._id]: e.target.value}))}
                         rows={3}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <label className="text-xs font-medium text-gray-600">Override Score (out of {sub.totalMarks}):</label>
+                          <label className="text-xs font-medium text-gray-600">Final Score (out of {sub.totalMarks}):</label>
                           <input type="number" min={0} max={sub.totalMarks}
                             value={scores[sub._id] ?? (sub.teacherScore !== null && sub.teacherScore !== undefined ? sub.teacherScore : sub.totalScore)}
                             onChange={e => setScores(p => ({...p, [sub._id]: Number(e.target.value)}))}
@@ -1630,10 +1773,10 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
                           <span className="text-xs text-gray-400">/ {sub.totalMarks} marks</span>
                         </div>
                         <button
-                          onClick={() => onReview(sub._id, comments[sub._id] || '', scores[sub._id] ?? (sub.teacherScore !== null && sub.teacherScore !== undefined ? sub.teacherScore : sub.totalScore))}
+                          onClick={() => onReview(sub._id, comments[sub._id] ?? (sub.teacherComment || ''), scores[sub._id] ?? (sub.teacherScore !== null && sub.teacherScore !== undefined ? sub.teacherScore : sub.totalScore))}
                           style={{ backgroundColor: '#4f46e5' }}
-                          className="px-4 py-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition">
-                          Save Review
+                          className="flex items-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition">
+                          <Send className="w-3.5 h-3.5" /> Send Review to Student
                         </button>
                       </div>
                     </div>
