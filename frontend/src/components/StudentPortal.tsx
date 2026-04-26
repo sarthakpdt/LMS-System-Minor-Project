@@ -3,6 +3,7 @@
   import { useNavigate } from 'react-router';
   import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain } from 'lucide-react';
   import AILearningAssistant from './student/AILearningAssistant';
+  import NotificationsPanel from './teacher/NotificationsPanel';
   import {
     LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
     PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -11,47 +12,13 @@
   const BASE     = 'http://localhost:5000/api/admin';
   const API      = 'http://localhost:5000/api';
 
-  const performanceTrend = [
-    { month: 'Jan', score: 82 }, { month: 'Feb', score: 85 },
-    { month: 'Mar', score: 83 }, { month: 'Apr', score: 87 },
-    { month: 'May', score: 89 },
+  const DEFAULT_SKILLS = [
+    { skill: 'Problem Solving', current: 0, target: 0 },
+    { skill: 'Critical Thinking', current: 0, target: 0 },
+    { skill: 'Programming', current: 0, target: 0 },
+    { skill: 'Communication', current: 0, target: 0 },
+    { skill: 'Collaboration', current: 0, target: 0 },
   ];
-
-  const skillsRadar = [
-    { skill: 'Problem Solving',  current: 88, target: 95 },
-    { skill: 'Critical Thinking', current: 75, target: 85 },
-    { skill: 'Programming',      current: 92, target: 95 },
-    { skill: 'Communication',    current: 80, target: 90 },
-    { skill: 'Collaboration',    current: 85, target: 90 },
-  ];
-
-  const weakAreas = [
-    { subject: 'Physics - Mechanics',      currentScore: 68, targetScore: 80, improvement: '+5%' },
-    { subject: 'Math - Integration',       currentScore: 72, targetScore: 85, improvement: '+3%' },
-    { subject: 'English - Essay Writing',  currentScore: 76, targetScore: 85, improvement: '+8%' },
-  ];
-
-  const recommendations = [
-    { icon: Lightbulb, title: 'Focus on Physics Mechanics',         description: 'Your scores in mechanics are below average. Watch additional video lectures.',     priority: 'high',   color: 'bg-red-100 text-red-600'    },
-    { icon: BookOpen,  title: 'Practice More Integration Problems',  description: 'Complete extra problem sets to improve your integration skills.',                 priority: 'medium', color: 'bg-yellow-100 text-yellow-600' },
-    { icon: Target,    title: 'Maintain Programming Excellence',     description: "You're excelling in CS! Keep up the great work.",                                  priority: 'low',    color: 'bg-green-100 text-green-600'  },
-  ];
-
-  // Load AI recommendations from localStorage
-  const getAIRecommendations = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('aiRecommendations') || '[]');
-      return stored.flatMap((item: any) => item.recommendations.map((rec: string) => ({
-        icon: Sparkles,
-        title: `From ${item.assignment}`,
-        description: rec,
-        priority: 'medium',
-        color: 'bg-indigo-100 text-indigo-600'
-      })));
-    } catch {
-      return [];
-    }
-  };
 
   // ── Deadline alarm banner ─────────────────────────────────────
   function DeadlineAlarm({ assignments, onDismiss }: {
@@ -130,8 +97,12 @@
       total: number; avgStars: number; breakdown: number[]
     }>({ total: 0, avgStars: 0, breakdown: [0, 0, 0, 0, 0] });
 
-    // AI Recommendations
-    const [aiRecs, setAiRecs] = useState<any[]>([]);
+    // Dynamic analytics (softcoded from quizzes + assignments + Gemini)
+    const [performanceTrend, setPerformanceTrend] = useState<Array<{ label: string; score: number }>>([]);
+    const [skillsRadar, setSkillsRadar] = useState<Array<{ skill: string; current: number; target: number }>>(DEFAULT_SKILLS);
+    const [weakAreas, setWeakAreas] = useState<Array<{ subject: string; currentScore: number; targetScore: number; improvement: string }>>([]);
+    const [recommendations, setRecommendations] = useState<Array<{ icon: any; title: string; description: string; priority: 'high' | 'medium' | 'low'; color: string }>>([]);
+    const [avgScoreDisplay, setAvgScoreDisplay] = useState('—');
 
     // Alarm sound via AudioContext
     const alarmFiredRef = useRef(false);
@@ -179,11 +150,6 @@
       };
       fetchEnrolledCourses();
     }, [user?.id]);
-
-    // ── Load AI recommendations ─────────────────────────────────
-    useEffect(() => {
-      setAiRecs(getAIRecommendations());
-    }, []);
 
     // ── Fetch real assignments for this student ─────────────────
     useEffect(() => {
@@ -241,6 +207,200 @@
       };
       fetchAssignments();
     }, [user?.id]);
+
+    // ── Build softcoded insights from real assessments + Gemini ──
+    useEffect(() => {
+      const buildInsights = async () => {
+        if (!user?.id) return;
+
+        try {
+          const quizResults: any[] = [];
+          const assignmentResults: any[] = [];
+          const timeline: Array<{ date: Date; score: number }> = [];
+
+          // Collect quiz attempts from enrolled courses
+          for (const course of enrolledCourses) {
+            try {
+              const qRes = await fetch(`${API}/quizzes/course/${course._id}`);
+              if (!qRes.ok) continue;
+              const quizzes = await qRes.json();
+              for (const quiz of quizzes.filter((q: any) => q.isPublished)) {
+                try {
+                  const rRes = await fetch(`${API}/quizzes/${quiz._id}/result/${user.id}`);
+                  if (!rRes.ok) continue;
+                  const result = await rRes.json();
+                  const scored = Number(result.score ?? 0);
+                  const total = Number(result.totalMarks ?? 100);
+                  const pct = total > 0 ? Math.round((scored / total) * 100) : 0;
+                  quizResults.push({
+                    subject: course.courseName || quiz.title || 'Quiz',
+                    scored,
+                    total,
+                  });
+                  timeline.push({
+                    date: new Date(result.submittedAt || result.createdAt || Date.now()),
+                    score: pct,
+                  });
+                } catch { /* ignore one quiz */ }
+              }
+            } catch { /* ignore one course */ }
+          }
+
+          // Collect assignment submissions
+          for (const assignment of assignments) {
+            try {
+              const subRes = await fetch(`${API}/assignments/${assignment._id}/submission/${user.id}`);
+              if (!subRes.ok) continue;
+              const subData = await subRes.json();
+              if (!subData.success || !subData.submission) continue;
+              const sub = subData.submission;
+              const scored = Number(sub.totalScore ?? 0);
+              const total = Number(sub.totalMarks ?? assignment.totalMarks ?? 100);
+              const pct = total > 0 ? Math.round((scored / total) * 100) : 0;
+              assignmentResults.push({
+                subject: assignment.courseId?.courseName || assignment.title || 'Assignment',
+                scored,
+                total,
+              });
+              timeline.push({
+                date: new Date(sub.submittedAt || sub.createdAt || Date.now()),
+                score: pct,
+              });
+            } catch { /* ignore one submission */ }
+          }
+
+          const all = [...quizResults, ...assignmentResults];
+          if (all.length === 0) {
+            setPerformanceTrend([]);
+            setSkillsRadar(DEFAULT_SKILLS);
+            setWeakAreas([]);
+            setRecommendations([]);
+            setAvgScoreDisplay('—');
+            return;
+          }
+
+          const avg = Math.round(all.reduce((sum, r) => sum + (r.total > 0 ? (r.scored / r.total) * 100 : 0), 0) / all.length);
+          setAvgScoreDisplay(String(avg));
+
+          // Trend chart points
+          const trend = timeline
+            .sort((a, b) => a.date.getTime() - b.date.getTime())
+            .slice(-8)
+            .map((t, idx) => ({
+              label: Number.isNaN(t.date.getTime())
+                ? `A${idx + 1}`
+                : t.date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+              score: t.score,
+            }));
+          setPerformanceTrend(trend);
+
+          // Subject averages
+          const bySubject: Record<string, { sum: number; count: number }> = {};
+          all.forEach((r) => {
+            const pct = r.total > 0 ? Math.round((r.scored / r.total) * 100) : 0;
+            const key = String(r.subject || 'General');
+            if (!bySubject[key]) bySubject[key] = { sum: 0, count: 0 };
+            bySubject[key].sum += pct;
+            bySubject[key].count += 1;
+          });
+          const subjectAverages = Object.entries(bySubject).map(([subject, v]) => ({
+            subject,
+            avg: Math.round(v.sum / v.count),
+          }));
+
+          // Gemini-backed weak area and recommendation generation
+          let aiFeedback: any = null;
+          try {
+            const aiRes = await fetch(`${API}/assignments/ai-performance`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                quizResults,
+                assignmentResults,
+                studentName: user?.name || 'Student',
+              }),
+            });
+            const aiData = await aiRes.json();
+            if (aiData?.success && aiData?.feedback) aiFeedback = aiData.feedback;
+          } catch { /* AI optional */ }
+
+          const derivedWeak = (aiFeedback?.weakAreas?.length
+            ? aiFeedback.weakAreas
+            : subjectAverages.filter((s) => s.avg < 75).map((s) => ({
+                subject: s.subject,
+                percentage: s.avg,
+              })))
+            .slice(0, 6)
+            .map((w: any) => {
+              const current = Number(w.percentage ?? 0);
+              const target = Math.min(100, Math.max(current + 10, 75));
+              return {
+                subject: String(w.subject || 'General'),
+                currentScore: current,
+                targetScore: target,
+                improvement: `+${Math.max(3, Math.round((target - current) / 2))}%`,
+              };
+            });
+          setWeakAreas(derivedWeak);
+
+          const aiTips: string[] = [
+            ...(aiFeedback?.improvements || []),
+            ...(aiFeedback?.improvementTips || []),
+            ...(aiFeedback?.studyTips || []),
+          ].filter(Boolean);
+          const recTexts = aiTips.length > 0
+            ? aiTips.slice(0, 6)
+            : (derivedWeak.length > 0
+                ? derivedWeak.map((w) => `Revise ${w.subject} and attempt two practice sets this week.`).slice(0, 3)
+                : ['Keep practicing consistently to maintain your current performance.']);
+
+          const iconCycle = [Lightbulb, BookOpen, Target];
+          const recColors = [
+            'bg-red-100 text-red-600',
+            'bg-yellow-100 text-yellow-600',
+            'bg-green-100 text-green-600',
+          ];
+          setRecommendations(
+            recTexts.map((text, idx) => ({
+              icon: iconCycle[idx % iconCycle.length],
+              title: idx === 0 ? 'Priority Focus' : `Action ${idx + 1}`,
+              description: text,
+              priority: idx === 0 ? 'high' : idx < 3 ? 'medium' : 'low',
+              color: recColors[idx % recColors.length],
+            }))
+          );
+
+          // Skills radar from real metrics
+          const assignmentAvg = assignmentResults.length > 0
+            ? Math.round(assignmentResults.reduce((s, r) => s + (r.total > 0 ? (r.scored / r.total) * 100 : 0), 0) / assignmentResults.length)
+            : avg;
+          const programmingAvgCandidates = subjectAverages
+            .filter((s) => /cs|program|coding|data|algo|software/i.test(s.subject))
+            .map((s) => s.avg);
+          const programmingAvg = programmingAvgCandidates.length > 0
+            ? Math.round(programmingAvgCandidates.reduce((a, b) => a + b, 0) / programmingAvgCandidates.length)
+            : avg;
+          const submissionRate = assignments.length > 0
+            ? Math.min(1, assignmentResults.length / assignments.length)
+            : 0.7;
+          const collaboration = Math.round(submissionRate * 100);
+          const communication = Math.round((assignmentAvg * 0.85) + (collaboration * 0.15));
+
+          const computedSkills = [
+            { skill: 'Problem Solving', current: avg, target: Math.min(100, avg + 10) },
+            { skill: 'Critical Thinking', current: assignmentAvg, target: Math.min(100, assignmentAvg + 10) },
+            { skill: 'Programming', current: programmingAvg, target: Math.min(100, programmingAvg + 8) },
+            { skill: 'Communication', current: communication, target: Math.min(100, communication + 10) },
+            { skill: 'Collaboration', current: collaboration, target: Math.min(100, collaboration + 8) },
+          ];
+          setSkillsRadar(computedSkills);
+        } catch (err) {
+          console.warn('Could not build dynamic insights:', err);
+        }
+      };
+
+      buildInsights();
+    }, [user?.id, user?.name, enrolledCourses, assignments]);
 
     // ── Quiz stars ──────────────────────────────────────────────
     useEffect(() => {
@@ -314,9 +474,7 @@
       .filter(a => new Date(a.dueDate) > new Date())
       .slice(0, 5);
 
-    const avgScore      = enrolledCourses.length > 0
-      ? (enrolledCourses.reduce((s, c) => s + (c.grade || 0), 0) / enrolledCourses.length).toFixed(1)
-      : '—';
+    const avgScore      = avgScoreDisplay;
     const avgAttendance = enrolledCourses.length > 0
       ? (enrolledCourses.reduce((s, c) => s + (c.attendance || 0), 0) / enrolledCourses.length).toFixed(1)
       : '—';
@@ -436,7 +594,7 @@
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={performanceTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" stroke="#6b7280" />
+                <XAxis dataKey="label" stroke="#6b7280" />
                 <YAxis stroke="#6b7280" domain={[0, 100]} />
                 <Tooltip />
                 <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={3} name="Average Score" />
@@ -496,6 +654,20 @@
           </div>
         </div>
 
+        {/* Student Notifications (teacher/admin announcements) */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+          </div>
+          <NotificationsPanel
+            userId={user?.id}
+            role="student"
+            userName={user?.name}
+            isAdmin={false}
+          />
+        </div>
+
         {/* Recommendations */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
@@ -503,13 +675,13 @@
             <h3 className="text-lg font-semibold text-gray-900">Personalized Learning Recommendations</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...recommendations, ...aiRecs].map((rec, i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
+            {recommendations.map((rec, i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col">
                 <div className={`w-12 h-12 ${rec.color} rounded-lg flex items-center justify-center mb-4`}>
                   <rec.icon className="w-6 h-6" />
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">{rec.title}</h4>
-                <p className="text-sm text-gray-600 mb-3">{rec.description}</p>
+                <p className="text-sm text-gray-600 mb-3 flex-1 leading-6">{rec.description}</p>
                 <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${
                   rec.priority === 'high'   ? 'bg-red-100 text-red-700'    :
                   rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
@@ -545,6 +717,9 @@
               <h3 className="text-lg font-semibold text-gray-900">Areas Requiring Improvement</h3>
             </div>
             <div className="space-y-4">
+              {weakAreas.length === 0 && (
+                <p className="text-sm text-gray-500">No weak areas detected from your current quiz/assignment data.</p>
+              )}
               {weakAreas.map((area, i) => (
                 <div key={i} className="pb-4 border-b border-gray-100 last:border-0">
                   <div className="flex items-start justify-between mb-2">

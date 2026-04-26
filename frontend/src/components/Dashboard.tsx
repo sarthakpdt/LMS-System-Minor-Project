@@ -738,9 +738,9 @@ function TeacherDashboard() {
 
       {activeTab === 'home' && (
         <>
-          <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
+          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
             <h2 className="text-2xl font-bold mb-1">Welcome, {user?.name?.split(' ')[0]}!</h2>
-            <p className="text-green-100 text-sm">{user?.department} · {user?.specialization}</p>
+                <p className="text-indigo-100 text-sm">{user?.department} · {user?.specialization}</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

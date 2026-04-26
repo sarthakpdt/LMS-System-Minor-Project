@@ -11,11 +11,18 @@ router.get('/:userId/:role', async (req, res) => {
     if (!userId || !role)
       return res.status(400).json({ success: false, message: 'userId and role are required' });
 
+    const normalizedRole = String(role).toLowerCase();
+    const roleTargets = Array.from(new Set([
+      normalizedRole,                 // student
+      `${normalizedRole}s`,           // students (legacy)
+      normalizedRole.endsWith('s') ? normalizedRole.slice(0, -1) : normalizedRole, // reverse legacy
+    ]));
+
     const notifs = await Notification.find({
       isActive: true,
       $or: [
         { targetRole: 'all' },          // broadcast to everyone
-        { targetRole: role },            // targeted to this role (e.g. 'student')
+        { targetRole: { $in: roleTargets } }, // tolerant role match
         { targetUserId: userId },        // direct message to this specific user
         { createdBy: userId },           // creator always sees their own
       ]
@@ -71,8 +78,15 @@ router.put('/read/:notifId', async (req, res) => {
 router.put('/readall/:userId/:role', async (req, res) => {
   try {
     const { userId, role } = req.params;
+    const normalizedRole = String(role).toLowerCase();
+    const roleTargets = Array.from(new Set([
+      normalizedRole,
+      `${normalizedRole}s`,
+      normalizedRole.endsWith('s') ? normalizedRole.slice(0, -1) : normalizedRole,
+    ]));
+
     await Notification.updateMany(
-      { isActive: true, $or: [{ targetRole: 'all' }, { targetRole: role }, { targetUserId: userId }] },
+      { isActive: true, $or: [{ targetRole: 'all' }, { targetRole: { $in: roleTargets } }, { targetUserId: userId }] },
       { $addToSet: { readBy: userId } }
     );
     res.json({ success: true });

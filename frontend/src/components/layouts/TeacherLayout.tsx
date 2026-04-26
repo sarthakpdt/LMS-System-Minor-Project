@@ -26,7 +26,7 @@ function SubjectSwitcher() {
 
   return (
     <div className="mx-4 mb-3 relative">
-      <p className="text-xs font-semibold text-green-300 uppercase tracking-wider mb-1.5 px-1">
+      <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wider mb-1.5 px-1">
         Active Subject
       </p>
 
@@ -41,16 +41,16 @@ function SubjectSwitcher() {
           {activeSubject ? (
             <>
               <p className="text-sm font-semibold text-white truncate">{activeSubject.courseName}</p>
-              <p className="text-xs text-green-200 truncate">{activeSubject.courseCode} · Sem {activeSubject.semester}</p>
+              <p className="text-xs text-indigo-100 truncate">{activeSubject.courseCode} · Sem {activeSubject.semester}</p>
             </>
           ) : (
             <>
               <p className="text-sm font-semibold text-white">Select Subject</p>
-              <p className="text-xs text-green-200">Click to choose</p>
+              <p className="text-xs text-indigo-100">Click to choose</p>
             </>
           )}
         </div>
-        <ChevronDown className={`w-4 h-4 text-green-200 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-indigo-100 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -74,16 +74,16 @@ function SubjectSwitcher() {
                   setOpen(false);
                   toast.success(`Switched to ${c.courseName}`);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${isActive ? 'bg-emerald-50' : ''}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${isActive ? 'bg-indigo-50' : ''}`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-gray-100'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-indigo-500' : 'bg-gray-100'}`}>
                   <BookOpen className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${isActive ? 'text-emerald-700' : 'text-gray-800'}`}>{c.courseName}</p>
+                  <p className={`text-sm font-medium truncate ${isActive ? 'text-indigo-700' : 'text-gray-800'}`}>{c.courseName}</p>
                   <p className="text-xs text-gray-400">{c.courseCode} · Sem {c.semester}</p>
                 </div>
-                {isActive && <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
+                {isActive && <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
               </button>
             );
           })}
@@ -119,16 +119,16 @@ export function TeacherLayout() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <aside className="w-64 bg-gradient-to-b from-green-600 to-green-800 text-white flex flex-col">
+      <aside className="w-64 bg-gradient-to-b from-indigo-600 to-violet-800 text-white flex flex-col">
         {/* Logo */}
-        <div className="p-5 border-b border-green-500/50">
+        <div className="p-5 border-b border-indigo-400/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
               <MessageSquare className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="font-bold text-white text-sm">EduTrack LMS</h1>
-              <p className="text-xs text-green-200">Teacher Portal</p>
+              <p className="text-xs text-indigo-100">Teacher Portal</p>
             </div>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function TeacherLayout() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 pb-3 overflow-y-auto">
-          <p className="text-xs font-semibold text-green-300 uppercase tracking-wider mb-2 px-2">Navigation</p>
+          <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wider mb-2 px-2">Navigation</p>
           <ul className="space-y-0.5">
             {navItems.map((item) => (
               <li key={item.to}>
@@ -149,7 +149,7 @@ export function TeacherLayout() {
                   end={item.end}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm ${
-                      isActive ? 'bg-white/20 text-white font-semibold shadow' : 'text-green-100 hover:bg-white/10'
+                      isActive ? 'bg-white/20 text-white font-semibold shadow' : 'text-indigo-100 hover:bg-white/10'
                     }`
                   }
                 >
@@ -165,7 +165,7 @@ export function TeacherLayout() {
         </nav>
 
         {/* User + Logout */}
-        <div className="p-4 border-t border-green-500/50 space-y-3">
+        <div className="p-4 border-t border-indigo-400/40 space-y-3">
           <div className="flex items-center gap-3 px-2">
             <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-sm font-bold text-white">
@@ -174,12 +174,12 @@ export function TeacherLayout() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{user?.name || 'Teacher'}</p>
-              <p className="text-xs text-green-200 truncate">{DEPT_LABELS[user?.department || ''] || user?.department || 'Department'}</p>
+              <p className="text-xs text-indigo-100 truncate">{DEPT_LABELS[user?.department || ''] || user?.department || 'Department'}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 text-green-100 hover:bg-white/10 rounded-lg transition-colors text-sm"
+            className="w-full flex items-center gap-2 px-3 py-2 text-indigo-100 hover:bg-white/10 rounded-lg transition-colors text-sm"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>

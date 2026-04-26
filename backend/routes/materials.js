@@ -201,9 +201,19 @@ router.get('/download/:id', async (req, res) => {
       return res.json({ success: true, url: material.filePath });
     }
 
-    const filePath = path.join(uploadDir, material.filePath);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: 'File not found on server.' });
+    // Try multiple possible upload locations (handles older data / moved cwd)
+    const candidatePaths = [
+      path.join(uploadDir, material.filePath),
+      path.join(process.cwd(), 'uploads', material.filePath),
+      path.join(__dirname, '..', 'uploads', material.filePath),
+    ];
+    const filePath = candidatePaths.find(p => fs.existsSync(p));
+    if (!filePath) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found on server.',
+        file: material.filePath
+      });
     }
 
     if (material.fileType === 'pdf') {

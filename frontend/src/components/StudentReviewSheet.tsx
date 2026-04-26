@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, Download, Copy, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 const API = 'http://localhost:5000/api';
+const FILE_BASE = 'http://localhost:5000';
 
 interface SubmissionAnswer {
   questionId: string;
@@ -280,7 +281,7 @@ export function StudentReviewSheet({
                         {ans.fileUrl && (
                           <div className="mt-2">
                             <p className="text-xs font-semibold text-gray-600 mb-1">📎 Attached File:</p>
-                            <a href={`${API}${ans.fileUrl}`} target="_blank" rel="noopener noreferrer"
+                            <a href={`${FILE_BASE}${ans.fileUrl}`} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-medium hover:bg-blue-100">
                               <Download className="w-3 h-3" /> View File
                             </a>

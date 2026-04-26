@@ -3,7 +3,38 @@ const AssignmentSubmission = require('../models/AssignmentSubmission');
 const fs                   = require('fs');
 const path                 = require('path');
 
-// ── Gemini AI helper ──────────────────────────────────────────
+// ── Anthropic Claude helper (preferred for AI insights) ───────
+async function callClaude(prompt) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || apiKey === 'your_anthropic_api_key_here') return null;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        temperature: 0.2,
+        system: 'You are an academic performance advisor. Return only valid JSON. Do not add markdown fences.',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const text = data?.content?.[0]?.text || '';
+    return text || null;
+  } catch (e) {
+    console.warn('[AI] Claude failed:', e.message);
+    return null;
+  }
+}
+
+// ── Gemini AI helper (fallback) ───────────────────────────────
 async function callGemini(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_gemini_api_key_here') return null;
@@ -128,7 +159,8 @@ Return ONLY valid JSON (no markdown):
 }
 overallStatus must be exactly one of: "Needs Attention", "On Track", "Excellent"`;
 
-    const text   = await callGemini(prompt);
+    // Free-friendly default: Gemini first, then Claude fallback.
+    const text   = await callGemini(prompt) || await callClaude(prompt);
     let feedback = null;
 
     if (text) {

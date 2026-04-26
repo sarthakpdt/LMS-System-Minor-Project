@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { StudentReviewSheet } from './StudentReviewSheet';
 
 const API = 'http://localhost:5000/api';
+const FILE_BASE = 'http://localhost:5000';
 
 // ─── Types ────────────────────────────────────────────────────
 interface Question {
@@ -1696,7 +1697,7 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
                                 {ans.fileUrl && (
                                   <div className="mt-2">
                                     <p className="text-xs font-semibold text-gray-600 mb-1">📎 Handwritten Submission:</p>
-                                    <a href={`${API}${ans.fileUrl}`} target="_blank" rel="noopener noreferrer"
+                                    <a href={`${FILE_BASE}${ans.fileUrl}`} target="_blank" rel="noopener noreferrer"
                                       className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-medium hover:bg-blue-100">
                                       <Eye className="w-3 h-3" /> View File
                                     </a>
