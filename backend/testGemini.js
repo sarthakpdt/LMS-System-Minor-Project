@@ -69,7 +69,7 @@ async function run() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: 'Say "hello" in JSON: {"message":"hello"}' }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 50 },
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1200 },
         }),
       }
     );

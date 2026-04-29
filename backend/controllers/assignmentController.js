@@ -39,43 +39,93 @@ async function callGemini(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_gemini_api_key_here') return null;
 
-  const MODELS = [
-    'gemini-2.0-flash-lite-001',
-    'gemini-2.0-flash-001',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-  ];
+  const MODELS = ['gemini-2.5-flash',       // Your system confirmed this is available
+  'gemini-2.0-flash',       // High stability
+  'gemini-3-flash-preview'];
 
   for (const model of MODELS) {
     try {
-      const url  = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      console.log(`[AI] Attempting ${model}...`);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
       const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+          generationConfig: { 
+            temperature: 0.2, 
+            maxOutputTokens: 4096// Reduced slightly for faster response
+          },
         }),
+        signal: controller.signal
       });
-      if (resp.status === 429) { await new Promise(r => setTimeout(r, 3000)); continue; }
-      if (!resp.ok) continue;
+      
+      clearTimeout(timeout);
+
+      if (resp.status === 429) {
+        console.warn(`[AI] Quota hit for ${model}, waiting...`);
+        await new Promise(r => setTimeout(r, 2000));
+        continue; 
+      }
+
+      if (!resp.ok) {
+        const errData = await resp.json();
+        console.error(`[AI] ${model} Error:`, errData.error?.message);
+        continue;
+      }
+
       const data = await resp.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (text) { console.log(`[AI] model: ${model}`); return text; }
-    } catch (e) { console.warn(`[AI] ${model} failed:`, e.message); }
+      const text = data?.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
+      
+      if (text) {
+        console.log(`[AI] Success with ${model}`);
+        return text;
+      }
+    } catch (e) {
+      console.error(`[AI] ${model} critical failure:`, e.message);
+    }
   }
   return null;
 }
 
 function parseJSON(raw) {
-  let text = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  const arr = text.match(/\[[\s\S]*\]/);
-  if (arr) return JSON.parse(arr[0]);
-  const obj = text.match(/\{[\s\S]*\}/);
-  if (obj) return JSON.parse(obj[0]);
-  return JSON.parse(text);
-}
+  try {
+    // 1. Initial cleanup of markdown fences
+    let text = raw.replace(/```json\s*|```\s*/gi, '').trim();
 
+    // 2. Find the boundaries of the actual data
+    const firstBracket = text.indexOf('[');
+    const firstBrace = text.indexOf('{');
+    
+    let startIndex = -1;
+    let endIndex = -1;
+
+    // Check if we are dealing with an Array [] or an Object {}
+    if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+      startIndex = firstBracket;
+      endIndex = text.lastIndexOf(']');
+    } else if (firstBrace !== -1) {
+      startIndex = firstBrace;
+      endIndex = text.lastIndexOf('}');
+    }
+
+    // 3. Extract and parse
+    if (startIndex !== -1 && endIndex !== -1) {
+      const jsonString = text.substring(startIndex, endIndex + 1);
+      return JSON.parse(jsonString);
+    }
+
+    // 4. Final fallback
+    return JSON.parse(text);
+  } catch (err) {
+    console.error("❌ JSON Extraction Failed. Raw output was:", raw);
+    throw new Error("AI returned malformed or empty data.");
+  }
+}
 function calcGrade(pct) {
   if (pct >= 90) return 'A+';
   if (pct >= 80) return 'A';
