@@ -227,6 +227,12 @@ export function StudentQuizList() {
                   result.percentage >= 60 ? 'text-yellow-600' : 'text-red-500'
                 }`}>{result.percentage.toFixed(1)}%</div>
                 <div className="text-xs text-gray-500">{result.score}/{result.totalMarks}</div>
+                <Link
+                  to={`/quiz/${quiz._id}`}
+                  className="mt-2 inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  View Response
+                </Link>
                 {getViolationSummary(result).total > 0 && (
                   <div className={`mt-1 text-xs flex items-center gap-1 ${
                     getViolationSummary(result).high > 0 ? 'text-red-600' : 'text-yellow-600'

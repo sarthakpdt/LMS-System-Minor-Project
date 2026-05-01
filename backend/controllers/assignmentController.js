@@ -459,23 +459,23 @@ exports.submit = async (req, res) => {
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
 
-    // Check if already submitted — return existing with full correct answers
-    const existing = await AssignmentSubmission.findOne({
-      assignmentId: assignment._id, studentId
-    });
-    if (existing) {
-      // Enrich with correct answers from assignment
-      const enriched = existing.toObject();
+    // Quiz mode: only one graded attempt allowed.
+    // Solve mode: allow repeated practice attempts.
+    const existingQuizModeSubmission = await AssignmentSubmission.findOne({
+      assignmentId: assignment._id, studentId, mode: 'quiz'
+    }).sort({ submittedAt: -1 });
+    if (mode === 'quiz' && existingQuizModeSubmission) {
+      const enriched = existingQuizModeSubmission.toObject();
       enriched.answers = enriched.answers.map(ans => {
         const q = assignment.questions.id(ans.questionId);
         return { ...ans, correctAnswer: q?.correctAnswer || ans.correctAnswer };
       });
-      enriched.questions = assignment.questions; // full questions with correct answers
+      enriched.questions = assignment.questions;
       return res.status(200).json({
         success: true,
         submission: enriched,
         alreadySubmitted: true,
-        message: 'You have already submitted this assignment.'
+        message: 'You have already submitted this assignment in quiz mode.'
       });
     }
 
@@ -598,10 +598,21 @@ exports.submit = async (req, res) => {
     const finalScore = Math.min(Math.max(0, totalScore), totalMarks);
     const finalPct   = Math.round((finalScore / totalMarks) * 10000) / 100;
 
+    let attemptNumber = 1;
+    if (mode !== 'quiz') {
+      const practiceAttemptsCount = await AssignmentSubmission.countDocuments({
+        assignmentId: assignment._id,
+        studentId,
+        mode: 'solve',
+      });
+      attemptNumber = practiceAttemptsCount + 1;
+    }
+
     const submission = await AssignmentSubmission.create({
       assignmentId: assignment._id, courseId, studentId, studentName,
       answers: gradedAnswers,
       mode: mode || 'solve',
+      attemptNumber,
       totalScore: finalScore, totalMarks, percentage: finalPct,
       grade: calcGrade(finalPct),
       overallFeedback, strengths, improvementAreas,
@@ -616,7 +627,9 @@ exports.submit = async (req, res) => {
     res.status(201).json({
       success: true,
       submission: responseSubmission,
-      message: 'Assignment submitted successfully!'
+      message: mode === 'quiz'
+        ? 'Assignment submitted successfully!'
+        : `Practice attempt ${attemptNumber} submitted successfully!`
     });
   } catch (err) {
     console.error('[submit]', err);
@@ -639,10 +652,17 @@ exports.getSubmissions = async (req, res) => {
 // ── GET /api/assignments/:id/submission/:studentId ────────────
 exports.getStudentSubmission = async (req, res) => {
   try {
-    const sub = await AssignmentSubmission.findOne({
+    const filter = {
       assignmentId: req.params.id,
-      studentId:    req.params.studentId
-    });
+      studentId: req.params.studentId
+    };
+    if (req.query.mode && ['quiz', 'solve'].includes(req.query.mode)) {
+      filter.mode = req.query.mode;
+    }
+
+    const sub = await AssignmentSubmission.findOne({
+      ...filter
+    }).sort({ submittedAt: -1 });
     if (!sub) return res.status(404).json({ success: false, message: 'Not submitted yet' });
 
     // Enrich with correct answers from assignment

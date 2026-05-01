@@ -55,6 +55,12 @@ interface SubmitResult {
   percentage: number;
   gradedAnswers: GradedAnswer[];
   correctAnswers: { questionId: string; correctAnswer: string }[];
+  plagiarismEvents?: Array<{ type: string; severity: 'low' | 'medium' | 'high'; timestamp?: string }>;
+  teacherReview?: {
+    action?: 'none' | 'warning' | 'zero_marks' | 'custom_marks';
+    note?: string;
+    reviewedAt?: string;
+  };
 }
 
 type PlagType = 'multiple_faces' | 'no_face' | 'phone_detected' | 'tab_switch' | 'face_away' | 'camera_blocked';
@@ -76,6 +82,28 @@ const PLAG_MESSAGES: Record<PlagType, { message: string; severity: 'low' | 'medi
 };
 
 const API = 'http://localhost:5000';
+
+function mapSavedResultToSubmitResult(savedResult: any, quiz: Quiz): SubmitResult {
+  const gradedAnswers: GradedAnswer[] = (savedResult.answers || []).map((a: any) => ({
+    questionId: String(a.questionId),
+    selectedAnswer: a.selectedAnswer || '',
+    isCorrect: !!a.isCorrect,
+    marksAwarded: Number(a.marksAwarded || 0),
+  }));
+
+  return {
+    score: typeof savedResult.effectiveScore === 'number' ? savedResult.effectiveScore : savedResult.score,
+    totalMarks: savedResult.totalMarks || quiz.totalMarks,
+    percentage: typeof savedResult.effectivePercentage === 'number' ? savedResult.effectivePercentage : savedResult.percentage,
+    gradedAnswers,
+    correctAnswers: (quiz.questions || []).map(q => ({
+      questionId: String(q._id),
+      correctAnswer: (savedResult.quizId?.questions || []).find((sq: any) => String(sq._id) === String(q._id))?.correctAnswer || '',
+    })),
+    plagiarismEvents: savedResult.plagiarismEvents || [],
+    teacherReview: savedResult.teacherReview || {},
+  };
+}
 
 // ── Simulated proctoring (replace with face-api.js for real detection) ────────
 function useSimulatedProctoring(active: boolean, onViolation: (type: PlagType) => void) {
@@ -212,11 +240,24 @@ export function StudentQuizTake() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const res = await fetch(`${API}/api/quizzes/${id}`);
-        if (!res.ok) { setError('Quiz not found or unavailable.'); return; }
-        const data: Quiz = await res.json();
-        setQuiz(data);
-        setTimeLeft(data.timeLimit * 60);
+        const quizRes = await fetch(`${API}/api/quizzes/${id}`);
+        if (!quizRes.ok) { setError('Quiz not found or unavailable.'); return; }
+        const quizData: Quiz = await quizRes.json();
+        setQuiz(quizData);
+        setTimeLeft(quizData.timeLimit * 60);
+
+        if (user?.id) {
+          try {
+            const resultRes = await fetch(`${API}/api/quizzes/${id}/result/${user.id}`);
+            if (resultRes.ok) {
+              const savedResult = await resultRes.json();
+              setResult(mapSavedResultToSubmitResult(savedResult, quizData));
+              setSubmitted(true);
+            }
+          } catch {
+            // ignore missing previous result
+          }
+        }
       } catch {
         setError('Failed to load quiz. Is the backend running?');
       } finally {
@@ -224,7 +265,7 @@ export function StudentQuizTake() {
       }
     };
     fetchQuiz();
-  }, [id]);
+  }, [id, user?.id]);
 
   // Submit
   const handleSubmit = useCallback(async (autoSubmit = false) => {
@@ -248,7 +289,22 @@ export function StudentQuizTake() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.message === 'Quiz already attempted' ? 'You have already attempted this quiz.' : data.message || 'Submission failed.');
+        if (data.message === 'Quiz already attempted') {
+          try {
+            const oldRes = await fetch(`${API}/api/quizzes/${id}/result/${user?.id}`);
+            if (oldRes.ok && quiz) {
+              const oldData = await oldRes.json();
+              setResult(mapSavedResultToSubmitResult(oldData, quiz));
+              setSubmitted(true);
+              return;
+            }
+          } catch {
+            // fallback to message below
+          }
+        }
+        setError(data.message === 'Quiz already attempted'
+          ? 'You have already attempted this quiz. Showing your saved result.'
+          : data.message || 'Submission failed.');
         setSubmitting(false);
         return;
       }
@@ -382,7 +438,15 @@ export function StudentQuizTake() {
   // ─────────────────────────────────────────────────────────────────────────────
   if (submitted && result && quiz) {
     const passed = result.percentage >= 60;
-    const highCount = plagEvents.filter(e => e.severity === 'high').length;
+    const persistedEvents = (result.plagiarismEvents || []).map((e: any, idx: number) => ({
+      id: `saved-${idx}`,
+      type: e.type,
+      timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+      message: PLAG_MESSAGES[e.type as PlagType]?.message || e.type,
+      severity: e.severity || 'low',
+    }));
+    const displayEvents = persistedEvents.length > 0 ? persistedEvents : plagEvents;
+    const highCount = displayEvents.filter(e => e.severity === 'high').length;
     return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
@@ -418,27 +482,40 @@ export function StudentQuizTake() {
             </span>
           </div>
 
-          {plagEvents.length > 0 && (
+          {result.teacherReview?.reviewedAt && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-blue-900">
+              <p className="text-sm font-semibold">Teacher Feedback</p>
+              <p className="text-sm mt-1">Action: {result.teacherReview.action || 'none'}</p>
+              {result.teacherReview.note?.trim() && (
+                <p className="text-sm mt-1">Note: {result.teacherReview.note}</p>
+              )}
+              <p className="text-xs mt-2 text-blue-700">
+                Reviewed on {new Date(result.teacherReview.reviewedAt).toLocaleString('en-IN')}
+              </p>
+            </div>
+          )}
+
+          {displayEvents.length > 0 && (
             <div className="bg-white rounded-xl border border-orange-200 shadow-sm mb-6 overflow-hidden">
               <div className="px-6 py-4 bg-orange-50 border-b border-orange-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="w-5 h-5 text-orange-600" />
                   <h3 className="font-semibold text-orange-900">Proctoring Report</h3>
                 </div>
-                <span className="text-sm text-orange-700 font-medium">{plagEvents.length} violation{plagEvents.length > 1 ? 's' : ''}</span>
+                <span className="text-sm text-orange-700 font-medium">{displayEvents.length} violation{displayEvents.length > 1 ? 's' : ''}</span>
               </div>
               <div className="p-4 grid grid-cols-3 gap-3 border-b border-gray-100">
                 {(['high','medium','low'] as const).map(s => (
                   <div key={s} className={`text-center p-3 rounded-lg ${s==='high'?'bg-red-50':s==='medium'?'bg-orange-50':'bg-yellow-50'}`}>
                     <p className={`text-2xl font-bold ${s==='high'?'text-red-600':s==='medium'?'text-orange-600':'text-yellow-600'}`}>
-                      {plagEvents.filter(e => e.severity === s).length}
+                      {displayEvents.filter(e => e.severity === s).length}
                     </p>
                     <p className={`text-xs mt-1 capitalize ${s==='high'?'text-red-500':s==='medium'?'text-orange-500':'text-yellow-500'}`}>{s} Severity</p>
                   </div>
                 ))}
               </div>
               <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-                {plagEvents.map(e => (
+                {displayEvents.map(e => (
                   <div key={e.id} className={`flex items-center gap-3 px-5 py-3 ${e.severity==='high'?'bg-red-50/50':e.severity==='medium'?'bg-orange-50/50':'bg-yellow-50/50'}`}>
                     <span className={e.severity==='high'?'text-red-500':e.severity==='medium'?'text-orange-500':'text-yellow-500'}>{severityIcon(e.type)}</span>
                     <div className="flex-1">

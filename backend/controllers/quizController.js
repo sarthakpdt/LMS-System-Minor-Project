@@ -1,5 +1,6 @@
 const Quiz        = require('../models/Quiz');
 const QuizResult  = require('../models/QuizResult');
+const Notification = require('../models/Notification');
 const { checkAndPromote } = require('./bucketController');
 
 // ── In-memory question cache for FEATURE 3 (fast generation) ──────────────────
@@ -24,6 +25,35 @@ function getCached(topic, subject, level) {
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) { QUESTION_CACHE.delete(getCacheKey(topic, subject, level)); return null; }
   return entry.questions;
+}
+
+function getReviewAdjustedResult(result) {
+  const review = result.teacherReview || {};
+  const action = review.action || 'none';
+  const totalMarks = result.totalMarks || 0;
+  let effectiveScore = result.score || 0;
+
+  if (action === 'zero_marks') {
+    effectiveScore = 0;
+  } else if (action === 'custom_marks' && typeof review.customMarks === 'number') {
+    effectiveScore = Math.max(0, Math.min(review.customMarks, totalMarks));
+  }
+
+  const effectivePercentage = totalMarks > 0
+    ? Math.round((effectiveScore / totalMarks) * 10000) / 100
+    : 0;
+
+  return {
+    teacherReview: {
+      action,
+      customMarks: review.customMarks,
+      note: review.note || '',
+      reviewedBy: review.reviewedBy || null,
+      reviewedAt: review.reviewedAt || null,
+    },
+    effectiveScore,
+    effectivePercentage,
+  };
 }
 
 // ── Teacher: Create quiz ──────────────────────────────────────────────────────
@@ -109,7 +139,7 @@ exports.getQuizById = async (req, res) => {
 // ── Student: Submit, auto-grade, apply negative marking, then auto-promote ────
 exports.submitQuiz = async (req, res) => {
   try {
-    const { studentId, answers, timeTaken, courseId } = req.body;
+    const { studentId, answers, timeTaken, courseId, plagiarismEvents = [] } = req.body;
     const quiz = await Quiz.findById(req.params.id);
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
@@ -137,11 +167,37 @@ exports.submitQuiz = async (req, res) => {
     score = Math.max(0, score);
     const percentage = quiz.totalMarks > 0 ? Math.round((score / quiz.totalMarks) * 10000) / 100 : 0;
 
+    const normalizedPlagiarismEvents = Array.isArray(plagiarismEvents)
+      ? plagiarismEvents
+          .filter(e => e && e.type)
+          .map(e => ({
+            type: e.type,
+            severity: ['low', 'medium', 'high'].includes(e.severity) ? e.severity : 'low',
+            timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+          }))
+      : [];
+
     await QuizResult.create({
       studentId, quizId: quiz._id, courseId,
       answers: gradedAnswers, score,
       totalMarks: quiz.totalMarks, percentage, timeTaken,
+      plagiarismEvents: normalizedPlagiarismEvents,
     });
+
+    if (normalizedPlagiarismEvents.length > 0 && quiz.createdBy) {
+      const highSeverityCount = normalizedPlagiarismEvents.filter(e => e.severity === 'high').length;
+      const uniqueTypes = [...new Set(normalizedPlagiarismEvents.map(e => e.type))];
+
+      await Notification.create({
+        title: `Quiz violation detected: ${quiz.title}`,
+        message: `${normalizedPlagiarismEvents.length} violation(s) reported for this submission${highSeverityCount ? `, including ${highSeverityCount} high-severity event(s)` : ''}. Types: ${uniqueTypes.join(', ')}.`,
+        type: highSeverityCount > 0 ? 'warning' : 'info',
+        targetRole: 'teacher',
+        targetUserId: quiz.createdBy,
+        createdBy: studentId,
+        createdByName: 'Auto Proctoring',
+      });
+    }
 
     const promotion = await checkAndPromote(studentId, courseId || quiz.courseId, quiz._id);
 
@@ -152,6 +208,7 @@ exports.submitQuiz = async (req, res) => {
       correctAnswers: quiz.questions.map(q => ({ questionId: q._id, correctAnswer: q.correctAnswer })),
       promotion,
       negativeMarkingApplied: negEnabled,
+      plagiarismEvents: normalizedPlagiarismEvents,
     });
   } catch (err) {
     res.status(500).json({ message: 'Error submitting quiz', error: err.message });
@@ -163,9 +220,75 @@ exports.getQuizAttempts = async (req, res) => {
   try {
     const results = await QuizResult.find({ quizId: req.params.id })
       .populate('studentId', 'name email studentId department semester');
-    res.json(results);
+    const formattedResults = results.map(result => {
+      const plainResult = result.toObject();
+      const violationCount = plainResult.plagiarismEvents?.length || 0;
+      const hasViolation = violationCount > 0;
+      const hasHighSeverityViolation = (plainResult.plagiarismEvents || []).some(
+        e => e.severity === 'high'
+      );
+      const originalName = plainResult.studentId?.name || 'Unknown Student';
+      const reviewAdjusted = getReviewAdjustedResult(plainResult);
+
+      return {
+        ...plainResult,
+        violationCount,
+        hasViolation,
+        hasHighSeverityViolation,
+        violationTag: hasViolation ? 'VIOLATED' : 'CLEAN',
+        studentDisplayName: hasViolation ? `Violated - ${originalName}` : originalName,
+        ...reviewAdjusted,
+      };
+    });
+    res.json(formattedResults);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching attempts', error: err.message });
+  }
+};
+
+// ── Teacher: Review attempt and apply action/marks ───────────────────────────
+exports.reviewQuizAttempt = async (req, res) => {
+  try {
+    const { id: quizId, attemptId } = req.params;
+    const { action = 'none', customMarks, note = '', reviewedBy } = req.body;
+
+    const validActions = ['none', 'warning', 'zero_marks', 'custom_marks'];
+    if (!validActions.includes(action)) {
+      return res.status(400).json({ message: 'Invalid action' });
+    }
+
+    if (action === 'custom_marks' && (typeof customMarks !== 'number' || Number.isNaN(customMarks))) {
+      return res.status(400).json({ message: 'customMarks is required for custom_marks action' });
+    }
+
+    const attempt = await QuizResult.findOne({ _id: attemptId, quizId });
+    if (!attempt) return res.status(404).json({ message: 'Attempt not found' });
+
+    const review = {
+      action,
+      note,
+      reviewedAt: new Date(),
+      reviewedBy: reviewedBy || null,
+    };
+
+    if (action === 'custom_marks') {
+      review.customMarks = Math.max(0, Math.min(customMarks, attempt.totalMarks || 0));
+    } else {
+      review.customMarks = undefined;
+    }
+
+    attempt.teacherReview = review;
+    await attempt.save();
+
+    const plainResult = attempt.toObject();
+    const reviewAdjusted = getReviewAdjustedResult(plainResult);
+    res.json({
+      message: 'Review saved successfully',
+      attemptId: attempt._id,
+      ...reviewAdjusted,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving review', error: err.message });
   }
 };
 
@@ -176,7 +299,16 @@ exports.getStudentResult = async (req, res) => {
       quizId: req.params.quizId, studentId: req.params.studentId
     }).populate('quizId');
     if (!result) return res.status(404).json({ message: 'Result not found' });
-    res.json(result);
+    const plainResult = result.toObject();
+    const reviewAdjusted = getReviewAdjustedResult(plainResult);
+    const violationCount = plainResult.plagiarismEvents?.length || 0;
+
+    res.json({
+      ...plainResult,
+      ...reviewAdjusted,
+      violationCount,
+      hasViolation: violationCount > 0,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching result', error: err.message });
   }

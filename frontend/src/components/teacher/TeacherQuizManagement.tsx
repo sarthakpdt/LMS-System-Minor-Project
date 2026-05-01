@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Trash2, Clock, Award, Send, ChevronDown, X, Sparkles, Shield, Users, PenLine } from 'lucide-react';
+import { Link } from 'react-router';
+import { Plus, Search, Trash2, Clock, Award, Send, ChevronDown, X, Sparkles, Shield, Users, PenLine, Eye } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AIQuizGenerator } from './AIQuizGenerator';
 
@@ -435,6 +436,15 @@ export function TeacherQuizManagement() {
         </div>
       </div>
 
+      {filtered.length > 0 && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-emerald-800 mb-1">Submissions & Actions</h3>
+          <p className="text-xs text-emerald-700">
+            Click <strong>View Submissions</strong> on any quiz to review violations and take action like warning, reject/zero marks, or custom marks.
+          </p>
+        </div>
+      )}
+
       {/* Quiz List */}
       {loading ? (
         <div className="p-8 text-center text-gray-500">
@@ -445,6 +455,11 @@ export function TeacherQuizManagement() {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">{courses.length === 0 ? 'No courses assigned. Contact an admin.' : 'No quizzes yet. Create your first quiz!'}</p>
+          {courses.length > 0 && (
+            <p className="text-xs text-gray-400 mt-2">
+              After students submit, use <strong>View Submissions</strong> to review and take action.
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -467,6 +482,23 @@ export function TeacherQuizManagement() {
                         {quiz.isPublished ? 'Published' : 'Draft'}
                       </span>
                     </div>
+                    <div className="mb-2">
+                      <Link
+                        to={`/quiz-monitor/${quiz._id}`}
+                        title="Open submissions and review actions"
+                        style={{
+                          display: 'inline-block',
+                          background: 'linear-gradient(90deg, #16a34a 0%, #2563eb 100%)',
+                          color: '#ffffff',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        View Submissions
+                      </Link>
+                    </div>
                     {course && <p className="text-sm text-gray-500 mb-2">{course.courseName} ({course.courseCode})</p>}
                     <div className="flex items-center gap-4 text-xs text-gray-500">
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{quiz.timeLimit} min</span>
@@ -481,6 +513,13 @@ export function TeacherQuizManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    <Link
+                      to={`/quiz-monitor/${quiz._id}`}
+                      className="hidden md:flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-xs font-medium"
+                      title="Open submissions review and teacher actions"
+                    >
+                      <Eye className="w-3 h-3" /> View Submissions
+                    </Link>
                     {!quiz.isPublished && (
                       <button onClick={() => handlePublish(quiz._id)}
                         className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium"
@@ -490,6 +529,16 @@ export function TeacherQuizManagement() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Link
+                    to={`/quiz-monitor/${quiz._id}`}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold shadow-sm"
+                    title="Open submissions review and teacher actions"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Submissions & Take Action
+                  </Link>
                 </div>
               </div>
             );

@@ -220,9 +220,42 @@ function StudentAttemptView({
   const [error,      setError]     = useState('');
   const [timeLeft,   setTimeLeft]  = useState(mode === 'quiz' ? 30 * 60 : 0);
   const [showReview, setShowReview] = useState(false);
+  const [nextPracticeAttempt, setNextPracticeAttempt] = useState(1);
 
   const questions = assignment.questions || [];
   const total     = questions.length;
+
+  useEffect(() => {
+    const loadLatestAttempt = async () => {
+      if (!assignment?._id || !userId) return;
+      try {
+        // Quiz mode: show existing submission instead of allowing re-attempt.
+        if (mode === 'quiz') {
+          const quizSubRes = await fetch(`${API}/assignments/${assignment._id}/submission/${userId}?mode=quiz`);
+          if (quizSubRes.ok) {
+            const quizSubData = await quizSubRes.json();
+            if (quizSubData?.success && quizSubData?.submission) {
+              setResult(quizSubData.submission);
+            }
+          }
+          return;
+        }
+
+        // Solve mode: calculate next practice attempt number.
+        const solveSubRes = await fetch(`${API}/assignments/${assignment._id}/submission/${userId}?mode=solve`);
+        if (solveSubRes.ok) {
+          const solveSubData = await solveSubRes.json();
+          const latestAttempt = Number(solveSubData?.submission?.attemptNumber || 0);
+          setNextPracticeAttempt(latestAttempt + 1);
+        } else {
+          setNextPracticeAttempt(1);
+        }
+      } catch {
+        setNextPracticeAttempt(1);
+      }
+    };
+    loadLatestAttempt();
+  }, [assignment?._id, mode, userId]);
 
   useEffect(() => {
     if (mode !== 'quiz' || result) return;
@@ -278,6 +311,9 @@ function StudentAttemptView({
             {result.percentage >= 80 ? '🏆' : result.percentage >= 60 ? '✅' : '📚'}
           </div>
           <h2 className="text-xl font-bold mb-2">{assignment.title}</h2>
+          {result.attemptNumber && (
+            <p className="text-sm text-white/90">Attempt #{result.attemptNumber} ({result.mode === 'solve' ? 'Practice' : 'Quiz'})</p>
+          )}
           <div className="text-5xl font-black my-3">{result.percentage?.toFixed(1)}%</div>
           <p className="text-lg">{result.totalScore} / {result.totalMarks} · Grade: <strong>{result.grade}</strong></p>
           {result.plagiarismFlagged && (
@@ -333,6 +369,11 @@ function StudentAttemptView({
     const warn   = timeLeft <= 60;
     return (
       <div>
+        {result && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+            You already submitted this assignment in quiz mode. Showing your previous response and feedback.
+          </div>
+        )}
         <div className={`rounded-xl px-5 py-3 flex items-center justify-between mb-5 ${warn ? 'bg-red-600' : 'bg-indigo-600'}`}>
           <span className="text-white font-bold truncate">{assignment.title} — Quiz Mode</span>
           <span className={`px-4 py-1 rounded-full font-mono font-bold ${warn ? 'bg-white text-red-600 animate-pulse' : 'bg-white/20 text-white'}`}>
@@ -389,7 +430,9 @@ function StudentAttemptView({
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-xl font-bold text-gray-900">{assignment.title}</h2>
-          <p className="text-sm text-gray-500">Solve Mode — answer all, then submit</p>
+          <p className="text-sm text-gray-500">
+            Solve Mode — Practice Attempt #{nextPracticeAttempt}
+          </p>
         </div>
         <button onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
           ← Back
@@ -439,7 +482,7 @@ function StudentAttemptView({
         <button onClick={() => handleSubmit(false)} disabled={submitting}
           className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold shadow-md">
           <Send className="w-4 h-4" />
-          {submitting ? 'AI Grading...' : 'Submit Assignment'}
+          {submitting ? 'AI Grading...' : `Submit Attempt #${nextPracticeAttempt}`}
         </button>
       </div>
     </div>
@@ -694,10 +737,122 @@ function TeacherDashboard() {
   const [loading,    setLoading]    = useState(true);
   const [activeTab,  setActiveTab]  = useState('home');
   const [myCourses,  setMyCourses]  = useState<any[]>([]);
+  const [performersLoading, setPerformersLoading] = useState(true);
+  const [performers, setPerformers] = useState<{
+    top: any[];
+    average: any[];
+    weak: any[];
+    topQuiz: any[];
+    topAssignment: any[];
+  }>({ top: [], average: [], weak: [], topQuiz: [], topAssignment: [] });
+
+  const buildPerformerInsights = async (courses: any[]) => {
+    const studentMap = new Map<string, any>();
+
+    const ensureStudent = (id: string, name = 'Student') => {
+      if (!studentMap.has(id)) {
+        studentMap.set(id, {
+          id,
+          name,
+          quizScores: [] as number[],
+          assignmentScores: [] as number[],
+        });
+      }
+      return studentMap.get(id);
+    };
+
+    for (const course of courses) {
+      // Assignment performance
+      try {
+        const aRes = await fetch(`${API}/assignments/course/${course._id}`);
+        if (aRes.ok) {
+          const aData = await aRes.json();
+          const assignments = aData?.assignments || [];
+          for (const assignment of assignments) {
+            const sRes = await fetch(`${API}/assignments/${assignment._id}/submissions`);
+            if (!sRes.ok) continue;
+            const sData = await sRes.json();
+            const submissions = sData?.submissions || [];
+            for (const sub of submissions) {
+              const sid = String(sub.studentId?._id || sub.studentId || '');
+              if (!sid) continue;
+              const holder = ensureStudent(sid, sub.studentId?.name || sub.studentName || 'Student');
+              holder.assignmentScores.push(Number(sub.percentage || 0));
+            }
+          }
+        }
+      } catch { /* ignore one course failure */ }
+
+      // Quiz performance
+      try {
+        const qRes = await fetch(`${API}/quizzes/course/${course._id}`);
+        if (qRes.ok) {
+          const quizzes = await qRes.json();
+          for (const quiz of quizzes || []) {
+            const attemptsRes = await fetch(`${API}/quizzes/${quiz._id}/attempts`);
+            if (!attemptsRes.ok) continue;
+            const attempts = await attemptsRes.json();
+            for (const attempt of attempts || []) {
+              const sid = String(attempt.studentId?._id || attempt.studentId || '');
+              if (!sid) continue;
+              const holder = ensureStudent(sid, attempt.studentId?.name || 'Student');
+              const pct = typeof attempt.effectivePercentage === 'number'
+                ? attempt.effectivePercentage
+                : Number(attempt.percentage || 0);
+              holder.quizScores.push(pct);
+            }
+          }
+        }
+      } catch { /* ignore one course failure */ }
+    }
+
+    const withAverages = [...studentMap.values()].map(s => {
+      const quizAvg = s.quizScores.length
+        ? s.quizScores.reduce((sum: number, v: number) => sum + v, 0) / s.quizScores.length
+        : 0;
+      const assignmentAvg = s.assignmentScores.length
+        ? s.assignmentScores.reduce((sum: number, v: number) => sum + v, 0) / s.assignmentScores.length
+        : 0;
+      const overallBase = [...s.quizScores, ...s.assignmentScores];
+      const overallAvg = overallBase.length
+        ? overallBase.reduce((sum: number, v: number) => sum + v, 0) / overallBase.length
+        : 0;
+      return {
+        ...s,
+        quizAvg: Number(quizAvg.toFixed(1)),
+        assignmentAvg: Number(assignmentAvg.toFixed(1)),
+        overallAvg: Number(overallAvg.toFixed(1)),
+      };
+    }).filter(s => s.quizScores.length > 0 || s.assignmentScores.length > 0);
+
+    const top = withAverages
+      .filter(s => s.overallAvg >= 75)
+      .sort((a, b) => b.overallAvg - a.overallAvg)
+      .slice(0, 5);
+    const average = withAverages
+      .filter(s => s.overallAvg >= 50 && s.overallAvg < 75)
+      .sort((a, b) => b.overallAvg - a.overallAvg)
+      .slice(0, 5);
+    const weak = withAverages
+      .filter(s => s.overallAvg < 50)
+      .sort((a, b) => a.overallAvg - b.overallAvg)
+      .slice(0, 5);
+    const topQuiz = withAverages
+      .filter(s => s.quizScores.length > 0)
+      .sort((a, b) => b.quizAvg - a.quizAvg)
+      .slice(0, 5);
+    const topAssignment = withAverages
+      .filter(s => s.assignmentScores.length > 0)
+      .sort((a, b) => b.assignmentAvg - a.assignmentAvg)
+      .slice(0, 5);
+
+    setPerformers({ top, average, weak, topQuiz, topAssignment });
+  };
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setPerformersLoading(true);
       try {
         const res  = await fetch(`${BASE}/dashboard-stats`);
         const data = await res.json();
@@ -707,9 +862,11 @@ function TeacherDashboard() {
         const cData = await cRes.json();
         const all: any[] = Array.isArray(cData) ? cData : [];
         const myIds = new Set((user?.assignedCourses || []).map((c: any) => String(c.courseId)));
-        setMyCourses(all.filter(c => myIds.has(String(c._id))));
+        const assignedCourses = all.filter(c => myIds.has(String(c._id)));
+        setMyCourses(assignedCourses);
+        await buildPerformerInsights(assignedCourses);
       } catch {}
-      finally { setLoading(false); }
+      finally { setLoading(false); setPerformersLoading(false); }
     };
     load();
   }, [user]);
@@ -783,6 +940,44 @@ function TeacherDashboard() {
               </div>
             </div>
           )}
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Student Performance Snapshot</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Overall + separate quiz/assignment performers for feedback planning.</p>
+            </div>
+            {performersLoading ? (
+              <div className="p-6 text-sm text-gray-500">Loading performance insights...</div>
+            ) : (
+              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {[
+                  { title: 'Top Students (Overall)', rows: performers.top, color: 'text-green-700 bg-green-50 border-green-200' },
+                  { title: 'Average Students', rows: performers.average, color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+                  { title: 'Weak Students', rows: performers.weak, color: 'text-red-700 bg-red-50 border-red-200' },
+                  { title: 'Top in Quizzes', rows: performers.topQuiz, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                  { title: 'Top in Assignments', rows: performers.topAssignment, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+                ].map(section => (
+                  <div key={section.title} className={`rounded-lg border p-4 ${section.color}`}>
+                    <p className="text-sm font-semibold mb-2">{section.title}</p>
+                    {section.rows.length === 0 ? (
+                      <p className="text-xs opacity-80">No data yet.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {section.rows.slice(0, 3).map((s: any) => (
+                          <div key={s.id} className="text-xs flex items-center justify-between">
+                            <span className="font-medium truncate pr-2">{s.name}</span>
+                            <span>
+                              Overall {s.overallAvg}% | Quiz {s.quizAvg}% | Assign {s.assignmentAvg}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Notifications on Teacher Home page */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">

@@ -20,6 +20,7 @@ const submissionSchema = new mongoose.Schema({
 
   answers:     [answerSchema],
   mode:        { type: String, enum: ['quiz','solve'], default: 'solve' },
+  attemptNumber:{ type: Number, default: 1 },
 
   totalScore:  { type: Number, default: 0 },
   totalMarks:  { type: Number, default: 0 },
