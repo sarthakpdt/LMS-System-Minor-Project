@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText } from 'lucide-react';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, FileText, CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,8 +12,8 @@ export function StudentLayout() {
     { to: '/courses', icon: BookOpen, label: 'My Courses' },
     { to: '/assignments', icon: FileText, label: 'Assignments' },
     { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
+    { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quizzes & Tests' },
-    { to: '/my-progress', icon: ClipboardList, label: 'My Progress & Level' },
   ];
 
   const handleLogout = () => {
@@ -39,26 +39,15 @@ export function StudentLayout() {
           </div>
         </div>
         
-        {/* Notifications Badge */}
-        <div className="p-4 border-b border-gray-100 bg-blue-50">
-          <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-blue-200">
-            <Bell className="w-4 h-4 text-blue-600" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-gray-900">3 Upcoming Quizzes</p>
-            </div>
-            <span className="w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">3</span>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <ul className="space-y-2">
+        <nav className="flex-1 p-3">
+          <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm ${
                       isActive
                         ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
                         : 'text-gray-700 hover:bg-gray-100'

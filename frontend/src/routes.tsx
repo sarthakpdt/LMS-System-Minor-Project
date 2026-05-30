@@ -28,6 +28,8 @@ import { TeacherAuth } from "./components/auth/TeacherAuth";
 // NEW imports
 import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
+import StudentAttendancePage from "./components/student/StudentAttendancePage";
+import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
 
 function ProtectedStudentLayout() {
@@ -61,6 +63,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { path: "courses", Component: Courses },
         { path: "assignments", Component: Assignments },
         { path: "materials", Component: StudyMaterials },
+        { path: "attendance", Component: StudentAttendancePage },
         { path: "quizzes", Component: StudentQuizList },
         { path: "quiz/:id", Component: StudentQuizTake },
         // NEW: student progress page
@@ -88,6 +91,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { path: "marks", Component: SubjectMarks },
           { path: "materials", Component: StudyMaterials },
           { path: "assignments", Component: Assignments },
+          { path: "attendance", Component: TeacherAttendancePage },
           { path: "quizzes", Component: TeacherQuizManagement },
           { path: "quiz-monitor/:id", Component: TeacherQuizMonitor },
           { path: "grading", Component: AutoGrading },

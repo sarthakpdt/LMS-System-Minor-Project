@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Users, BookOpen, FileText, TrendingUp, Award,
   ArrowUp, AlertCircle, ChevronDown, ChevronUp, Loader2,
-  Clock, Star, Send, CheckCircle, Brain,
+  Clock, Star, Send, CheckCircle, Brain, CalendarCheck,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -900,6 +901,24 @@ function TeacherDashboard() {
                 <p className="text-indigo-100 text-sm">{user?.department} · {user?.specialization}</p>
           </div>
 
+          <Link
+            to="/attendance"
+            className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white shadow-lg transition hover:brightness-105"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
+                <CalendarCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-lg font-bold">Attendance Management</p>
+                <p className="text-sm text-emerald-100">
+                  Take attendance for each class at its scheduled day & time
+                </p>
+              </div>
+            </div>
+            <span className="text-sm font-semibold text-emerald-100">Open →</span>
+          </Link>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
               { label: 'My Courses',  value: myCourses.length, icon: BookOpen,   color: 'bg-blue-500'   },
@@ -995,7 +1014,7 @@ function TeacherDashboard() {
 
       {activeTab === 'assignments'   && <Assignments />}
       {activeTab === 'materials'     && <StudyMaterials />}
-      {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} />}
+      {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} teacherName={user?.name} />}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, FileText, BarChart3,
   ClipboardList, FolderOpen, Sparkles, MessageSquare,
-  TrendingUp, GraduationCap, Bell, LogOut, ChevronDown, Check,
+  TrendingUp, GraduationCap, Bell, LogOut, ChevronDown, Check, CalendarCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
@@ -104,6 +104,7 @@ export function TeacherLayout() {
     { to: '/marks', icon: GraduationCap, label: 'Subject Marks' },
     { to: '/materials', icon: FolderOpen, label: 'Materials' },
     { to: '/assignments', icon: FileText, label: 'Assignments' },
+    { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quiz Management' },
     { to: '/bucket-dashboard', icon: TrendingUp, label: 'Student Buckets' },
     { to: '/grading', icon: Sparkles, label: 'Auto Grading' },

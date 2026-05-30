@@ -1,7 +1,7 @@
-  import { useAuth } from '../contexts/AuthContext';
+﻿  import { useAuth } from '../contexts/AuthContext';
   import { useState, useEffect, useRef } from 'react';
   import { useNavigate } from 'react-router';
-  import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain } from 'lucide-react';
+  import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, CalendarCheck, ArrowRight } from 'lucide-react';
   import AILearningAssistant from './student/AILearningAssistant';
   import NotificationsPanel from './teacher/NotificationsPanel';
   import {
@@ -20,7 +20,7 @@
     { skill: 'Collaboration', current: 0, target: 0 },
   ];
 
-  // ── Deadline alarm banner ─────────────────────────────────────
+  // â”€â”€ Deadline alarm banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function DeadlineAlarm({ assignments, onDismiss }: {
     assignments: any[];
     onDismiss: (id: string) => void;
@@ -41,10 +41,10 @@
             className="flex items-start gap-3 bg-red-50 border border-red-300 rounded-xl px-4 py-3 shadow-sm animate-pulse">
             <Bell className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-red-800">⏰ Deadline in less than 24 hours!</p>
+              <p className="text-sm font-bold text-red-800">â° Deadline in less than 24 hours!</p>
               <p className="text-sm text-red-700 truncate">
                 <span className="font-semibold">{a.title}</span>
-                {a.courseId?.courseName && <span className="text-red-500"> · {a.courseId.courseName}</span>}
+                {a.courseId?.courseName && <span className="text-red-500"> Â· {a.courseId.courseName}</span>}
               </p>
               <p className="text-xs text-red-500 mt-0.5">
                 Due: {new Date(a.dueDate).toLocaleString('en-IN', {
@@ -62,19 +62,19 @@
     );
   }
 
-  // ── Deadline status badge ─────────────────────────────────────
+  // â”€â”€ Deadline status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function DeadlineBadge({ dueDate }: { dueDate: string }) {
     const now   = new Date();
     const due   = new Date(dueDate);
     const diffH = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (diffH < 0)   return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Expired</span>;
-    if (diffH < 24)  return <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold animate-pulse">🔴 Due Soon!</span>;
-    if (diffH < 72)  return <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">⚠ Due Soon</span>;
+    if (diffH < 24)  return <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold animate-pulse">ðŸ”´ Due Soon!</span>;
+    if (diffH < 72)  return <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">âš  Due Soon</span>;
     return               <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Upcoming</span>;
   }
 
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   export function StudentPortal() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -102,7 +102,7 @@
     const [skillsRadar, setSkillsRadar] = useState<Array<{ skill: string; current: number; target: number }>>(DEFAULT_SKILLS);
     const [weakAreas, setWeakAreas] = useState<Array<{ subject: string; currentScore: number; targetScore: number; improvement: string }>>([]);
     const [recommendations, setRecommendations] = useState<Array<{ icon: any; title: string; description: string; priority: 'high' | 'medium' | 'low'; color: string }>>([]);
-    const [avgScoreDisplay, setAvgScoreDisplay] = useState('—');
+    const [avgScoreDisplay, setAvgScoreDisplay] = useState('â€”');
 
     // Alarm sound via AudioContext
     const alarmFiredRef = useRef(false);
@@ -112,7 +112,7 @@
       return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     };
 
-    // ── Fetch enrolled courses ──────────────────────────────────
+    // â”€â”€ Fetch enrolled courses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     useEffect(() => {
       const fetchEnrolledCourses = async () => {
         if (!user?.id) { setLoadingCourses(false); return; }
@@ -151,7 +151,7 @@
       fetchEnrolledCourses();
     }, [user?.id]);
 
-    // ── Fetch real assignments for this student ─────────────────
+    // â”€â”€ Fetch real assignments for this student â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     useEffect(() => {
       const fetchAssignments = async () => {
         if (!user?.id) { setLoadingAssign(false); return; }
@@ -187,7 +187,7 @@
           all.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
           setAssignments(all);
 
-          // ── Trigger alarm if any due within 24h ──────────────
+          // â”€â”€ Trigger alarm if any due within 24h â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           const now   = new Date();
           const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
           const urgent = all.filter(a => {
@@ -208,7 +208,7 @@
       fetchAssignments();
     }, [user?.id]);
 
-    // ── Build softcoded insights from real assessments + Gemini ──
+    // â”€â”€ Build softcoded insights from real assessments + Gemini â”€â”€
     useEffect(() => {
       const buildInsights = async () => {
         if (!user?.id) return;
@@ -275,7 +275,7 @@
             setSkillsRadar(DEFAULT_SKILLS);
             setWeakAreas([]);
             setRecommendations([]);
-            setAvgScoreDisplay('—');
+            setAvgScoreDisplay('â€”');
             return;
           }
 
@@ -402,7 +402,7 @@
       buildInsights();
     }, [user?.id, user?.name, enrolledCourses, assignments]);
 
-    // ── Quiz stars ──────────────────────────────────────────────
+    // â”€â”€ Quiz stars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     useEffect(() => {
       const fetchQuizStars = async () => {
         if (!user?.id) return;
@@ -443,7 +443,7 @@
       fetchQuizStars();
     }, [user?.id]);
 
-    // ── Play a simple beep alarm via Web Audio API ──────────────
+    // â”€â”€ Play a simple beep alarm via Web Audio API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const playAlarm = () => {
       try {
         const ctx  = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -477,7 +477,7 @@
     const avgScore      = avgScoreDisplay;
     const avgAttendance = enrolledCourses.length > 0
       ? (enrolledCourses.reduce((s, c) => s + (c.attendance || 0), 0) / enrolledCourses.length).toFixed(1)
-      : '—';
+      : 'â€”';
     const totalCredits  = enrolledCourses.reduce((s, c) => s + (c.credits || 0), 0);
 
     return (
@@ -487,13 +487,33 @@
           <p className="text-gray-600">Personalized dashboard with performance insights and learning recommendations.</p>
         </div>
 
-        {/* ── Deadline Alarm Banners ── */}
+        {/* â”€â”€ Deadline Alarm Banners â”€â”€ */}
         <DeadlineAlarm
           assignments={visibleAssignments}
           onDismiss={handleDismiss}
         />
 
-        {/* ── Student Profile Card ── */}
+        {/* â”€â”€ Smart Attendance shortcut â”€â”€ */}
+        <button
+          type="button"
+          onClick={() => navigate('/attendance')}
+          className="mb-6 flex w-full items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-left text-white shadow-lg transition hover:shadow-xl hover:brightness-105"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
+              <CalendarCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-lg font-bold">Smart Attendance Analytics</p>
+              <p className="mt-1 text-sm text-indigo-100">
+                Predictions, risk warnings, leave planning, recovery planner & trend chart
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 flex-shrink-0 opacity-90" />
+        </button>
+
+        {/* â”€â”€ Student Profile Card â”€â”€ */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-8 mb-6 text-white">
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
@@ -502,15 +522,15 @@
               </div>
               <div>
                 <h3 className="text-2xl font-bold mb-1">{user?.name ?? 'Student'}</h3>
-                <p className="text-sm opacity-90">{user?.studentId ?? 'N/A'} · {user?.email}</p>
-                <p className="text-sm opacity-75">{user?.department ?? 'Department'} · Semester {user?.semester ?? '—'}</p>
+                <p className="text-sm opacity-90">{user?.studentId ?? 'N/A'} Â· {user?.email}</p>
+                <p className="text-sm opacity-75">{user?.department ?? 'Department'} Â· Semester {user?.semester ?? 'â€”'}</p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
               <div className="text-right">
                 <p className="text-sm opacity-75">Current GPA</p>
-                <p className="text-3xl font-bold">—</p>
-                <p className="text-xs opacity-75">Rank: —</p>
+                <p className="text-3xl font-bold">â€”</p>
+                <p className="text-xs opacity-75">Rank: â€”</p>
               </div>
               {/* AI Insights icon */}
               <button
@@ -527,19 +547,19 @@
           <div className="grid grid-cols-4 gap-4 pt-6 border-t border-white/20">
             <div>
               <p className="text-sm opacity-75 mb-1">Enrolled Courses</p>
-              <p className="text-2xl font-bold">{loadingCourses ? '…' : enrolledCourses.length}</p>
+              <p className="text-2xl font-bold">{loadingCourses ? 'â€¦' : enrolledCourses.length}</p>
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Avg Score</p>
-              <p className="text-2xl font-bold">{avgScore}{avgScore !== '—' ? '%' : ''}</p>
+              <p className="text-2xl font-bold">{avgScore}{avgScore !== 'â€”' ? '%' : ''}</p>
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Attendance</p>
-              <p className="text-2xl font-bold">{avgAttendance}{avgAttendance !== '—' ? '%' : ''}</p>
+              <p className="text-2xl font-bold">{avgAttendance}{avgAttendance !== 'â€”' ? '%' : ''}</p>
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Credits</p>
-              <p className="text-2xl font-bold">{totalCredits || '—'}</p>
+              <p className="text-2xl font-bold">{totalCredits || 'â€”'}</p>
             </div>
           </div>
         </div>
@@ -559,7 +579,7 @@
                 <div className="text-center">
                   <div className="text-3xl font-black text-amber-400">
                     {Array.from({ length: 5 }, (_, i) => (
-                      <span key={i} className={i < Math.round(quizStarSummary.avgStars) ? 'text-amber-400' : 'text-gray-200'}>★</span>
+                      <span key={i} className={i < Math.round(quizStarSummary.avgStars) ? 'text-amber-400' : 'text-gray-200'}>â˜…</span>
                     ))}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">Avg {quizStarSummary.avgStars} / 5 stars</p>
@@ -570,11 +590,11 @@
                   const count  = quizStarSummary.breakdown[star - 1];
                   const pct    = quizStarSummary.total > 0 ? Math.round((count / quizStarSummary.total) * 100) : 0;
                   const colors: Record<number, string> = { 5: 'bg-green-500', 4: 'bg-blue-400', 3: 'bg-yellow-400', 2: 'bg-orange-400', 1: 'bg-red-400' };
-                  const labels: Record<number, string> = { 5: '81–100%', 4: '61–80%', 3: '41–60%', 2: '21–40%', 1: '0–20%' };
+                  const labels: Record<number, string> = { 5: '81â€“100%', 4: '61â€“80%', 3: '41â€“60%', 2: '21â€“40%', 1: '0â€“20%' };
                   return (
                     <div key={star} className="flex items-center gap-3">
                       <span className="text-amber-400 text-sm w-20 flex-shrink-0 font-medium">
-                        {Array.from({ length: 5 }, (_, i) => <span key={i}>{i < star ? '★' : '☆'}</span>)}
+                        {Array.from({ length: 5 }, (_, i) => <span key={i}>{i < star ? 'â˜…' : 'â˜†'}</span>)}
                       </span>
                       <span className="text-xs text-gray-400 w-16 flex-shrink-0">{labels[star]}</span>
                       <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -602,7 +622,7 @@
             </ResponsiveContainer>
           </div>
 
-          {/* ── Upcoming Deadlines — REAL DATA ── */}
+          {/* â”€â”€ Upcoming Deadlines â€” REAL DATA â”€â”€ */}
           <div className="bg-white rounded-lg p-6 border border-gray-200">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-blue-600" />
@@ -614,7 +634,7 @@
             ) : upcomingAssignments.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No upcoming deadlines 🎉</p>
+                <p className="text-sm">No upcoming deadlines ðŸŽ‰</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -643,7 +663,7 @@
                       </div>
                       <div className="flex items-center gap-1 mt-1 flex-wrap">
                         <span className="text-xs text-gray-400">
-                          {a.questions?.length || 0} questions · {a.totalMarks} marks
+                          {a.questions?.length || 0} questions Â· {a.totalMarks} marks
                         </span>
                       </div>
                     </div>
@@ -768,8 +788,8 @@
                       <p className="text-xs font-mono text-gray-500">{course.courseCode}</p>
                       <p className="text-sm text-gray-600 mt-1">
                         {course.instructor?.name
-                          ? <span className="text-emerald-600 font-medium">👤 {course.instructor.name}</span>
-                          : <span className="text-orange-500">⚠ No teacher assigned</span>
+                          ? <span className="text-emerald-600 font-medium">ðŸ‘¤ {course.instructor.name}</span>
+                          : <span className="text-orange-500">âš  No teacher assigned</span>
                         }
                       </p>
                       <p className="text-xs text-indigo-600 mt-0.5">Semester {course.semester}</p>
@@ -781,11 +801,11 @@
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Grade</p>
-                      <p className="text-sm font-medium text-gray-900">{course.grade != null ? `${course.grade}%` : '—'}</p>
+                      <p className="text-sm font-medium text-gray-900">{course.grade != null ? `${course.grade}%` : 'â€”'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Credits</p>
-                      <p className="text-sm font-medium text-gray-900">{course.credits ?? '—'}</p>
+                      <p className="text-sm font-medium text-gray-900">{course.credits ?? 'â€”'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Students</p>
@@ -804,7 +824,7 @@
           )}
         </div>
 
-        {/* ── AI Performance Insights Modal ── */}
+        {/* â”€â”€ AI Performance Insights Modal â”€â”€ */}
         {showAIPanel && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
@@ -813,7 +833,7 @@
                   <Brain className="w-5 h-5 text-white" />
                   <h3 className="text-white font-bold text-base">AI Performance Insights</h3>
                 </div>
-                <button onClick={() => setShowAIPanel(false)} className="text-white/80 hover:text-white text-xl leading-none">✕</button>
+                <button onClick={() => setShowAIPanel(false)} className="text-white/80 hover:text-white text-xl leading-none">âœ•</button>
               </div>
               <div className="flex-1 overflow-y-auto">
                 <AILearningAssistant userId={user?.id || ''} userName={user?.name || 'Student'} />
