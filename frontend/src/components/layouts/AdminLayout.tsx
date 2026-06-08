@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { LayoutDashboard, Users, BookOpen, FileText, BarChart3, Shield, FolderOpen, ClipboardCheck, Sparkles, GraduationCap, UserCheck, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, FileText, BarChart3, Shield, FolderOpen, ClipboardCheck, Sparkles, UserCheck, Bell } from 'lucide-react';
 import { RoleSwitcher } from '../RoleSwitcher';
 
 export function AdminLayout() {

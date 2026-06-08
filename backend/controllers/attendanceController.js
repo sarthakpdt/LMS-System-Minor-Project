@@ -1,9 +1,23 @@
+const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const Course = require('../models/Course');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
 
 const MIN_REQUIRED_PERCENTAGE = 75;
+
+const isValidObjectId = (id) => {
+  if (id == null) return false;
+  const s = String(id).trim();
+  if (!s || s === 'undefined' || s === 'null') return false;
+  return mongoose.Types.ObjectId.isValid(s);
+};
+
+const resolveTimetableSlotId = (raw) => {
+  if (!raw) return null;
+  const id = String(raw).trim();
+  return isValidObjectId(id) ? id : null;
+};
 
 const toRiskLevel = (percentage) => {
   if (percentage >= 75) return 'safe';
@@ -163,9 +177,17 @@ const mapStudentRow = (s) => ({
   studentId: s.studentId,
   department: s.department,
   semester: s.semester,
+  section: s.section || null,
 });
 
 const teacherOwnsCourse = async (teacherId, courseId) => {
+  if (!isValidObjectId(teacherId)) {
+    return { ok: false, status: 400, message: 'Invalid teacher id.' };
+  }
+  if (!isValidObjectId(courseId)) {
+    return { ok: false, status: 400, message: 'Invalid course id. Select a course assigned by admin.' };
+  }
+
   const course = await Course.findById(courseId).lean();
   if (!course) {
     return { ok: false, status: 404, message: 'Course not found' };
@@ -193,21 +215,38 @@ const teacherOwnsCourse = async (teacherId, courseId) => {
 
 exports.getStudents = async (req, res) => {
   try {
-    const { semester, department, courseId, teacherId } = req.query;
+    const { semester, department, courseId, teacherId, section } = req.query;
 
     if (courseId && teacherId) {
+      if (!isValidObjectId(courseId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid courseId. Reload the page and pick a course from the dropdown.',
+        });
+      }
+      if (!isValidObjectId(teacherId)) {
+        return res.status(400).json({ success: false, message: 'Invalid teacher id.' });
+      }
+
       const access = await teacherOwnsCourse(teacherId, courseId);
       if (!access.ok) {
         return res.status(access.status).json({ success: false, message: access.message });
       }
 
       const course = await Course.findById(courseId)
-        .populate('enrolledStudents', '_id name email studentId department semester approvalStatus')
+        .populate('enrolledStudents', '_id name email studentId department semester section approvalStatus')
         .lean();
 
-      const students = (course?.enrolledStudents || [])
-        .filter((s) => s && s._id && s.approvalStatus === 'approved')
-        .map(mapStudentRow);
+      let enrolled = (course?.enrolledStudents || [])
+        .filter((s) => s && s._id && s.approvalStatus === 'approved');
+
+      if (section) {
+        enrolled = enrolled.filter((s) => String(s.section || '') === String(section));
+      } else if (course?.section) {
+        enrolled = enrolled.filter((s) => String(s.section || '') === String(course.section));
+      }
+
+      const students = enrolled.map(mapStudentRow);
 
       return res.json({
         success: true,
@@ -232,7 +271,7 @@ exports.getStudents = async (req, res) => {
 
     res.json({ success: true, students: students.map(mapStudentRow) });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -255,10 +294,20 @@ exports.submitAttendance = async (req, res) => {
       });
     }
 
+    if (!isValidObjectId(teacherId)) {
+      return res.status(400).json({ success: false, message: 'Invalid teacher id.' });
+    }
+
     let resolvedSubject = subject;
     let resolvedCourseId = courseId || null;
 
     if (courseId) {
+      if (!isValidObjectId(courseId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid course id. Select a valid assigned course.',
+        });
+      }
       const access = await teacherOwnsCourse(teacherId, courseId);
       if (!access.ok) {
         return res.status(access.status).json({ success: false, message: access.message });
@@ -274,6 +323,18 @@ exports.submitAttendance = async (req, res) => {
       });
     }
 
+    const validRecords = records.filter(
+      (r) => r.studentId && isValidObjectId(r.studentId),
+    );
+    if (validRecords.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid student records. Enroll approved students in this course first.',
+      });
+    }
+
+    const slotId = resolveTimetableSlotId(timetableSlotId);
+
     let attendance = await Attendance.findOne({
       date,
       subject: resolvedSubject,
@@ -282,18 +343,18 @@ exports.submitAttendance = async (req, res) => {
     const wasUpdate = Boolean(attendance);
 
     if (attendance) {
-      attendance.records = records;
-      if (timetableSlotId) attendance.timetableSlotId = timetableSlotId;
+      attendance.records = validRecords;
+      if (slotId) attendance.timetableSlotId = slotId;
       if (teacherName) attendance.teacherName = teacherName;
       await attendance.save();
     } else {
       attendance = await Attendance.create({
         date,
         subject: resolvedSubject,
-        timetableSlotId,
+        timetableSlotId: slotId,
         teacherId,
         teacherName,
-        records,
+        records: validRecords,
       });
     }
 
@@ -307,7 +368,7 @@ exports.submitAttendance = async (req, res) => {
       syncedAt: new Date().toISOString(),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

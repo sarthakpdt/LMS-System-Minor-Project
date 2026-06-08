@@ -19,6 +19,7 @@ import AttendanceManager             from './teacher/AttendanceManager';
 import StudentAttendance             from './student/StudentAttendance';
 import AnalyticsAdmin                from './admin/Analytics';
 import TimetableManager              from './admin/TimetableManager';
+import FacultySchedule               from './timetable/FacultySchedule';
 
 const BASE = 'http://localhost:5000/api/admin';
 const API  = 'http://localhost:5000/api';
@@ -877,6 +878,7 @@ function TeacherDashboard() {
     { id: 'assignments', label: '📝 Assignments' },
     { id: 'materials',   label: '📚 Materials' },
     { id: 'attendance',  label: '📋 Attendance' },
+    { id: 'timetable',   label: '📅 Timetable' },
   ];
 
   return (
@@ -1015,6 +1017,7 @@ function TeacherDashboard() {
       {activeTab === 'assignments'   && <Assignments />}
       {activeTab === 'materials'     && <StudyMaterials />}
       {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} teacherName={user?.name} />}
+      {activeTab === 'timetable'     && <FacultySchedule fixedFacultyId={user?.id} />}
     </div>
   );
 }

@@ -96,4 +96,8 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Automatic timetable generation engine (admin)
+const engineRouter = require('./timetableEngineRoutes');
+router.use('/engine', engineRouter);
+
 module.exports = router;

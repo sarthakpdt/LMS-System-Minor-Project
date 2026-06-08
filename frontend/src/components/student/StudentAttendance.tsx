@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { AlertTriangle, BookOpen, Brain, CheckCircle2, ShieldAlert, TrendingUp } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -9,6 +9,14 @@ import type { AttendanceAnalytics, AttendanceRecord, AttendanceResponse, Subject
 
 const API_BASE = 'http://localhost:5000/api';
 const POLL_INTERVAL_MS = 20_000;
+
+const attendancePayloadHash = (data: AttendanceResponse): string =>
+  JSON.stringify({
+    subjects: data.subjects,
+    analytics: data.analytics,
+    recordsLen: data.records?.length ?? 0,
+    isDemo: data.isDemo,
+  });
 
 const riskBadge: Record<string, string> = {
   safe: 'bg-emerald-100 text-emerald-700',
@@ -73,6 +81,7 @@ export default function StudentAttendance({ studentId }: { studentId: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const lastHashRef = useRef('');
 
   const loadAttendance = useCallback(async (silent = false) => {
     try {
@@ -81,6 +90,12 @@ export default function StudentAttendance({ studentId }: { studentId: string }) 
         setError('');
       }
       const { data } = await axios.get<AttendanceResponse>(`${API_BASE}/attendance/student/${studentId}`);
+      const nextHash = attendancePayloadHash(data);
+      if (silent && nextHash === lastHashRef.current) {
+        return;
+      }
+      lastHashRef.current = nextHash;
+
       if (!data.success || !(data.subjects?.length || data.analytics?.totalClasses)) {
         const demo = getDemoAttendanceBundle();
         setSubjects(demo.subjects);

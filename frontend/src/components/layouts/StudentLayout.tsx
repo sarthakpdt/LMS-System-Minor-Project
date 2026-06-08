@@ -1,7 +1,6 @@
 import { Outlet, NavLink } from 'react-router';
 import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, FileText, CalendarCheck } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
-import { RoleSwitcher } from '../RoleSwitcher';
+import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function StudentLayout() {
@@ -62,10 +61,6 @@ export function StudentLayout() {
           </ul>
         </nav>
 
-        <div className="p-4">
-          <RoleSwitcher />
-        </div>
-        
         <div className="p-4 border-t border-gray-200 space-y-3">
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">

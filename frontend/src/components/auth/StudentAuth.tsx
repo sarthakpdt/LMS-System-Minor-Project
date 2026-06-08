@@ -23,12 +23,14 @@ export const DEPARTMENTS = [
   { value: 'MCA',  label: 'Master of Computer Applications' },
 ];
 
-export function StudentAuth() {
+type AuthRole = 'student' | 'teacher' | 'admin';
+
+export function StudentAuth({ defaultRole = 'student' }: { defaultRole?: AuthRole }) {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'student' | 'teacher' | 'admin'>('student');
+  const [role, setRole] = useState<AuthRole>(defaultRole);
   const [error, setError] = useState('');
   const { login, signup } = useAuth();
 

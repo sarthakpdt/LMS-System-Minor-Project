@@ -84,7 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const data = await res.json();
-      console.log("Login full response:", data, "Status:", res.status);
 
       if (!res.ok) {
         return { success: false, message: data.message || "Login failed" };
@@ -145,7 +144,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const data = await res.json();
-      console.log("Signup full response:", data, "Status:", res.status);
 
       if (!res.ok) {
         return { success: false, message: data.message || "Registration failed" };

@@ -23,12 +23,14 @@ const buildTeacherPayload = (user) => ({
   employeeId: user.employeeId || null,
   phone: user.phone || null,
   // Return full assignedCourses array so frontend can show subject picker
-  assignedCourses: (user.assignedCourses || []).map(c => ({
-    courseId: String(c.courseId),
-    courseCode: c.courseCode,
-    courseName: c.courseName,
-    semester: c.semester,
-  })),
+  assignedCourses: (user.assignedCourses || [])
+    .filter((c) => c && c.courseId)
+    .map((c) => ({
+      courseId: String(c.courseId),
+      courseCode: c.courseCode || '',
+      courseName: c.courseName || c.courseCode || '',
+      semester: c.semester,
+    })),
 });
 
 // POST /api/auth/register

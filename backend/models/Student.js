@@ -20,6 +20,10 @@ const studentSchema = new mongoose.Schema({
     required: true,
     enum: ['1', '2', '3', '4', '5', '6', '7', '8'],
   },
+  /** Timetable branch code from TtConfig (e.g. BTECH, BBA) */
+  timetableBranch: { type: String, default: null },
+  /** Class section label (e.g. A, B, C) */
+  section: { type: String, default: null },
   enrollmentYear: { type: Number },
 
   // Approval Status

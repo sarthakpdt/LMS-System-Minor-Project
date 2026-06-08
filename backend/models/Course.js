@@ -27,6 +27,11 @@ const courseSchema = new mongoose.Schema({
     required: true,
     enum: ['1', '2', '3', '4', '5', '6', '7', '8'],
   },
+  /** Optional timetable linkage */
+  timetableBranch: { type: String, default: null },
+  academicYear: { type: Number, default: null },
+  section: { type: String, default: null },
+  ttSubjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'TtSubject', default: null },
   teacher: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Teacher',

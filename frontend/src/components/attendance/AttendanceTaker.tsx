@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
+import { isValidObjectId, resolveCourseId } from '../../lib/objectId';
 import {
   AlertTriangle,
   BarChart3,
@@ -92,16 +94,35 @@ const DEMO_TIMETABLE: TimetableSlot[] = [
   { _id: 'demo-slot-3', subject: 'Operating Systems', day: 'Friday', startTime: '14:00', endTime: '15:00', semester: 3, department: 'CS' },
 ];
 
-const DEMO_STUDENTS: StudentRow[] = [
-  { _id: 'demo-1', name: 'Aarav Sharma', email: 'aarav@edu.in', studentId: 'CS2021001' },
-  { _id: 'demo-2', name: 'Priya Patel', email: 'priya@edu.in', studentId: 'CS2021002' },
-  { _id: 'demo-3', name: 'Rohan Mehta', email: 'rohan@edu.in', studentId: 'CS2021003' },
-  { _id: 'demo-4', name: 'Sneha Reddy', email: 'sneha@edu.in', studentId: 'CS2021004' },
-  { _id: 'demo-5', name: 'Vikram Singh', email: 'vikram@edu.in', studentId: 'CS2021005' },
-  { _id: 'demo-6', name: 'Ananya Iyer', email: 'ananya@edu.in', studentId: 'CS2021006' },
-];
-
 type MarkStatus = 'present' | 'absent' | 'late';
+
+interface TeacherCourseOption {
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  semester: string;
+  department?: string;
+}
+
+const mapApiCourseToOption = (c: {
+  _id: string;
+  courseCode?: string;
+  courseName?: string;
+  semester?: string | number;
+  department?: string;
+}): TeacherCourseOption | null => {
+  const courseId = resolveCourseId(c);
+  if (!courseId) return null;
+  const code = c.courseCode?.trim() || '';
+  const name = c.courseName?.trim() || code || 'Course';
+  return {
+    courseId,
+    courseCode: code || name,
+    courseName: name,
+    semester: String(c.semester ?? ''),
+    department: c.department,
+  };
+};
 
 const normalizeMarkStatus = (status: string): MarkStatus => {
   if (status === 'absent') return 'absent';
@@ -114,14 +135,6 @@ const statusConfig: Record<MarkStatus, { label: string; className: string; icon:
   absent: { label: 'Absent', className: 'bg-red-500 text-white', icon: XCircle },
   late: { label: 'Late', className: 'bg-amber-500 text-white', icon: Clock },
 };
-
-interface TeacherCourseOption {
-  courseId: string;
-  courseCode: string;
-  courseName: string;
-  semester: string;
-  department?: string;
-}
 
 const riskBadge: Record<string, string> = {
   safe: 'bg-emerald-100 text-emerald-700',
@@ -166,6 +179,11 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
   const [teacherCourses, setTeacherCourses] = useState<TeacherCourseOption[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const userEditedRef = useRef(false);
+  const reminderShownRef = useRef<string | null>(null);
+  const [showReminderBanner, setShowReminderBanner] = useState(false);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [sectionOptions, setSectionOptions] = useState<string[]>(['A', 'B', 'C']);
+  const [selectedSection, setSelectedSection] = useState('');
 
   const selectedCourse = useMemo(
     () => teacherCourses.find((c) => c.courseId === selectedCourseId) || null,
@@ -177,13 +195,33 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
     : '';
 
   useEffect(() => {
+    axios
+      .get(`${API}/timetable/engine/config`)
+      .then(({ data }) => {
+        const sections = new Set<string>();
+        (data.config?.branches || []).forEach((b: { years: { sections: string[] }[] }) => {
+          b.years.forEach((y) => y.sections.forEach((s) => sections.add(s)));
+        });
+        const list = Array.from(sections).sort();
+        if (list.length) {
+          setSectionOptions(list);
+          setSelectedSection((prev) => (prev && list.includes(prev) ? prev : list[0]));
+        }
+      })
+      .catch(() => {
+        /* keep defaults */
+      });
+  }, []);
+
+  useEffect(() => {
     if (!teacherId) return;
     axios
       .get(`${API}/timetable/teacher/${teacherId}`)
       .then(({ data }) => {
         let slots: TimetableSlot[] = data.slots || [];
-        if (slots.length === 0 && user?.assignedCourses?.length) {
-          slots = buildSlotsFromAssignedCourses(user.assignedCourses);
+        const assignedValid = (user?.assignedCourses || []).filter((c) => resolveCourseId(c));
+        if (slots.length === 0 && assignedValid.length) {
+          slots = buildSlotsFromAssignedCourses(assignedValid);
           setUsingFallbackSchedule(true);
         } else if (slots.length === 0) {
           slots = DEMO_TIMETABLE;
@@ -194,8 +232,9 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
         setTimetableSlots(slots);
       })
       .catch(() => {
-        const fallback = user?.assignedCourses?.length
-          ? buildSlotsFromAssignedCourses(user.assignedCourses)
+        const assignedValid = (user?.assignedCourses || []).filter((c) => resolveCourseId(c));
+        const fallback = assignedValid.length
+          ? buildSlotsFromAssignedCourses(assignedValid)
           : DEMO_TIMETABLE;
         setTimetableSlots(fallback);
         setUsingFallbackSchedule(true);
@@ -204,44 +243,68 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
   }, [teacherId, user?.assignedCourses]);
 
   useEffect(() => {
-    if (!teacherId) return;
-
-    const fromAuth: TeacherCourseOption[] = (user?.assignedCourses || []).map((c) => ({
-      courseId: String(c.courseId),
-      courseCode: c.courseCode,
-      courseName: c.courseName,
-      semester: String(c.semester),
-    }));
-
-    if (fromAuth.length > 0) {
-      setTeacherCourses(fromAuth);
-      setSelectedCourseId((prev) => prev || fromAuth[0].courseId);
+    if (!teacherId) {
+      setCoursesLoading(false);
       return;
     }
 
-    const token = user?.token || JSON.parse(localStorage.getItem('lms_user') || '{}')?.token;
-    if (!token) return;
+    let cancelled = false;
 
-    axios
-      .get(`${API}/teachers/me/courses`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(({ data }) => {
-        const list: TeacherCourseOption[] = (data.data || []).map((c: { _id: string; courseCode: string; courseName: string; semester: string; department?: string }) => ({
-          courseId: String(c._id),
-          courseCode: c.courseCode,
-          courseName: c.courseName,
-          semester: String(c.semester),
-          department: c.department,
-        }));
-        setTeacherCourses(list);
-        if (list.length > 0) {
-          setSelectedCourseId((prev) => prev || list[0].courseId);
-        }
-      })
-      .catch(() => {
-        setTeacherCourses([]);
+    const coursesFromAuth = (): TeacherCourseOption[] =>
+      (user?.assignedCourses || [])
+        .map((c) => {
+          const courseId = resolveCourseId(c);
+          if (!courseId) return null;
+          const code = c.courseCode?.trim() || '';
+          const name = c.courseName?.trim() || code || 'Course';
+          return {
+            courseId,
+            courseCode: code || name,
+            courseName: name,
+            semester: String(c.semester ?? ''),
+          };
+        })
+        .filter((c): c is TeacherCourseOption => c !== null);
+
+    const applyCourses = (list: TeacherCourseOption[]) => {
+      if (cancelled) return;
+      const valid = list.filter((c) => isValidObjectId(c.courseId));
+      setTeacherCourses(valid);
+      setSelectedCourseId((prev) => {
+        if (prev && valid.some((c) => c.courseId === prev)) return prev;
+        return valid[0]?.courseId ?? '';
       });
+      if (!valid.length) {
+        setError('No valid assigned courses. Ask admin to assign courses to your account.');
+      }
+      setCoursesLoading(false);
+    };
+
+    const token =
+      user?.token ||
+      (typeof localStorage !== 'undefined'
+        ? JSON.parse(localStorage.getItem('lms_user') || '{}')?.token
+        : null);
+
+    if (token) {
+      axios
+        .get(`${API}/teachers/me/courses`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then(({ data }) => {
+          const fromApi = (data.data || [])
+            .map(mapApiCourseToOption)
+            .filter((c): c is TeacherCourseOption => c !== null);
+          applyCourses(fromApi.length ? fromApi : coursesFromAuth());
+        })
+        .catch(() => applyCourses(coursesFromAuth()));
+    } else {
+      applyCourses(coursesFromAuth());
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [teacherId, user?.assignedCourses, user?.token]);
 
   useEffect(() => {
@@ -252,6 +315,16 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
 
   const loadStudentsAndSession = useCallback(async () => {
     if (!teacherId || !selectedCourseId) return;
+
+    if (!isValidObjectId(selectedCourseId)) {
+      setStudents([]);
+      setAttendance({});
+      setUseDemoStudents(false);
+      setError('Invalid course selected. Choose another course from the dropdown.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
     userEditedRef.current = false;
@@ -267,13 +340,32 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
         params: {
           courseId: selectedCourseId,
           teacherId,
+          section: selectedSection || undefined,
           semester: selectedSlot?.semester,
           department: selectedSlot?.department,
         },
       });
-      const studs: StudentRow[] = data.students?.length ? data.students : DEMO_STUDENTS;
-      setUseDemoStudents(!data.students?.length);
+
+      if (!data.success) {
+        setError(data.message || 'Could not load students for this course.');
+        setStudents([]);
+        setUseDemoStudents(false);
+        setAttendance({});
+        setSessionExists(false);
+        return;
+      }
+
+      const studs: StudentRow[] = (data.students || []).filter((s: StudentRow) =>
+        isValidObjectId(s._id),
+      );
+      setUseDemoStudents(false);
       setStudents(studs);
+
+      if (!studs.length) {
+        setError(
+          'No approved students enrolled in this course. Admin must enroll students before you can mark attendance.',
+        );
+      }
 
       const init: Record<string, MarkStatus> = {};
       studs.forEach((s) => {
@@ -287,11 +379,14 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
         if (sessionRes.data.session?.records?.length) {
           sessionRes.data.session.records.forEach(
             (r: { studentId: string; status: string }) => {
-              init[String(r.studentId)] = normalizeMarkStatus(r.status);
-            }
+              const sid = String(r.studentId);
+              if (init[sid] !== undefined) init[sid] = normalizeMarkStatus(r.status);
+            },
           );
           setSessionExists(true);
           setIsDraft(false);
+          setShowReminderBanner(false);
+          reminderShownRef.current = null;
         } else {
           setSessionExists(false);
           const draft = draftKey ? localStorage.getItem(draftKey) : null;
@@ -308,19 +403,20 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
       }
 
       setAttendance(init);
-    } catch {
-      setStudents(DEMO_STUDENTS);
-      setUseDemoStudents(true);
-      const init: Record<string, MarkStatus> = {};
-      DEMO_STUDENTS.forEach((s) => {
-        init[String(s._id)] = 'present';
-      });
-      setAttendance(init);
+    } catch (err) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string })?.message ||
+          'Could not load students. Check course assignment and try again.'
+        : 'Could not load students.';
+      setError(msg);
+      setStudents([]);
+      setUseDemoStudents(false);
+      setAttendance({});
       setSessionExists(false);
     } finally {
       setLoading(false);
     }
-  }, [selectedSlot, selectedCourse, selectedCourseId, teacherId, date, draftKey]);
+  }, [selectedSlot, selectedCourse, selectedCourseId, selectedSection, teacherId, date, draftKey]);
 
   useEffect(() => {
     loadStudentsAndSession();
@@ -392,43 +488,99 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
 
   const submitAttendance = async (isUpdate = false) => {
     if (!teacherId || !selectedCourseId) return;
+    if (!isValidObjectId(selectedCourseId)) {
+      setError('Invalid course. Select a course from the dropdown.');
+      return;
+    }
     const subjectName = selectedCourse?.courseName || selectedSlot?.subject;
     if (!subjectName) return;
+
+    const validStudents = students.filter((s) => isValidObjectId(s._id));
+    if (!validStudents.length) {
+      setError('Cannot save: no enrolled students in this course.');
+      toast.error('No enrolled students to save.');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
-      const records = students.map((s) => ({
+      const records = validStudents.map((s) => ({
         studentId: s._id,
         studentName: s.name,
         status: getStatus(s._id),
       }));
-      const { data } = await axios.post(`${API}/attendance/mark`, {
+
+      const payload: Record<string, unknown> = {
         date,
         subject: subjectName,
         courseId: selectedCourseId,
-        timetableSlotId: selectedSlot?._id,
         teacherId,
         teacherName,
         records,
         isDraft: false,
-      });
+      };
+      if (selectedSlot?._id && isValidObjectId(selectedSlot._id)) {
+        payload.timetableSlotId = selectedSlot._id;
+      }
+
+      const { data } = await axios.post(`${API}/attendance/mark`, payload);
       if (data.success) {
         setSaved(true);
         setSessionExists(true);
         setIsDraft(false);
+        setShowReminderBanner(false);
+        reminderShownRef.current = null;
         if (draftKey) localStorage.removeItem(draftKey);
+        toast.success(isUpdate ? 'Attendance updated' : 'Attendance saved');
         setTimeout(() => setSaved(false), 3000);
         if (isUpdate) setConfirmUpdate(false);
         if (tab === 'analytics') loadAnalytics();
       } else {
-        setError(data.message || 'Failed to save attendance.');
+        const msg = data.message || 'Failed to save attendance.';
+        setError(msg);
+        toast.error(msg);
       }
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string })?.message || 'Failed to save attendance.'
+        : 'Network error. Please try again.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (tab !== 'take' || sessionExists || !selectedSlot?.endTime || !date) {
+      setShowReminderBanner(false);
+      return;
+    }
+
+    const checkReminder = () => {
+      const [h, m] = selectedSlot.endTime.split(':').map(Number);
+      const end = new Date(`${date}T00:00:00`);
+      end.setHours(h ?? 0, m ?? 0, 0, 0);
+      const msLeft = end.getTime() - Date.now();
+      const fiveMin = 5 * 60 * 1000;
+      const inWindow = msLeft > 0 && msLeft <= fiveMin;
+      setShowReminderBanner(inWindow);
+
+      const key = `${date}_${selectedSlot._id}_${teacherId}`;
+      if (inWindow && reminderShownRef.current !== key) {
+        reminderShownRef.current = key;
+        toast.warning('Attendance not submitted for this session.', {
+          description: 'Please mark attendance before class ends.',
+          id: `attendance-reminder-${key}`,
+        });
+      }
+    };
+
+    checkReminder();
+    const timer = window.setInterval(checkReminder, 30_000);
+    return () => window.clearInterval(timer);
+  }, [tab, sessionExists, selectedSlot, date, teacherId]);
 
   const openEditSession = (session: PastSession) => {
     setEditSession(session);
@@ -605,9 +757,16 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
         </div>
       )}
 
-      {useDemoStudents && tab === 'take' && (
+      {showReminderBanner && tab === 'take' && !sessionExists && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Attendance not submitted for this session. Please mark attendance before class ends.
+        </div>
+      )}
+
+      {!coursesLoading && students.length === 0 && !loading && tab === 'take' && isValidObjectId(selectedCourseId) && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-          Using sample student list — connect approved students in your department to use live data.
+          No enrolled students for this course. Admin must enroll approved students before you can save attendance.
         </div>
       )}
 
@@ -643,6 +802,23 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
                       ))}
                     </select>
                   )}
+                </div>
+                <div>
+                  <label className="text-xs font-medium uppercase text-slate-500">Section</label>
+                  <select
+                    value={selectedSection}
+                    onChange={(e) => {
+                      userEditedRef.current = false;
+                      setSelectedSection(e.target.value);
+                      setSaved(false);
+                    }}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    {sectionOptions.map((sec) => (
+                      <option key={sec} value={sec}>Section {sec}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[10px] text-slate-500">Attendance sheet shows students in this section only.</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium uppercase text-slate-500">Attendance Date</label>
@@ -928,7 +1104,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
                   </div>
                   <Button
                     type="button"
-                    disabled={saving || students.length === 0}
+                    disabled={saving || students.length === 0 || !isValidObjectId(selectedCourseId)}
                     onClick={() => (sessionExists ? setConfirmUpdate(true) : submitAttendance())}
                     className="bg-emerald-600 hover:bg-emerald-700"
                   >

@@ -24,13 +24,16 @@ import { AdminQuizDashboard } from "./components/admin/AdminQuizDashboard";
 import { StudentApprovals } from "./components/admin/StudentApprovals";
 import { NotFound } from "./components/NotFound";
 import { StudentAuth } from "./components/auth/StudentAuth";
-import { TeacherAuth } from "./components/auth/TeacherAuth";
 // NEW imports
 import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
 import StudentAttendancePage from "./components/student/StudentAttendancePage";
 import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
+
+function TeacherAuthPage() {
+  return <StudentAuth defaultRole="teacher" />;
+}
 
 function ProtectedStudentLayout() {
   return (
@@ -79,7 +82,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
     return createBrowserRouter([
       {
         path: "/auth",
-        Component: TeacherAuth,
+        Component: TeacherAuthPage,
       },
       {
         path: "/",

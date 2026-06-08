@@ -8,9 +8,19 @@
     LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
     PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
   } from 'recharts';
+  import {
+    NA,
+    formatGpa,
+    formatPercent,
+    formatCredits,
+    formatRank,
+    displayWithSuffix,
+    isNA,
+  } from '../lib/formatMetrics';
 
-  const BASE     = 'http://localhost:5000/api/admin';
-  const API      = 'http://localhost:5000/api';
+  const BASE = 'http://localhost:5000/api/admin';
+  const API = 'http://localhost:5000/api';
+  const ATTENDANCE_POLL_MS = 20_000;
 
   const DEFAULT_SKILLS = [
     { skill: 'Problem Solving', current: 0, target: 0 },
@@ -44,7 +54,7 @@
               <p className="text-sm font-bold text-red-800">â° Deadline in less than 24 hours!</p>
               <p className="text-sm text-red-700 truncate">
                 <span className="font-semibold">{a.title}</span>
-                {a.courseId?.courseName && <span className="text-red-500"> Â· {a.courseId.courseName}</span>}
+                {a.courseId?.courseName && <span className="text-red-500"> · {a.courseId.courseName}</span>}
               </p>
               <p className="text-xs text-red-500 mt-0.5">
                 Due: {new Date(a.dueDate).toLocaleString('en-IN', {
@@ -102,7 +112,9 @@
     const [skillsRadar, setSkillsRadar] = useState<Array<{ skill: string; current: number; target: number }>>(DEFAULT_SKILLS);
     const [weakAreas, setWeakAreas] = useState<Array<{ subject: string; currentScore: number; targetScore: number; improvement: string }>>([]);
     const [recommendations, setRecommendations] = useState<Array<{ icon: any; title: string; description: string; priority: 'high' | 'medium' | 'low'; color: string }>>([]);
-    const [avgScoreDisplay, setAvgScoreDisplay] = useState('â€”');
+    const [avgScoreDisplay, setAvgScoreDisplay] = useState(NA);
+    const [studentGpa, setStudentGpa] = useState<number | null>(null);
+    const [attendancePct, setAttendancePct] = useState<number | null>(null);
 
     // Alarm sound via AudioContext
     const alarmFiredRef = useRef(false);
@@ -142,8 +154,8 @@
             }));
 
           setEnrolledCourses(myCourses);
-        } catch (err) {
-          console.warn('Could not fetch enrolled courses:', err);
+        } catch {
+          /* optional */
         } finally {
           setLoadingCourses(false);
         }
@@ -151,7 +163,59 @@
       fetchEnrolledCourses();
     }, [user?.id]);
 
-    // â”€â”€ Fetch real assignments for this student â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    useEffect(() => {
+      if (!user?.id) return;
+      const loadProfile = async () => {
+        try {
+          const res = await fetch(`${BASE}/students/${user.id}`);
+          const json = await res.json();
+          const gpa = json.data?.gpa;
+          if (gpa != null && !Number.isNaN(Number(gpa)) && Number(gpa) > 0) {
+            setStudentGpa(Number(gpa));
+          } else {
+            setStudentGpa(null);
+          }
+        } catch {
+          setStudentGpa(null);
+        }
+      };
+      loadProfile();
+    }, [user?.id]);
+
+    useEffect(() => {
+      if (!user?.id) return;
+      let lastHash = '';
+      const loadAttendance = async () => {
+        try {
+          const res = await fetch(`${API}/attendance/student/${user.id}`);
+          const data = await res.json();
+          if (!data.success) return;
+          const hash = JSON.stringify({
+            pct: data.analytics?.attendancePercentage,
+            n: data.records?.length ?? 0,
+            demo: data.isDemo,
+          });
+          if (hash === lastHash) return;
+          lastHash = hash;
+          if (
+            data.isDemo ||
+            !data.records?.length ||
+            data.analytics?.attendancePercentage == null
+          ) {
+            setAttendancePct(null);
+          } else {
+            setAttendancePct(Number(data.analytics.attendancePercentage));
+          }
+        } catch {
+          /* retry on next poll */
+        }
+      };
+      loadAttendance();
+      const timer = window.setInterval(loadAttendance, ATTENDANCE_POLL_MS);
+      return () => window.clearInterval(timer);
+    }, [user?.id]);
+
+    // Fetch real assignments for this student
     useEffect(() => {
       const fetchAssignments = async () => {
         if (!user?.id) { setLoadingAssign(false); return; }
@@ -199,8 +263,8 @@
             alarmFiredRef.current = true;
             playAlarm();
           }
-        } catch (err) {
-          console.warn('Could not fetch assignments:', err);
+        } catch {
+          /* optional */
         } finally {
           setLoadingAssign(false);
         }
@@ -275,7 +339,7 @@
             setSkillsRadar(DEFAULT_SKILLS);
             setWeakAreas([]);
             setRecommendations([]);
-            setAvgScoreDisplay('â€”');
+            setAvgScoreDisplay(NA);
             return;
           }
 
@@ -474,11 +538,12 @@
       .filter(a => new Date(a.dueDate) > new Date())
       .slice(0, 5);
 
-    const avgScore      = avgScoreDisplay;
-    const avgAttendance = enrolledCourses.length > 0
-      ? (enrolledCourses.reduce((s, c) => s + (c.attendance || 0), 0) / enrolledCourses.length).toFixed(1)
-      : 'â€”';
-    const totalCredits  = enrolledCourses.reduce((s, c) => s + (c.credits || 0), 0);
+    const avgScore = avgScoreDisplay;
+    const avgAttendance = formatPercent(attendancePct);
+    const totalCredits = enrolledCourses.reduce((s, c) => s + (Number(c.credits) || 0), 0);
+    const gpaDisplay = formatGpa(studentGpa);
+    const rankDisplay = formatRank(null);
+    const creditsLabel = formatCredits(totalCredits);
 
     return (
       <div className="p-8 bg-gray-50 min-h-screen">
@@ -522,15 +587,15 @@
               </div>
               <div>
                 <h3 className="text-2xl font-bold mb-1">{user?.name ?? 'Student'}</h3>
-                <p className="text-sm opacity-90">{user?.studentId ?? 'N/A'} Â· {user?.email}</p>
-                <p className="text-sm opacity-75">{user?.department ?? 'Department'} Â· Semester {user?.semester ?? 'â€”'}</p>
+                <p className="text-sm opacity-90">{user?.studentId ?? NA} · {user?.email}</p>
+                <p className="text-sm opacity-75">{user?.department ?? 'Department'} · Semester {user?.semester ?? NA}</p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
               <div className="text-right">
                 <p className="text-sm opacity-75">Current GPA</p>
-                <p className="text-3xl font-bold">â€”</p>
-                <p className="text-xs opacity-75">Rank: â€”</p>
+                <p className="text-3xl font-bold">{gpaDisplay}</p>
+                <p className="text-xs opacity-75">{rankDisplay}</p>
               </div>
               {/* AI Insights icon */}
               <button
@@ -544,22 +609,22 @@
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4 pt-6 border-t border-white/20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-white/20">
             <div>
               <p className="text-sm opacity-75 mb-1">Enrolled Courses</p>
-              <p className="text-2xl font-bold">{loadingCourses ? 'â€¦' : enrolledCourses.length}</p>
+              <p className="text-2xl font-bold">{loadingCourses ? '...' : enrolledCourses.length}</p>
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Avg Score</p>
-              <p className="text-2xl font-bold">{avgScore}{avgScore !== 'â€”' ? '%' : ''}</p>
+              <p className="text-2xl font-bold">{displayWithSuffix(avgScore, '%')}</p>
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Attendance</p>
-              <p className="text-2xl font-bold">{avgAttendance}{avgAttendance !== 'â€”' ? '%' : ''}</p>
+              <p className="text-2xl font-bold">{displayWithSuffix(avgAttendance, '%')}</p>
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Credits</p>
-              <p className="text-2xl font-bold">{totalCredits || 'â€”'}</p>
+              <p className="text-2xl font-bold">{isNA(creditsLabel) ? NA : creditsLabel}</p>
             </div>
           </div>
         </div>
@@ -590,7 +655,7 @@
                   const count  = quizStarSummary.breakdown[star - 1];
                   const pct    = quizStarSummary.total > 0 ? Math.round((count / quizStarSummary.total) * 100) : 0;
                   const colors: Record<number, string> = { 5: 'bg-green-500', 4: 'bg-blue-400', 3: 'bg-yellow-400', 2: 'bg-orange-400', 1: 'bg-red-400' };
-                  const labels: Record<number, string> = { 5: '81â€“100%', 4: '61â€“80%', 3: '41â€“60%', 2: '21â€“40%', 1: '0â€“20%' };
+                  const labels: Record<number, string> = { 5: '81-100%', 4: '61-80%', 3: '41-60%', 2: '21-40%', 1: '0-20%' };
                   return (
                     <div key={star} className="flex items-center gap-3">
                       <span className="text-amber-400 text-sm w-20 flex-shrink-0 font-medium">
@@ -663,7 +728,7 @@
                       </div>
                       <div className="flex items-center gap-1 mt-1 flex-wrap">
                         <span className="text-xs text-gray-400">
-                          {a.questions?.length || 0} questions Â· {a.totalMarks} marks
+                          {a.questions?.length || 0} questions · {a.totalMarks} marks
                         </span>
                       </div>
                     </div>
@@ -801,11 +866,11 @@
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <p className="text-xs text-gray-500">Grade</p>
-                      <p className="text-sm font-medium text-gray-900">{course.grade != null ? `${course.grade}%` : 'â€”'}</p>
+                      <p className="text-sm font-medium text-gray-900">{course.grade != null ? `${course.grade}%` : NA}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Credits</p>
-                      <p className="text-sm font-medium text-gray-900">{course.credits ?? 'â€”'}</p>
+                      <p className="text-sm font-medium text-gray-900">{course.credits ?? NA}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Students</p>
