@@ -1,0 +1,530 @@
+/* ================================================================
+   EduTrack LMS — Design System Tokens
+   ================================================================
+   A unified design token system for consistent theming across
+   all roles (Admin/Student/Teacher) with dark mode support.
+   ================================================================ */
+
+/* ============= FONT FAMILY ============= */
+:root {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ============= LIGHT MODE TOKENS ============= */
+:root {
+  /* --- Surfaces --- */
+  --background: #f8fafc;
+  --background-secondary: #f1f5f9;
+  --background-tertiary: #e2e8f0;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --input-background: #f8fafc;
+  --ring: #3b82f6;
+
+  /* --- Role Colors: Student (Blue) --- */
+  --student-50: #eff6ff;
+  --student-100: #dbeafe;
+  --student-200: #bfdbfe;
+  --student-300: #93c5fd;
+  --student-400: #60a5fa;
+  --student-500: #3b82f6;
+  --student-600: #2563eb;
+  --student-700: #1d4ed8;
+  --student-800: #1e40af;
+  --student-900: #1e3a8a;
+
+  /* --- Role Colors: Teacher (Green) --- */
+  --teacher-50: #f0fdf4;
+  --teacher-100: #dcfce7;
+  --teacher-200: #bbf7d0;
+  --teacher-300: #86efac;
+  --teacher-400: #4ade80;
+  --teacher-500: #22c55e;
+  --teacher-600: #16a34a;
+  --teacher-700: #15803d;
+  --teacher-800: #166534;
+  --teacher-900: #14532d;
+
+  /* --- Role Colors: Admin (Purple) --- */
+  --admin-50: #faf5ff;
+  --admin-100: #f3e8ff;
+  --admin-200: #e9d5ff;
+  --admin-300: #d8b4fe;
+  --admin-400: #c084fc;
+  --admin-500: #a855f7;
+  --admin-600: #9333ea;
+  --admin-700: #7c3aed;
+  --admin-800: #6d28d9;
+  --admin-900: #581c87;
+
+  /* --- Semantic Colors --- */
+  --success: #22c55e;
+  --success-light: #dcfce7;
+  --success-dark: #15803d;
+  --warning: #f59e0b;
+  --warning-light: #fef3c7;
+  --warning-dark: #92400e;
+  --error: #ef4444;
+  --error-light: #fee2e2;
+  --error-dark: #991b1b;
+  --info: #3b82f6;
+  --info-light: #dbeafe;
+  --info-dark: #1e40af;
+
+  /* --- Performance Levels --- */
+  --bronze: #CD7F32;
+  --bronze-bg: #fef3e2;
+  --silver: #94a3b8;
+  --silver-bg: #f1f5f9;
+  --gold: #eab308;
+  --gold-bg: #fef9c3;
+  --platinum: #818cf8;
+  --platinum-bg: #eef2ff;
+
+  /* --- Spacing Scale --- */
+  --space-0: 0;
+  --space-0-5: 0.125rem;
+  --space-1: 0.25rem;
+  --space-1-5: 0.375rem;
+  --space-2: 0.5rem;
+  --space-2-5: 0.625rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* --- Border Radius --- */
+  --radius-none: 0;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.2);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* Glow Shadows */
+  --shadow-glow-blue: 0 0 20px rgb(59 130 246 / 0.25), 0 0 40px rgb(59 130 246 / 0.1);
+  --shadow-glow-purple: 0 0 20px rgb(168 85 247 / 0.25), 0 0 40px rgb(168 85 247 / 0.1);
+  --shadow-glow-green: 0 0 20px rgb(34 197 94 / 0.25), 0 0 40px rgb(34 197 94 / 0.1);
+  --shadow-glow-amber: 0 0 20px rgb(245 158 11 / 0.25), 0 0 40px rgb(245 158 11 / 0.1);
+
+  /* --- Transitions --- */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slower: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- Glassmorphism --- */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-blur: 16px;
+
+  /* --- Neumorphism --- */
+  --neu-shadow-light: -6px -6px 14px rgba(255, 255, 255, 0.7);
+  --neu-shadow-dark: 6px 6px 14px rgba(0, 0, 0, 0.08);
+  --neu-shadow-pressed-light: inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+  --neu-shadow-pressed-dark: inset 4px 4px 8px rgba(0, 0, 0, 0.08);
+
+  /* --- Z-Index Scale --- */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-tooltip: 500;
+}
+
+/* ============= DARK MODE TOKENS ============= */
+.dark {
+  --background: #0c1222;
+  --background-secondary: #111a2e;
+  --background-tertiary: #182038;
+  --foreground: #f1f5f9;
+  --card: #151d30;
+  --card-foreground: #f1f5f9;
+  --popover: #151d30;
+  --popover-foreground: #f1f5f9;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #1e3050;
+  --input: #1e3050;
+  --input-background: #111a2e;
+  --ring: #60a5fa;
+
+  /* Dark glow shadows are more intense */
+  --shadow-glow-blue: 0 0 24px rgb(59 130 246 / 0.35), 0 0 48px rgb(59 130 246 / 0.15);
+  --shadow-glow-purple: 0 0 24px rgb(168 85 247 / 0.35), 0 0 48px rgb(168 85 247 / 0.15);
+  --shadow-glow-green: 0 0 24px rgb(34 197 94 / 0.35), 0 0 48px rgb(34 197 94 / 0.15);
+  --shadow-glow-amber: 0 0 24px rgb(245 158 11 / 0.35), 0 0 48px rgb(245 158 11 / 0.15);
+
+  /* Dark shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.25), 0 1px 2px -1px rgb(0 0 0 / 0.25);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.25);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.35), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.15);
+
+  /* Dark glassmorphism */
+  --glass-bg: rgba(21, 29, 48, 0.72);
+  --glass-bg-strong: rgba(21, 29, 48, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* Dark neumorphism */
+  --neu-shadow-light: -6px -6px 14px rgba(30, 41, 59, 0.5);
+  --neu-shadow-dark: 6px 6px 14px rgba(0, 0, 0, 0.4);
+  --neu-shadow-pressed-light: inset -4px -4px 8px rgba(30, 41, 59, 0.5);
+  --neu-shadow-pressed-dark: inset 4px 4px 8px rgba(0, 0, 0, 0.4);
+
+  /* Dark semantic backgrounds */
+  --success-light: rgba(34, 197, 94, 0.15);
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --error-light: rgba(239, 68, 68, 0.15);
+  --info-light: rgba(59, 130, 246, 0.15);
+
+  /* Dark performance level backgrounds */
+  --bronze-bg: rgba(205, 127, 50, 0.15);
+  --silver-bg: rgba(148, 163, 184, 0.15);
+  --gold-bg: rgba(234, 179, 8, 0.15);
+  --platinum-bg: rgba(129, 140, 248, 0.15);
+}
+
+
+/* ================================================================
+   UTILITY CLASSES
+   ================================================================ */
+
+/* --- Glassmorphism --- */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+}
+
+.glass-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* --- Neumorphism --- */
+.neu-card {
+  background: var(--card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--neu-shadow-light), var(--neu-shadow-dark);
+  transition: all var(--transition-base);
+}
+
+.neu-card:hover {
+  box-shadow: var(--neu-shadow-light), var(--neu-shadow-dark), var(--shadow-md);
+}
+
+.neu-pressed {
+  box-shadow: var(--neu-shadow-pressed-light), var(--neu-shadow-pressed-dark);
+}
+
+/* --- Modern Card --- */
+.ds-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.ds-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* --- Gradient Text --- */
+.ds-gradient-text {
+  background: linear-gradient(135deg, var(--admin-500), var(--student-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ds-gradient-text-admin {
+  background: linear-gradient(135deg, var(--admin-500), var(--admin-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ds-gradient-text-student {
+  background: linear-gradient(135deg, var(--student-500), var(--student-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ds-gradient-text-teacher {
+  background: linear-gradient(135deg, var(--teacher-500), var(--teacher-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+
+/* ================================================================
+   KEYFRAME ANIMATIONS
+   ================================================================ */
+
+/* Shimmer loading effect */
+@keyframes ds-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ds-shimmer {
+  background: linear-gradient(90deg, var(--muted) 25%, var(--background) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Slide up entrance */
+@keyframes ds-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ds-slide-up {
+  animation: ds-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Slide down entrance */
+@keyframes ds-slide-down {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ds-slide-down {
+  animation: ds-slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Fade in */
+@keyframes ds-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ds-fade-in {
+  animation: ds-fade-in 0.3s ease both;
+}
+
+/* Scale in */
+@keyframes ds-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.ds-scale-in {
+  animation: ds-scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Glow pulse (for AI features, notifications) */
+@keyframes ds-glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgb(168 85 247 / 0.3); }
+  50% { box-shadow: 0 0 24px rgb(168 85 247 / 0.5), 0 0 48px rgb(168 85 247 / 0.2); }
+}
+
+.ds-glow-pulse {
+  animation: ds-glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* Gradient background flow */
+@keyframes ds-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.ds-gradient-shift {
+  background-size: 200% 200%;
+  animation: ds-gradient-shift 4s ease infinite;
+}
+
+/* Float effect */
+@keyframes ds-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.ds-float {
+  animation: ds-float 3s ease-in-out infinite;
+}
+
+/* Spin slow (for loading indicators) */
+@keyframes ds-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ds-spin-slow {
+  animation: ds-spin-slow 3s linear infinite;
+}
+
+/* Counter animation for stat numbers */
+@keyframes ds-count-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.ds-count-pop {
+  animation: ds-count-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Notification badge pulse */
+@keyframes ds-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.ds-badge-pulse {
+  animation: ds-badge-pulse 2s ease-in-out infinite;
+}
+
+
+/* ================================================================
+   SCROLL-TO-TOP BUTTON
+   ================================================================ */
+
+.ds-scroll-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: var(--z-sticky);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+  opacity: 0;
+  transform: translateY(1rem);
+  pointer-events: none;
+}
+
+.ds-scroll-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.ds-scroll-top:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+
+/* ================================================================
+   FOCUS & ACCESSIBILITY
+   ================================================================ */
+
+/* Focus ring for keyboard navigation */
+.ds-focus-ring:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+/* Skip to content link (screen readers) */
+.ds-skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  padding: 0.5rem 1rem;
+  background: var(--foreground);
+  color: var(--background);
+  z-index: 9999;
+  transition: top 0.2s;
+}
+
+.ds-skip-link:focus {
+  top: 0;
+}
+
+
+/* ================================================================
+   RESPONSIVE BREAKPOINT UTILITIES
+   ================================================================ */
+
+/* Hide on mobile */
+@media (max-width: 767px) {
+  .ds-hide-mobile { display: none !important; }
+}
+
+/* Hide on desktop */
+@media (min-width: 768px) {
+  .ds-hide-desktop { display: none !important; }
+}
+
+/* Mobile-first sidebar overlay */
+@media (max-width: 1023px) {
+  .ds-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: var(--z-overlay);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base);
+  }
+
+  .ds-sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
