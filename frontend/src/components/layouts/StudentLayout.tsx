@@ -1,6 +1,6 @@
 import { Outlet, NavLink } from 'react-router';
 import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
 
