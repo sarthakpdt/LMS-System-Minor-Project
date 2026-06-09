@@ -316,9 +316,10 @@ interface AlertProps {
   title?: string;
   children: React.ReactNode;
   onClose?: () => void;
+  className?: string;
 }
 
-export const Alert: React.FC<AlertProps> = ({ variant = 'info', title, children, onClose }) => {
+export const Alert: React.FC<AlertProps> = ({ variant = 'info', title, children, onClose, className = '' }) => {
   const variantClasses = {
     info: 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
     success: 'bg-green-50 border-green-200 text-green-900 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300',
@@ -332,7 +333,7 @@ export const Alert: React.FC<AlertProps> = ({ variant = 'info', title, children,
       initial="initial"
       animate="animate"
       exit="exit"
-      className={`border rounded-xl p-4 ${variantClasses[variant]}`}
+      className={`border rounded-xl p-4 ${variantClasses[variant]} ${className}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
