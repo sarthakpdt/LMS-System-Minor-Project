@@ -101,8 +101,18 @@ export function StudentLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <Outlet />
+      <main className="flex-1 overflow-auto relative">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[0] flex items-center justify-center">
+          <img
+            src="/illustrations/student-hero.png"
+            alt="Student background illustration"
+            className="w-full max-w-[750px] h-auto opacity-[0.05] dark:opacity-[0.02] object-contain select-none filter saturate-[0.3]"
+            draggable={false}
+          />
+        </div>
+        <div className="relative z-[1]">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
