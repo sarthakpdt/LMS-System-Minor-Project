@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Eye, EyeOff, Mail, Lock, User, Phone, GraduationCap, Hash, ArrowRight,
-  Sparkles, Building2, Brain, BookOpen, Beaker, Shield, ChevronRight, Check
+  Sparkles, Building2, Brain, BookOpen, Beaker, Shield, ChevronRight, Check,
+  PenTool, Lightbulb, ClipboardCheck, Users, Award, BarChart3, Settings, TrendingUp, Database, Star, Presentation
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
@@ -315,6 +316,20 @@ export function StudentAuthNew() {
     }
   };
 
+  // ── Subject selected handler (teacher login with multiple courses) ────────
+  const handleSubjectSelected = (course: any) => {
+    if (course) {
+      setActiveSubject({
+        courseId: String(course.courseId || course._id),
+        courseCode: course.courseCode,
+        courseName: course.courseName,
+        semester: course.semester,
+      });
+    }
+    setShowSubjectPicker(false);
+    navigate('/');
+  };
+
   // Color config mapping by role for dynamic visual feedback
   const roleThemes = {
     student: {
@@ -325,6 +340,13 @@ export function StudentAuthNew() {
       glow: 'shadow-glow-blue',
       icon: GraduationCap,
       label: 'Student',
+      bgGradient: 'from-blue-600 via-cyan-500 to-indigo-600',
+      bgGradientDark: 'dark:from-blue-900 dark:via-cyan-900 dark:to-indigo-950',
+      heroImage: '/illustrations/student-hero.png',
+      headline: 'Welcome Back, Student',
+      subtitle: 'Continue Your Learning Journey',
+      tagline: 'Track Progress, Complete Assignments, Achieve More',
+      floatingIcons: [BookOpen, GraduationCap, Brain, Beaker, PenTool, Lightbulb],
     },
     teacher: {
       accent: 'emerald',
@@ -334,6 +356,13 @@ export function StudentAuthNew() {
       glow: 'shadow-glow-green',
       icon: Beaker,
       label: 'Teacher',
+      bgGradient: 'from-green-600 via-emerald-500 to-teal-600',
+      bgGradientDark: 'dark:from-green-900 dark:via-emerald-900 dark:to-teal-950',
+      heroImage: '/illustrations/teacher-hero.png',
+      headline: 'Welcome Back, Educator',
+      subtitle: 'Inspire, Teach, and Guide',
+      tagline: 'Manage Courses and Empower Students',
+      floatingIcons: [BookOpen, Presentation, ClipboardCheck, Users, Star, Award],
     },
     admin: {
       accent: 'purple',
@@ -343,43 +372,117 @@ export function StudentAuthNew() {
       glow: 'shadow-glow-purple',
       icon: Shield,
       label: 'Admin',
+      bgGradient: 'from-purple-600 via-violet-500 to-indigo-600',
+      bgGradientDark: 'dark:from-purple-900 dark:via-violet-900 dark:to-indigo-950',
+      heroImage: '/illustrations/admin-hero.png',
+      headline: 'Welcome Back, Administrator',
+      subtitle: 'Manage and Monitor Your Institution',
+      tagline: 'Control, Analyze, and Lead',
+      floatingIcons: [BarChart3, Shield, Settings, Users, Database, TrendingUp],
     },
   };
 
   const currentTheme = roleThemes[role];
 
+  // Floating icon positions (fixed, pre-computed for 6 icons)
+  const iconPositions = [
+    { top: '8%', left: '6%', delay: 0, duration: 6, size: 28 },
+    { top: '18%', right: '8%', delay: 1.2, duration: 7, size: 22 },
+    { bottom: '22%', left: '4%', delay: 0.6, duration: 8, size: 24 },
+    { bottom: '12%', right: '6%', delay: 1.8, duration: 5.5, size: 26 },
+    { top: '45%', left: '3%', delay: 2.4, duration: 7.5, size: 20 },
+    { top: '60%', right: '4%', delay: 0.3, duration: 6.5, size: 22 },
+  ];
+
   return (
-    <PageTransition className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-pink-50 dark:from-slate-950 dark:via-gray-950 dark:to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Floating Orbs with Framer Motion */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <PageTransition className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* ── Role-Specific Animated Gradient Background ── */}
+      <AnimatePresence mode="wait">
         <motion.div
-          animate={{
-            x: [0, 80, -50, 0],
-            y: [0, -70, 80, 0],
-            scale: [1, 1.15, 0.9, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute w-[450px] h-[450px] bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full blur-[100px]"
+          key={`bg-${role}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className={`absolute inset-0 bg-gradient-to-br ${currentTheme.bgGradient} ${currentTheme.bgGradientDark}`}
+          style={{ backgroundSize: '400% 400%', animation: 'ds-gradient-shift 12s ease infinite' }}
+        />
+      </AnimatePresence>
+
+      {/* ── Floating Orbs (ambient glow, role-colored) ── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+        <motion.div
+          animate={{ x: [0, 80, -50, 0], y: [0, -70, 80, 0], scale: [1, 1.15, 0.9, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute w-[500px] h-[500px] bg-white/10 rounded-full blur-[120px]"
           style={{ top: '-10%', left: '-5%' }}
         />
         <motion.div
-          animate={{
-            x: [0, -80, 60, 0],
-            y: [0, 80, -60, 0],
-            scale: [1, 0.9, 1.1, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute w-[450px] h-[450px] bg-gradient-to-br from-pink-500/10 to-blue-500/20 rounded-full blur-[100px]"
+          animate={{ x: [0, -80, 60, 0], y: [0, 80, -60, 0], scale: [1, 0.9, 1.1, 1] }}
+          transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute w-[500px] h-[500px] bg-black/5 dark:bg-white/5 rounded-full blur-[120px]"
           style={{ bottom: '-15%', right: '-5%' }}
         />
+      </div>
+
+      {/* ── Floating Role-Specific SVG Icons ── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`icons-${role}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0"
+          >
+            {currentTheme.floatingIcons.map((Icon, i) => {
+              const pos = iconPositions[i];
+              return (
+                <motion.div
+                  key={i}
+                  className="absolute text-white/[0.12] dark:text-white/[0.08]"
+                  style={{
+                    top: pos.top,
+                    left: pos.left,
+                    right: pos.right,
+                    bottom: pos.bottom,
+                  }}
+                  animate={{
+                    y: [0, -18, 0, 12, 0],
+                    rotate: [0, 5, -3, 5, 0],
+                  }}
+                  transition={{
+                    duration: pos.duration,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: pos.delay,
+                  }}
+                >
+                  <Icon size={pos.size} strokeWidth={1.5} />
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── Hero Illustration (behind card, reduced opacity) ── */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[3]">
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={`hero-${role}`}
+            src={currentTheme.heroImage}
+            alt={`${role} illustration`}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 0.85, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-[700px] max-h-[85vh] w-auto h-auto object-contain select-none"
+            style={{ filter: 'saturate(0.6) brightness(1.2)' }}
+            draggable={false}
+          />
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
@@ -392,7 +495,7 @@ export function StudentAuthNew() {
         )}
       </AnimatePresence>
 
-      {/* Main Card Wrapper */}
+      {/* Main Card Wrapper — stays in exact same position */}
       <motion.div
         layout
         initial={{ opacity: 0, scale: 0.96 }}
@@ -404,25 +507,39 @@ export function StudentAuthNew() {
           glass
           noPadding
           hover={false}
-          className={`w-full max-w-md ${!isLogin && (role === 'student' || role === 'teacher') ? 'md:max-w-2xl' : 'md:max-w-md'} shadow-2xl p-6 md:p-8 backdrop-blur-xl border border-white/30 dark:border-gray-800/50 bg-white/70 dark:bg-gray-900/70 transition-all duration-300 ${currentTheme.glow}`}
+          className={`w-full max-w-md ${!isLogin && (role === 'student' || role === 'teacher') ? 'md:max-w-2xl' : 'md:max-w-md'} shadow-2xl p-6 md:p-8 backdrop-blur-2xl border border-white/25 dark:border-white/10 bg-white/80 dark:bg-gray-900/75 transition-all duration-300 ${currentTheme.glow}`}
         >
-          {/* Header Branding */}
+          {/* Header Branding — now role-aware messaging */}
           <div className="flex flex-col items-center text-center mb-6">
             <motion.div
               layout
-              className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${currentTheme.gradient} text-white mb-3 shadow-lg`}
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${currentTheme.gradient} text-white mb-3 shadow-lg`}
             >
-              <currentTheme.icon className="w-6 h-6 animate-pulse" />
+              <currentTheme.icon className="w-7 h-7" />
             </motion.div>
-            <h1 className="text-2xl font-black tracking-tight text-gray-950 dark:text-white flex items-center gap-1.5 justify-center">
-              <span>EduTrack LMS</span>
-              <span className={`text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 font-semibold border border-gray-200 dark:border-gray-700 ${currentTheme.text}`}>
-                {currentTheme.label}
-              </span>
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {isLogin ? `Log in to access your portal` : `Create a new ${role} account`}
-            </p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`heading-${role}-${isLogin}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25 }}
+                className="text-center"
+              >
+                <h1 className="text-2xl font-black tracking-tight text-gray-950 dark:text-white flex items-center gap-1.5 justify-center">
+                  <span>EduTrack LMS</span>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full bg-gray-100/80 dark:bg-gray-800/80 font-semibold border border-gray-200/50 dark:border-gray-700/50 ${currentTheme.text}`}>
+                    {currentTheme.label}
+                  </span>
+                </h1>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mt-1.5">
+                  {isLogin ? currentTheme.headline : `Create a new ${role} account`}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  {isLogin ? currentTheme.subtitle : currentTheme.tagline}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Role Segment Selector (Floating Slider Animation) */}
