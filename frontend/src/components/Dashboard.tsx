@@ -3,11 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Users, BookOpen, FileText, TrendingUp, Award,
   ArrowUp, AlertCircle, ChevronDown, ChevronUp, Loader2,
-  Clock, Star, Send, CheckCircle, Brain,
+  Clock, Star, Send, CheckCircle, Brain, UserCheck,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import { StudyMaterials }            from './StudyMaterials';
 import NotificationsPanel            from './teacher/NotificationsPanel';
@@ -18,6 +18,7 @@ import AttendanceManager             from './teacher/AttendanceManager';
 import StudentAttendance             from './student/StudentAttendance';
 import AnalyticsAdmin                from './admin/Analytics';
 import TimetableManager              from './admin/TimetableManager';
+import { toast }                     from 'sonner';
 
 const BASE = 'http://localhost:5000/api/admin';
 const API  = 'http://localhost:5000/api';
@@ -1005,86 +1006,458 @@ function TeacherDashboard() {
 // ─────────────────────────────────────────────────────────────
 function AdminDashboard() {
   const { user } = useAuth();
-  const [stats,     setStats]     = useState<any>({});
-  const [loading,   setLoading]   = useState(true);
+  const [stats, setStats] = useState<any>({});
+  const [pendingStudents, setPendingStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('home');
 
+  const loadStats = async () => {
+    try {
+      const res = await fetch(`${BASE}/dashboard-stats`, {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStats(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadPending = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/admin/students/pending', {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingStudents((data.data || []).slice(0, 3).map((s: any) => ({ ...s, id: s._id })));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
+    const loadAll = async () => {
       setLoading(true);
-      try {
-        const res  = await fetch(`${BASE}/dashboard-stats`);
-        const data = await res.json();
-        setStats(data.data || data);
-      } catch {}
-      finally { setLoading(false); }
+      await Promise.all([loadStats(), loadPending()]);
+      setLoading(false);
     };
-    load();
-  }, []);
+    if (user?.token) {
+      loadAll();
+    }
+  }, [user]);
+
+  const handleApprove = async (studentId: string) => {
+    setApprovingId(studentId);
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/students/${studentId}/approve`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ adminId: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Student approved!', {
+          description: 'The student can now login and access the platform.',
+        });
+        await Promise.all([loadStats(), loadPending()]);
+      } else {
+        toast.error('Approval failed', { description: data.message });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error during approval');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (studentId: string) => {
+    setRejectingId(studentId);
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/students/${studentId}/reject`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ adminId: user.id, reason: 'Rejected via dashboard quick action' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Student rejected', {
+          description: 'The student registration has been rejected.',
+        });
+        await Promise.all([loadStats(), loadPending()]);
+      } else {
+        toast.error('Rejection failed', { description: data.message });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error during rejection');
+    } finally {
+      setRejectingId(null);
+    }
+  };
 
   const tabs = [
-    { id: 'home',        label: '🏠 Home' },
-    { id: 'analytics',   label: '📊 Analytics' },
-    { id: 'timetable',   label: '📅 Timetable' },
-    { id: 'materials',   label: '📚 Materials' },
+    { id: 'home', label: '🏠 Home' },
+    { id: 'analytics', label: '📊 Analytics' },
+    { id: 'timetable', label: '📅 Timetable' },
+    { id: 'materials', label: '📚 Materials' },
     { id: 'assignments', label: '📝 Assignments' },
   ];
 
+  // Donut chart data
+  const chartData = [
+    { name: 'Approved', value: stats.students?.approved || 0, color: '#8b5cf6' },
+    { name: 'Pending', value: stats.students?.pending || 0, color: '#f59e0b' },
+    { name: 'Rejected', value: stats.students?.rejected || 0, color: '#ef4444' },
+  ].filter(item => item.value > 0);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } }
+  };
+
   return (
-    <div className="p-8">
-      <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      {/* Tabs Menu */}
+      <div className="flex gap-2 border-b border-gray-200 dark:border-slate-800 overflow-x-auto pb-px">
         {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-5 py-3 text-sm font-semibold rounded-t-xl transition-all duration-200 whitespace-nowrap -mb-px border-b-2 ${
               activeTab === tab.id
-                ? 'bg-white border border-b-white border-gray-200 text-indigo-600 -mb-px'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}>
+                ? 'border-purple-600 text-purple-600 dark:text-purple-400 font-bold bg-purple-500/5 dark:bg-purple-400/5'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+            }`}
+          >
             {tab.label}
           </button>
         ))}
       </div>
 
       {activeTab === 'home' && (
-        <>
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-6 text-white mb-8 shadow-lg">
-            <h2 className="text-2xl font-bold mb-1">Admin Dashboard</h2>
-            <p className="text-gray-300 text-sm">System overview and management</p>
-          </div>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-8"
+        >
+          {/* Welcome Banner */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 dark:from-purple-950 dark:via-indigo-950 dark:to-indigo-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group"
+          >
+            {/* Background elements */}
+            <div className="absolute right-0 top-0 -mt-8 -mr-8 w-48 h-48 rounded-full bg-white/5 blur-3xl group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
+            <div className="absolute left-1/2 bottom-0 w-32 h-32 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {[
-              { label: 'Total Students', value: stats.totalStudents  || 0, icon: Users,    color: 'bg-blue-500'   },
-              { label: 'Total Teachers', value: stats.totalTeachers  || 0, icon: Award,    color: 'bg-green-500'  },
-              { label: 'Total Courses',  value: stats.totalCourses   || 0, icon: BookOpen, color: 'bg-purple-500' },
-              { label: 'Pending',        value: stats.pendingStudents || 0, icon: Clock,   color: 'bg-orange-500' },
-            ].map((s, i) => (
-              <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
-                  <s.icon className="w-5 h-5 text-white" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h2 className="text-3xl font-black mb-2 tracking-wide">Hello, {user?.name?.split(' ')[0] || 'Administrator'}!</h2>
+                <p className="text-purple-100 text-sm md:text-base font-medium max-w-md">
+                  Welcome to your command center. Everything is running smoothly. Take a look at your daily overview below.
+                </p>
+              </div>
+              <div className="flex items-center gap-4 bg-white/10 dark:bg-slate-900/40 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 self-start md:self-auto shadow-inner">
+                <div className="text-center">
+                  <p className="text-3xl font-black leading-none">{stats.courses?.total || 0}</p>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-purple-200 mt-1">Active Courses</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-0.5">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+                <div className="w-px h-8 bg-white/20" />
+                <div className="text-center">
+                  <p className="text-3xl font-black leading-none">{stats.students?.pending || 0}</p>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-purple-200 mt-1">Pending Approvals</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Metric Cards Grid */}
+          <motion.div
+            variants={itemVariants}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {[
+              {
+                label: 'Total Students',
+                value: stats.students?.total || 0,
+                icon: Users,
+                textColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30',
+                description: `${stats.students?.approved || 0} approved students`
+              },
+              {
+                label: 'Total Teachers',
+                value: stats.teachers?.total || 0,
+                icon: Award,
+                textColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
+                description: `${stats.teachers?.approved || 0} active teachers`
+              },
+              {
+                label: 'Total Courses',
+                value: stats.courses?.total || 0,
+                icon: BookOpen,
+                textColor: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30',
+                description: 'Across all departments'
+              },
+              {
+                label: 'Pending Approvals',
+                value: stats.students?.pending || 0,
+                icon: Clock,
+                textColor: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30',
+                description: 'Requires admin attention'
+              },
+            ].map((s, idx) => (
+              <div
+                key={idx}
+                className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-lg transition-all duration-300 flex items-center gap-5 group relative overflow-hidden"
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${s.textColor}`}>
+                  <s.icon className="w-6 h-6 animate-pulse-slow" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-3xl font-black text-gray-900 dark:text-white leading-none mb-1.5">{loading ? '—' : s.value}</p>
+                  <p className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">{s.label}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1 truncate">{s.description}</p>
+                </div>
               </div>
             ))}
+          </motion.div>
+
+          {/* Core Body Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Quick Approvals (Left 2 Columns) */}
+            <motion.div
+              variants={itemVariants}
+              className="lg:col-span-2 space-y-6"
+            >
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm overflow-hidden flex flex-col h-full">
+                <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    Pending Approvals Request
+                  </h3>
+                  <button
+                    onClick={() => setActiveTab('home')}
+                    className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                  >
+                    Quick Feed
+                  </button>
+                </div>
+
+                <div className="p-6 flex-1 flex flex-col justify-center">
+                  {loading ? (
+                    <div className="text-center py-12 text-sm text-gray-400">Loading registrations...</div>
+                  ) : pendingStudents.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-purple-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-purple-100 dark:border-slate-800">
+                        <CheckCircle className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <p className="font-bold text-gray-800 dark:text-slate-200">System is fully approved!</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">All registrations processed.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {pendingStudents.map(student => (
+                        <div
+                          key={student.id}
+                          className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 hover:border-purple-500/20 transition-all gap-4"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <span className="font-bold text-purple-700 dark:text-purple-400 text-sm">
+                                {student.name?.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{student.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                                {student.email} · {student.department} Sem {student.semester}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              disabled={approvingId === student.id || rejectingId === student.id}
+                              onClick={() => handleApprove(student.id)}
+                              className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center disabled:opacity-50"
+                            >
+                              {approvingId === student.id ? '...' : 'Approve'}
+                            </button>
+                            <button
+                              disabled={approvingId === student.id || rejectingId === student.id}
+                              onClick={() => handleReject(student.id)}
+                              className="px-3.5 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                            >
+                              {rejectingId === student.id ? '...' : 'Reject'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Recharts Pie Chart (Right 1 Column) */}
+            <motion.div
+              variants={itemVariants}
+              className="space-y-6"
+            >
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm p-6 flex flex-col h-full justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">Student Ratios</h3>
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Approval Overview</p>
+                </div>
+
+                <div className="h-48 my-4 relative flex items-center justify-center">
+                  {loading ? (
+                    <div className="text-xs text-gray-400">Loading chart...</div>
+                  ) : chartData.length === 0 ? (
+                    <div className="text-xs text-gray-400">No chart data available.</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          innerRadius={50}
+                          outerRadius={70}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                  {/* Center Total Count label inside donut */}
+                  {!loading && (
+                    <div className="absolute text-center">
+                      <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">
+                        {stats.students?.total || 0}
+                      </p>
+                      <p className="text-[9px] uppercase font-bold tracking-wider text-gray-400 mt-1">Total</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Legend list */}
+                <div className="space-y-2.5">
+                  {[
+                    { label: 'Approved Students', value: stats.students?.approved || 0, color: 'bg-purple-500' },
+                    { label: 'Pending Registrations', value: stats.students?.pending || 0, color: 'bg-amber-500' },
+                    { label: 'Rejected Applications', value: stats.students?.rejected || 0, color: 'bg-red-500' },
+                  ].map((leg, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${leg.color}`} />
+                        <span className="font-semibold text-gray-600 dark:text-slate-400">{leg.label}</span>
+                      </div>
+                      <span className="font-black text-gray-900 dark:text-white">{loading ? '—' : leg.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-              <span className="text-lg">🔔</span>
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-              <span className="text-xs text-gray-400 ml-auto">Send announcements to your users</span>
+          {/* Quick Actions Panel */}
+          <motion.div
+            variants={itemVariants}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            {[
+              {
+                title: 'Add New Course',
+                desc: 'Configure semesters and departments',
+                action: () => setActiveTab('materials'),
+                emoji: '📚',
+                bg: 'hover:border-purple-500/30'
+              },
+              {
+                title: 'Register Faculty',
+                desc: 'Assign teachers to specific subjects',
+                action: () => toast.info('Navigate to Teachers menu from the sidebar'),
+                emoji: '👨‍🏫',
+                bg: 'hover:border-indigo-500/30'
+              },
+              {
+                title: 'View Full Reports',
+                desc: 'Examine detailed metrics and analytics',
+                action: () => setActiveTab('analytics'),
+                emoji: '📊',
+                bg: 'hover:border-pink-500/30'
+              }
+            ].map((act, idx) => (
+              <div
+                key={idx}
+                onClick={act.action}
+                className={`bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-md cursor-pointer transition-all duration-300 flex items-center gap-4 group ${act.bg}`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform">
+                  {act.emoji}
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    {act.title}
+                  </h4>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{act.desc}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Notifications / Announcements Panel */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm"
+          >
+            <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center gap-2">
+              <span className="text-lg">📢</span>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Global Announcements</h3>
+              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider ml-auto">
+                System Broadcast
+              </span>
             </div>
-            <div className="p-5">
+            <div className="p-6">
               <NotificationsPanel userId={user?.id} role="admin" userName={user?.name} isAdmin />
             </div>
-          </div>
-        </>
+          </motion.div>
+        </motion.div>
       )}
 
-      {activeTab === 'analytics'   && <AnalyticsAdmin />}
-      {activeTab === 'timetable'   && <TimetableManager />}
-      {activeTab === 'materials'   && <StudyMaterials />}
+      {activeTab === 'analytics' && <AnalyticsAdmin />}
+      {activeTab === 'timetable' && <TimetableManager />}
+      {activeTab === 'materials' && <StudyMaterials />}
       {activeTab === 'assignments' && <Assignments />}
     </div>
   );

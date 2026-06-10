@@ -1,4 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Users, AlertCircle, BarChart3, TrendingUp,
+  Award, ShieldAlert, CheckCircle2, PieChart as PieIcon
+} from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -28,6 +37,15 @@ const normalizeLevel = (level?: string): 'Weak' | 'Medium' | 'Advanced' | null =
   if (v === 'intermediate' || v === 'medium') return 'Medium';
   if (v === 'advanced') return 'Advanced';
   return null;
+};
+
+const DEPT_LABELS: Record<string, string> = {
+  CS: 'Computer Science', IT: 'Information Technology',
+  ECE: 'Electronics & Comm.', EE: 'Electrical Eng.',
+  ME: 'Mechanical Eng.', CE: 'Civil Eng.',
+  CH: 'Chemical Eng.', BT: 'Biotechnology',
+  MBA: 'MBA', MCA: 'MCA',
+  Other: 'Other'
 };
 
 const Analytics: React.FC = () => {
@@ -96,33 +114,74 @@ const Analytics: React.FC = () => {
 
   const topN = (arr: StudentRow[], n = 5) => [...arr].sort((a, b) => b.score - a.score).slice(0, n);
 
-  if (loading) return <div style={{ padding: '48px', textAlign: 'center', color: '#6b7280' }}>Loading analytics...</div>;
-  if (error) return <div style={{ padding: '24px', color: '#b91c1c' }}>{error}</div>;
-
   const topWeak = topN(totals.weak, 5);
   const topMedium = topN(totals.medium, 5);
   const topAdvanced = topN(totals.advanced, 5);
   const topOverall = topN(totals.sortedAll, 10);
 
-  const ListCard = ({ title, subtitle, rows, color }: { title: string; subtitle: string; rows: StudentRow[]; color: string }) => (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ padding: '16px 18px', borderBottom: '1px solid #f3f4f6', background: color }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{title}</h3>
-        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#4b5563' }}>{subtitle}</p>
+  // Chart configs
+  const barChartData = [
+    { name: 'Weak', count: totals.weak.length, fill: '#ef4444' },
+    { name: 'Medium', count: totals.medium.length, fill: '#f59e0b' },
+    { name: 'Advanced', count: totals.advanced.length, fill: '#10b981' }
+  ];
+
+  const pieChartData = [
+    { name: 'Weak (< 50%)', value: totals.weak.length, color: '#ef4444' },
+    { name: 'Medium (50%-75%)', value: totals.medium.length, color: '#f59e0b' },
+    { name: 'Advanced (>= 75%)', value: totals.advanced.length, color: '#10b981' }
+  ].filter(item => item.value > 0);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-32 text-gray-500 dark:text-slate-400 gap-2">
+      <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <span>Loading analytics console...</span>
+    </div>
+  );
+
+  if (error) return (
+    <div className="p-8 max-w-lg mx-auto mt-12 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400 rounded-3xl flex items-center gap-3">
+      <AlertCircle className="w-5 h-5 flex-shrink-0" />
+      <span className="text-sm font-medium">{error}</span>
+    </div>
+  );
+
+  const ListCard = ({ title, subtitle, rows, gradientHeader, borderStyle, icon: Icon }: { title: string; subtitle: string; rows: StudentRow[]; gradientHeader: string; borderStyle: string; icon: any }) => (
+    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs overflow-hidden flex flex-col justify-between">
+      <div className={`p-5 text-white ${gradientHeader} flex items-center justify-between`}>
+        <div>
+          <h3 className="text-sm font-black tracking-wide">{title}</h3>
+          <p className="text-[10px] text-white/80 font-medium mt-0.5">{subtitle}</p>
+        </div>
+        <Icon className="w-5 h-5 text-white/90" />
       </div>
       {rows.length === 0 ? (
-        <div style={{ padding: 16, fontSize: 13, color: '#6b7280' }}>No students in this bucket.</div>
+        <div className="p-6 text-center text-xs text-gray-400 dark:text-slate-500">No students in this bucket.</div>
       ) : (
-        <div style={{ padding: 12, display: 'grid', gap: 8 }}>
+        <div className="p-5 space-y-3">
           {rows.map((s, i) => (
-            <div key={s._id} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{i + 1}. {s.name}</div>
-                <div style={{ fontSize: 11, color: '#6b7280' }}>{s.studentId || s.email}</div>
+            <div key={s._id} className={`flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-slate-900/30 border border-transparent ${borderStyle} transition-all`}>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                  {i + 1}. {s.name}
+                </div>
+                <div className="text-[10px] text-gray-400 dark:text-slate-500 font-mono mt-0.5">
+                  {s.studentId || 'N/A'}
+                </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{s.score}%</div>
-                <div style={{ fontSize: 11, color: '#6b7280' }}>GPA {Number(s.gpa || 0).toFixed(2)}</div>
+              <div className="text-right">
+                <div className="text-xs font-black text-gray-950 dark:text-white">{s.score}%</div>
+                <div className="text-[10px] text-gray-400 dark:text-slate-500 font-medium mt-0.5">GPA {s.gpa?.toFixed(2)}</div>
               </div>
             </div>
           ))}
@@ -132,72 +191,221 @@ const Analytics: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ fontWeight: 700, fontSize: 24, marginBottom: 20 }}>📊 Student Bucket Analytics</h2>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-        <div style={{ background: '#eff6ff', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{students.length}</div>
-          <div style={{ fontSize: 12, color: '#4b5563' }}>Total Approved Students</div>
-        </div>
-        <div style={{ background: '#fef2f2', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{totals.weak.length}</div>
-          <div style={{ fontSize: 12, color: '#4b5563' }}>Weak Bucket</div>
-        </div>
-        <div style={{ background: '#fffbeb', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{totals.medium.length}</div>
-          <div style={{ fontSize: 12, color: '#4b5563' }}>Medium Bucket</div>
-        </div>
-        <div style={{ background: '#ecfdf5', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{totals.advanced.length}</div>
-          <div style={{ fontSize: 12, color: '#4b5563' }}>Advanced Bucket</div>
-        </div>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="p-8 max-w-7xl mx-auto space-y-8"
+    >
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-wide flex items-center gap-3">
+          📊 Student Performance Analytics
+        </h1>
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1.5">
+          Global academic health metrics, score aggregates, and student bucket distributions.
+        </p>
       </div>
 
-      <div style={{ marginBottom: 20, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Overall Class Snapshot</div>
-        <div style={{ fontSize: 13, color: '#4b5563' }}>
-          Average score: <strong>{totals.avgScore}%</strong> | Weak: <strong>{totals.weak.length}</strong> | Medium: <strong>{totals.medium.length}</strong> | Advanced: <strong>{totals.advanced.length}</strong>
-        </div>
-      </div>
+      {/* Metric Cards Row */}
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        {[
+          { label: 'Total Approved Students', value: students.length, icon: Users, color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/30 border-purple-200/50 dark:border-purple-800/20' },
+          { label: 'Weak Bucket Students', value: totals.weak.length, icon: ShieldAlert, color: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30 border-red-200/50 dark:border-red-800/20' },
+          { label: 'Medium Bucket Students', value: totals.medium.length, icon: TrendingUp, color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-800/20' },
+          { label: 'Advanced Bucket Students', value: totals.advanced.length, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-800/20' },
+        ].map((c, idx) => (
+          <div key={idx} className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-200/80 dark:border-slate-700/50 shadow-xs flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${c.color}`}>
+              <c.icon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-3xl font-black text-gray-900 dark:text-white leading-none mb-1.5">{c.value}</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{c.label}</p>
+            </div>
+          </div>
+        ))}
+      </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
-        <ListCard title="Top Weak Students" subtitle="Highest performers within Weak bucket" rows={topWeak} color="#fef2f2" />
-        <ListCard title="Top Medium Students" subtitle="Highest performers within Medium bucket" rows={topMedium} color="#fffbeb" />
-        <ListCard title="Top Advanced Students" subtitle="Top performers in Advanced bucket" rows={topAdvanced} color="#ecfdf5" />
-      </div>
-
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 18px', borderBottom: '1px solid #f3f4f6' }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>🏆 Top Students Overall</h3>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#4b5563' }}>Across all three buckets</p>
+      {/* Score Snapshot Banner */}
+      <motion.div
+        variants={itemVariants}
+        className="bg-indigo-50 border border-indigo-100 dark:bg-slate-850 dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between gap-4 flex-wrap"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-xl">
+            ✨
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Class Academic Snapshot</h3>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+              The overall average score of the approved student cohort is <strong className="text-indigo-600 dark:text-indigo-400">{totals.avgScore}%</strong>.
+            </p>
+          </div>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, color: '#6b7280' }}>Rank</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, color: '#6b7280' }}>Student</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, color: '#6b7280' }}>ID</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, color: '#6b7280' }}>Bucket</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, color: '#6b7280' }}>Score</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, color: '#6b7280' }}>GPA</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topOverall.map((s, i) => (
-              <tr key={s._id} style={{ borderTop: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '10px 14px', fontWeight: 700 }}>{i + 1}</td>
-                <td style={{ padding: '10px 14px' }}>{s.name}</td>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{s.studentId || '-'}</td>
-                <td style={{ padding: '10px 14px' }}>{s.bucket}</td>
-                <td style={{ padding: '10px 14px' }}>{s.score}%</td>
-                <td style={{ padding: '10px 14px' }}>{Number(s.gpa || 0).toFixed(2)}</td>
-              </tr>
+      </motion.div>
+
+      {/* Visual Analytics Graphs */}
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+      >
+        {/* Bar Chart Bucket Count */}
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm space-y-4">
+          <div>
+            <h3 className="font-bold text-base text-gray-900 dark:text-white">Bucket Distribution</h3>
+            <p className="text-xs text-gray-400 dark:text-slate-500">Student enrollment counts per evaluation bucket</p>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.1)" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={45}>
+                  {barChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Donut Chart Bucket Ratio */}
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm space-y-4 flex flex-col justify-between">
+          <div>
+            <h3 className="font-bold text-base text-gray-900 dark:text-white">Bucket Ratios</h3>
+            <p className="text-xs text-gray-400 dark:text-slate-500">Comparative percentages of student levels</p>
+          </div>
+          <div className="h-44 relative flex items-center justify-center">
+            {pieChartData.length === 0 ? (
+              <p className="text-xs text-gray-400">No chart data.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    innerRadius={45}
+                    outerRadius={65}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            <div className="absolute text-center">
+              <PieIcon className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+              <p className="text-[10px] uppercase font-bold text-gray-400">Ratios</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center text-xs border-t border-gray-50 dark:border-slate-700/30 pt-4">
+            {pieChartData.map((item, idx) => (
+              <div key={idx}>
+                <p className="font-bold text-gray-900 dark:text-white">{item.value}</p>
+                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate mt-0.5">{item.name}</p>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Top Bucket Performers Row */}
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        <ListCard
+          title="Top Weak Students"
+          subtitle="Highest scores in Weak bucket"
+          rows={topWeak}
+          gradientHeader="bg-gradient-to-r from-red-500 to-rose-600 shadow-md shadow-red-500/10"
+          borderStyle="hover:border-red-500/20"
+          icon={ShieldAlert}
+        />
+        <ListCard
+          title="Top Medium Students"
+          subtitle="Highest scores in Medium bucket"
+          rows={topMedium}
+          gradientHeader="bg-gradient-to-r from-amber-500 to-orange-600 shadow-md shadow-amber-500/10"
+          borderStyle="hover:border-amber-500/20"
+          icon={TrendingUp}
+        />
+        <ListCard
+          title="Top Advanced Students"
+          subtitle="Highest scores in Advanced bucket"
+          rows={topAdvanced}
+          gradientHeader="bg-gradient-to-r from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/10"
+          borderStyle="hover:border-emerald-500/20"
+          icon={CheckCircle2}
+        />
+      </motion.div>
+
+      {/* Top Students Overall Table */}
+      <motion.div
+        variants={itemVariants}
+        className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm overflow-hidden"
+      >
+        <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-base text-gray-900 dark:text-white">🏆 Overall Leaderboard</h3>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Top 10 performing students across all courses</p>
+          </div>
+          <Award className="w-5 h-5 text-amber-500" />
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50/50 dark:bg-slate-900/30 text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700/50 font-semibold text-xs uppercase tracking-wider text-left">
+                <th className="px-6 py-4">Rank</th>
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Roll No</th>
+                <th className="px-6 py-4">Department</th>
+                <th className="px-6 py-4">Bucket</th>
+                <th className="px-6 py-4">Avg. Score</th>
+                <th className="px-6 py-4 text-right">GPA</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700/30">
+              {topOverall.map((s, i) => (
+                <tr key={s._id} className="hover:bg-gray-50/40 dark:hover:bg-slate-900/10 transition-colors">
+                  <td className="px-6 py-4 font-bold text-purple-600 dark:text-purple-400">#{i + 1}</td>
+                  <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{s.name}</td>
+                  <td className="px-6 py-4 font-mono text-xs text-gray-500 dark:text-slate-400">{s.studentId || 'N/A'}</td>
+                  <td className="px-6 py-4 text-gray-600 dark:text-slate-400">
+                    {DEPT_LABELS[s.department || ''] || s.department || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge
+                      className={
+                        s.bucket === 'Advanced' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400' :
+                        s.bucket === 'Medium' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400' :
+                        'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
+                      }
+                    >
+                      {s.bucket}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-gray-950 dark:text-white">{s.score}%</td>
+                  <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-slate-300">
+                    {s.gpa?.toFixed(2) || '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
