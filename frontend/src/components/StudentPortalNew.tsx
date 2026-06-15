@@ -1,8 +1,9 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, FileText } from 'lucide-react';
+import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, FileText, Wallet } from 'lucide-react';
 import AILearningAssistant from './student/AILearningAssistant';
+import { StudentFeePayment } from './student/StudentFeePayment';
 import NotificationsPanel from './teacher/NotificationsPanel';
 import {
   LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -114,6 +115,7 @@ export function StudentPortalNew() {
   const [showAI, setShowAI] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses'>('overview');
+  const [feeRecord, setFeeRecord] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -156,6 +158,16 @@ export function StudentPortalNew() {
       ]);
 
       setCompleted(assignmentsData.filter((a: any) => a.submitted));
+
+      // Fetch student fee record
+      const studentId = user?.studentId || 'STU002';
+      const feeRes = await fetch(`http://localhost:5000/api/accounts/student/${studentId}`);
+      if (feeRes.ok) {
+        const feeData = await feeRes.json();
+        if (feeData.success) {
+          setFeeRecord(feeData.record);
+        }
+      }
     } catch (err) {
       console.error('Failed to load data', err);
     } finally {
@@ -202,7 +214,16 @@ export function StudentPortalNew() {
                 </p>
               </div>
             </div>
-            <motion.div whileHover={{ scale: 1.1 }} className="flex gap-2">
+            <motion.div whileHover={{ scale: 1.05 }} className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => navigate('/fees')}
+                className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30 flex items-center gap-1.5"
+              >
+                <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Pay Fees
+              </Button>
               <Button
                 variant="secondary"
                 size="md"
@@ -320,7 +341,7 @@ export function StudentPortalNew() {
               variants={animationVariants.slideInUp}
               initial="initial"
               animate="animate"
-              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
               {/* Progress Ring */}
               <Card gradient role="student" className="flex flex-col items-center justify-center py-8">
@@ -377,6 +398,57 @@ export function StudentPortalNew() {
                     </div>
                     <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">Consistent</p>
                   </motion.div>
+                </div>
+              </Card>
+
+              {/* Fee Payment Card */}
+              <Card gradient role="student" className="flex flex-col justify-between">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-450" />
+                    Fee Statement
+                  </h3>
+                  {feeRecord && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${
+                      feeRecord.feeStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30' :
+                      feeRecord.feeStatus === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30' :
+                      feeRecord.feeStatus === 'overdue' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30' :
+                      'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
+                    }`}>
+                      {feeRecord.feeStatus}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-2 flex-1 flex flex-col justify-center">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Total Invoice:</span>
+                    <span className="font-semibold text-gray-900 dark:text-slate-100">
+                      {feeRecord ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(feeRecord.totalFee) : '₹0'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Amount Paid:</span>
+                    <span className="font-bold text-emerald-650 dark:text-emerald-400">
+                      {feeRecord ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(feeRecord.paidAmount) : '₹0'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-dashed border-gray-200 dark:border-slate-700/50 pt-2 text-xs">
+                    <span className="font-semibold text-gray-700 dark:text-slate-350">Remaining Due:</span>
+                    <span className={`font-black ${feeRecord?.dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-slate-500'}`}>
+                      {feeRecord ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(feeRecord.dueAmount) : '₹0'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-1.5 transition duration-200"
+                    onClick={() => navigate('/fees')}
+                  >
+                    <Wallet className="w-4 h-4" />
+                    <span>Go to Fee Portal</span>
+                  </Button>
                 </div>
               </Card>
             </motion.div>

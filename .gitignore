@@ -1,6 +1,3 @@
-node_modules 
-.vite 
-<<<<<<< HEAD
-=======
+node_modules
+.vite
 .env
->>>>>>> ba81ea383e9918572453d637dbfdd249f9cc8407

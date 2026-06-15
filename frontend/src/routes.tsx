@@ -22,6 +22,7 @@ import { StudentQuizList } from "./components/student/StudentQuizList";
 import { StudentQuizTake } from "./components/student/StudentQuizTake";
 import { AdminQuizDashboardNew } from "./components/admin/AdminQuizDashboardNew";
 import { StudentApprovals } from "./components/admin/StudentApprovals";
+import { Accounts } from "./components/admin/Accounts";
 import { NotFound } from "./components/NotFound";
 import { StudentAuthNew } from "./components/auth/StudentAuthNew";
 import { TeacherAuth } from "./components/auth/TeacherAuth";
@@ -30,6 +31,7 @@ import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
 import StudentAttendancePage from "./components/student/StudentAttendancePage";
 import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
+import { StudentFeePayment } from "./components/student/StudentFeePayment";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
 
 function ProtectedStudentLayout() {
@@ -66,6 +68,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "attendance", Component: StudentAttendancePage },
         { path: "quizzes", Component: StudentQuizList },
         { path: "quiz/:id", Component: StudentQuizTake },
+        { path: "fees", Component: StudentFeePayment },
         // NEW: student progress page
         { path: "my-progress", Component: StudentBucketProgress },
         // ai-assistant route removed - now accessible via AI icon on Dashboard
@@ -119,6 +122,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { index: true, Component: Dashboard },
         { path: "students", Component: Students },
         { path: "student-approvals", Component: StudentApprovals },
+        { path: "accounts", Component: Accounts },
         { path: "courses", Component: Courses },
         { path: "materials", Component: StudyMaterials },
         { path: "assignments", Component: Assignments },

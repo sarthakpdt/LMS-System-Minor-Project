@@ -23,9 +23,11 @@ const bucketRoutes       = require('./routes/bucketRoutes');
 const courseRoutes       = require('./routes/courseRoutes');   
 const teacherRoutes      = require('./routes/teacherRoutes'); 
 const assignmentRoutes   = require('./routes/assignmentRoutes');
+const feeRoutes          = require('./routes/feeRoutes');
 
 // ── Route registration ─────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
+app.use('/api',               feeRoutes);
 app.use('/api/quizzes',       quizRoutes);     
 app.use('/api/admin',         adminRoutes);
 app.use('/api/materials',     materialRoutes);
