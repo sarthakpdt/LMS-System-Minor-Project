@@ -44,7 +44,13 @@ const syncFeeRecords = async () => {
           feeStatus: 'pending',
           lastPaymentDate: '-'
         });
-        await record.save();
+        try {
+          await record.save();
+        } catch (saveErr) {
+          if (saveErr.code !== 11000) {
+            throw saveErr;
+          }
+        }
       }
     }
     console.log('🔄 Synced Accounts DB FeeRecords with Student DB successfully.');
@@ -178,7 +184,7 @@ router.get('/student/fee-record/:studentId', async (req, res) => {
 
 router.post('/student/pay-fee', async (req, res) => {
   try {
-    const { studentId, category, amount, method } = req.body;
+    const { studentId, category, amount, method, referenceNumber, status } = req.body;
     
     if (!studentId || !category || !amount || !method) {
       return res.status(400).json({ success: false, message: 'Missing payment fields' });
@@ -194,18 +200,6 @@ router.post('/student/pay-fee', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
     }
 
-    // Update fee record calculations
-    record.paidAmount += payAmt;
-    record.dueAmount = Math.max(0, record.totalFee - record.paidAmount);
-
-    if (record.dueAmount === 0) {
-      record.feeStatus = 'paid';
-    } else if (record.paidAmount > 0) {
-      record.feeStatus = 'partial';
-    } else {
-      record.feeStatus = 'pending';
-    }
-
     const today = new Date();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const formattedDate = `${today.getDate()} ${months[today.getMonth()]}`;
@@ -217,8 +211,24 @@ router.post('/student/pay-fee', async (req, res) => {
     hours = hours ? hours : 12; // the hour '0' should be '12'
     const strTime = `${hours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
 
-    record.lastPaymentDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-    await record.save();
+    const initialStatus = status || 'Under Verification';
+
+    // Update fee record calculations immediately ONLY if status is explicitly 'Paid' or 'completed'
+    if (initialStatus === 'Paid' || initialStatus === 'completed') {
+      record.paidAmount += payAmt;
+      record.dueAmount = Math.max(0, record.totalFee - record.paidAmount);
+
+      if (record.dueAmount === 0) {
+        record.feeStatus = 'paid';
+      } else if (record.paidAmount > 0) {
+        record.feeStatus = 'partial';
+      } else {
+        record.feeStatus = 'pending';
+      }
+
+      record.lastPaymentDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+      await record.save();
+    }
 
     // Create unique TXN ID
     const txnId = `TXN${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}${String(Math.floor(1000 + Math.random() * 9000))}`;
@@ -234,15 +244,66 @@ router.post('/student/pay-fee', async (req, res) => {
       method: method,
       date: formattedDate,
       time: strTime,
-      status: 'completed'
+      status: initialStatus,
+      referenceNumber: referenceNumber || '-'
     });
     await txn.save();
 
     res.json({
       success: true,
-      message: 'Payment processed successfully',
+      message: 'Payment submitted successfully',
       transaction: txn,
       feeRecord: record
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Admin Route to Approve/Reject/Update payment status
+router.put('/accounts/transactions/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'Paid' or 'Rejected'
+
+    if (!['Paid', 'Rejected', 'Under Verification', 'completed', 'processing'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid payment status value' });
+    }
+
+    const txn = await Transaction.findOne({ id: id });
+    if (!txn) {
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+
+    const prevStatus = txn.status;
+    txn.status = status;
+    await txn.save();
+
+    // If transitioned to Paid/completed, update FeeRecord
+    if ((status === 'Paid' || status === 'completed') && prevStatus !== 'Paid' && prevStatus !== 'completed') {
+      const record = await FeeRecord.findOne({ studentId: txn.rollNo });
+      if (record) {
+        record.paidAmount += txn.amount;
+        record.dueAmount = Math.max(0, record.totalFee - record.paidAmount);
+
+        if (record.dueAmount === 0) {
+          record.feeStatus = 'paid';
+        } else if (record.paidAmount > 0) {
+          record.feeStatus = 'partial';
+        } else {
+          record.feeStatus = 'pending';
+        }
+
+        const today = new Date();
+        record.lastPaymentDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+        await record.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Transaction status successfully updated to ${status}`,
+      transaction: txn
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

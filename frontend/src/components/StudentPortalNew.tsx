@@ -116,6 +116,7 @@ export function StudentPortalNew() {
   const [showNotif, setShowNotif] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses'>('overview');
   const [feeRecord, setFeeRecord] = useState<any>(null);
+  const [latestPaymentStatus, setLatestPaymentStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -166,6 +167,15 @@ export function StudentPortalNew() {
         const feeData = await feeRes.json();
         if (feeData.success) {
           setFeeRecord(feeData.record);
+        }
+      }
+
+      // Fetch latest payment transaction status
+      const paymentsRes = await fetch(`http://localhost:5000/api/accounts/student/${studentId}/payments`);
+      if (paymentsRes.ok) {
+        const paymentsData = await paymentsRes.json();
+        if (paymentsData.success && paymentsData.transactions && paymentsData.transactions.length > 0) {
+          setLatestPaymentStatus(paymentsData.transactions[0].status);
         }
       }
     } catch (err) {
@@ -436,6 +446,17 @@ export function StudentPortalNew() {
                     <span className="font-semibold text-gray-700 dark:text-slate-350">Remaining Due:</span>
                     <span className={`font-black ${feeRecord?.dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-slate-500'}`}>
                       {feeRecord ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(feeRecord.dueAmount) : '₹0'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-dashed border-gray-200 dark:border-slate-700/50 pt-2 text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Latest Payment:</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border capitalize ${
+                      latestPaymentStatus === 'Paid' || latestPaymentStatus === 'completed' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30' :
+                      latestPaymentStatus === 'Under Verification' || latestPaymentStatus === 'processing' || latestPaymentStatus === 'Payment Submitted' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30 animate-pulse' :
+                      latestPaymentStatus === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30' :
+                      'bg-gray-100 text-gray-650 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
+                    }`}>
+                      {latestPaymentStatus || 'None'}
                     </span>
                   </div>
                 </div>

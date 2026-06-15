@@ -12,7 +12,8 @@ const transactionSchema = new mongoose.Schema({
   method: { type: String, enum: ['UPI', 'NEFT', 'RTGS', 'Card', 'Cash'], default: 'UPI' },
   date: { type: String, required: true }, // "28 Jan" or full date
   time: { type: String, required: true }, // "2:34 PM"
-  status: { type: String, enum: ['completed', 'processing'], default: 'completed' },
+  status: { type: String, enum: ['Pending', 'Payment Submitted', 'Under Verification', 'Paid', 'Rejected', 'completed', 'processing'], default: 'Under Verification' },
+  referenceNumber: { type: String, default: '-' },
   createdAt: { type: Date, default: Date.now }
 });
 

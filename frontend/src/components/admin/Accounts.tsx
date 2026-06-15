@@ -32,6 +32,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AreaChart, 
@@ -79,7 +80,9 @@ interface TransactionRecord {
   method: 'UPI' | 'NEFT' | 'RTGS' | 'Card' | 'Cash';
   date: string;
   time: string;
-  status: 'completed' | 'processing';
+  status: 'completed' | 'processing' | 'Pending' | 'Payment Submitted' | 'Under Verification' | 'Paid' | 'Rejected';
+  referenceNumber?: string;
+  createdAt?: string;
 }
 
 function formatINR(amount: number) {
@@ -122,6 +125,8 @@ export function Accounts() {
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   
+  const [activeTab, setActiveTab] = useState<'directory' | 'approvals'>('directory');
+
   // Table Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("all");
@@ -376,6 +381,117 @@ This is a computer-generated fee ledger statement.
     toast.success(`Receipt for ${student.name} downloaded!`);
   };
 
+  const downloadTransactionReceipt = (txn: TransactionRecord) => {
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Header Banner
+      doc.setFillColor(124, 58, 237); // Purple-600 to match Admin theme color
+      doc.rect(0, 0, 210, 40, 'F');
+
+      // College Title
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.text('EDUTRACK ENGINEERING COLLEGE', 15, 18);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text('Academic Fee Payment Receipt', 15, 28);
+      doc.text('ERP Finance & Accounts Division (Admin Portal)', 15, 33);
+
+      // Receipt details column 1
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RECEIPT INFORMATION', 15, 52);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Receipt Number: REC-${txn.id.slice(-6).toUpperCase()}`, 15, 60);
+      doc.text(`Transaction ID: ${txn.id}`, 15, 66);
+      doc.text(`Date & Time: ${txn.date} ${txn.time}`, 15, 72);
+      doc.text(`Payment Method: ${txn.method}`, 15, 78);
+
+      const displayStatus = txn.status === 'completed' || txn.status === 'Paid' ? 'PAID' : 
+                            txn.status === 'Rejected' ? 'REJECTED' : 'UNDER VERIFICATION';
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Status: ${displayStatus}`, 15, 84);
+
+      // Student details column 2
+      doc.setFont('helvetica', 'bold');
+      doc.text('STUDENT INFORMATION', 120, 52);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Student Name: ${txn.studentName}`, 120, 60);
+      doc.text(`Roll Number: ${txn.rollNo}`, 120, 66);
+      doc.text(`Program: ${txn.program}`, 120, 72);
+      doc.text(`UTR / Reference: ${txn.referenceNumber || '-'}`, 120, 78);
+
+      // Line separator
+      doc.setDrawColor(220, 220, 220);
+      doc.line(15, 92, 195, 92);
+
+      // Table Header
+      doc.setFillColor(243, 244, 246); // Gray-100
+      doc.rect(15, 100, 180, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.text('Fee Category Description', 18, 105);
+      doc.text('Amount (INR)', 160, 105);
+
+      // Table Row
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${txn.feeCategory} Fee Payment`, 18, 115);
+      doc.text(formatINR(txn.amount), 160, 115);
+
+      // Table Footer
+      doc.line(15, 122, 195, 122);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total Amount Received', 18, 130);
+      doc.text(formatINR(txn.amount), 160, 130);
+
+      // Verification Watermark if status is verification pending
+      if (displayStatus === 'UNDER VERIFICATION') {
+        doc.setTextColor(245, 158, 11, 0.15); // amber-500 with low opacity
+        doc.setFontSize(28);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VERIFICATION PENDING', 40, 150, { angle: 25 });
+      }
+
+      // Notes
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text('Notes:', 15, 160);
+      doc.text('1. This receipt is automatically generated and serves as confirmation of payment submission.', 15, 165);
+      doc.text('2. Payments are subject to verification by the administration. Status will update in your portal.', 15, 169);
+      doc.text('3. For any discrepancies, please contact the college finance counter with the Transaction ID.', 15, 173);
+
+      // Signatures
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      doc.line(140, 205, 195, 205);
+      doc.text('Authorized Accounts Officer', 142, 210);
+      doc.text('EduTrack ERP Finance', 142, 214);
+
+      // Save PDF
+      const dateObj = txn.createdAt ? new Date(txn.createdAt) : new Date();
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      const formattedDateForFile = `${day}-${month}-${year}`;
+      doc.save(`Receipt_${txn.rollNo}_${formattedDateForFile}.pdf`);
+      toast.success('Professional PDF Receipt downloaded!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to generate PDF receipt.');
+    }
+  };
+
   const handleManualPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudent) return;
@@ -418,10 +534,30 @@ This is a computer-generated fee ledger statement.
     }
   };
 
+  const handleUpdateStatus = async (id: string, status: 'Paid' | 'Rejected') => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/accounts/transactions/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Transaction successfully marked as ${status}!`);
+        await fetchData(); // Refresh statistics, student list, and transactions
+      } else {
+        toast.error(data.message || `Failed to update status to ${status}.`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error updating transaction status.');
+    }
+  };
+
   // Derive Collection Trend Data
   const trendData = useMemo(() => {
     const groups: { [key: string]: number } = {};
-    const completedTxns = transactions.filter(t => t.status === 'completed' && t.type === 'payment');
+    const completedTxns = transactions.filter(t => (t.status === 'completed' || t.status === 'Paid') && t.type === 'payment');
 
     completedTxns.forEach(txn => {
       let label = txn.date;
@@ -782,24 +918,52 @@ This is a computer-generated fee ledger statement.
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-4">
         {/* Student payments table - Takes 3 columns */}
         <div className="xl:col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden flex flex-col">
-          {/* Table Header & Actions */}
-          <div className="p-4 border-b border-gray-100 dark:border-slate-700/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">Student Fee Registry</h3>
-              <p className="text-[11px] text-gray-500 dark:text-slate-400">Search, filter, and review dynamic student fee invoices</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={exportToExcel}
-                className="h-8 px-2.5 rounded border border-gray-200 dark:border-slate-700 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center gap-1.5 text-gray-700 dark:text-slate-200"
+          {/* Table Header & Actions with Tabs */}
+          <div className="p-4 border-b border-gray-100 dark:border-slate-700/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50 dark:bg-slate-900/40">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('directory')}
+                className={`px-4 py-2 text-xs font-bold transition duration-200 rounded-lg flex items-center justify-center gap-2 ${
+                  activeTab === 'directory'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-550 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-205 hover:bg-gray-100 dark:hover:bg-slate-750'
+                }`}
               >
-                <FileSpreadsheet className="h-4 w-4" />
-                <span>Export Excel</span>
+                <span>Student Fee Registry</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('approvals')}
+                className={`px-4 py-2 text-xs font-bold transition duration-200 rounded-lg flex items-center justify-center gap-2 ${
+                  activeTab === 'approvals'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-550 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-205 hover:bg-gray-100 dark:hover:bg-slate-750'
+                }`}
+              >
+                <span>Pending Approvals</span>
+                {transactions.filter(t => t.status === 'Under Verification').length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-500 text-white animate-pulse">
+                    {transactions.filter(t => t.status === 'Under Verification').length}
+                  </span>
+                )}
               </button>
             </div>
+            
+            {activeTab === 'directory' && (
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <button 
+                  onClick={exportToExcel}
+                  className="h-8 px-2.5 rounded border border-gray-200 dark:border-slate-700 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center gap-1.5 text-gray-700 dark:text-slate-202"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span>Export Excel</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Filters Bar */}
+          {activeTab === 'directory' ? (
+            <>
+              {/* Filters Bar */}
           <div className="p-3 bg-gray-50/50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700/40 flex flex-col lg:flex-row gap-2">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -996,6 +1160,70 @@ This is a computer-generated fee ledger statement.
               </button>
             </div>
           </div>
+            </>
+          ) : (
+            <div className="overflow-x-auto flex-1">
+              {transactions.filter(t => t.status === 'Under Verification').length === 0 ? (
+                <div className="p-12 text-center text-xs text-gray-500 dark:text-slate-400 space-y-2">
+                  <div className="text-3xl">🎉</div>
+                  <p className="font-semibold text-gray-750 dark:text-slate-300">All caught up! No transactions pending verification.</p>
+                  <p className="text-gray-450 dark:text-slate-450">When students pay using UPI/NEFT, payments requiring approval will appear here.</p>
+                </div>
+              ) : (
+                <table className="w-full min-w-[1000px]">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-slate-700/40 bg-gray-50 dark:bg-slate-900/50 text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase text-left">
+                      <th className="px-4 py-3">Transaction ID</th>
+                      <th className="px-4 py-3">Roll No</th>
+                      <th className="px-4 py-3">Student Name</th>
+                      <th className="px-4 py-3">Category</th>
+                      <th className="px-4 py-3">Amount</th>
+                      <th className="px-4 py-3">Method</th>
+                      <th className="px-4 py-3">Reference / UTR</th>
+                      <th className="px-4 py-3">Date &amp; Time</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700/30 text-xs text-gray-750 dark:text-slate-350">
+                    {transactions
+                      .filter(t => t.status === 'Under Verification')
+                      .map((txn) => (
+                        <tr key={txn._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-750/30 transition">
+                          <td className="px-4 py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{txn.id}</td>
+                          <td className="px-4 py-3 font-mono text-gray-450 dark:text-slate-500">{txn.rollNo}</td>
+                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{txn.studentName}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
+                              {txn.feeCategory}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-gray-900 dark:text-slate-100">{formatINR(txn.amount)}</td>
+                          <td className="px-4 py-3 font-medium text-gray-655 dark:text-slate-350">{txn.method}</td>
+                          <td className="px-4 py-3 font-mono font-bold text-gray-705 dark:text-slate-300">{txn.referenceNumber || '-'}</td>
+                          <td className="px-4 py-3 text-gray-500 dark:text-slate-400">{txn.date} • {txn.time}</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleUpdateStatus(txn.id, 'Rejected')}
+                                className="h-7 px-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs font-bold transition flex items-center justify-center gap-1"
+                              >
+                                Reject
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(txn.id, 'Paid')}
+                                className="h-7 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
+                              >
+                                Approve
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right side: Recent Transactions */}
@@ -1028,11 +1256,22 @@ This is a computer-generated fee ledger statement.
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-[11px] font-bold ${isRefund ? 'text-red-600' : 'text-green-600 dark:text-green-450'}`}>
-                        {isRefund ? '-' : '+'}{formatINR(txn.amount)}
-                      </p>
-                      <p className="text-[8px] text-gray-400 dark:text-slate-450">{txn.date} • {txn.time}</p>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-right">
+                        <p className={`text-[11px] font-bold ${isRefund ? 'text-red-600' : 'text-green-600 dark:text-green-450'}`}>
+                          {isRefund ? '-' : '+'}{formatINR(txn.amount)}
+                        </p>
+                        <p className="text-[8px] text-gray-400 dark:text-slate-450">{txn.date} • {txn.time}</p>
+                      </div>
+                      {!isRefund && (txn.status === 'Paid' || txn.status === 'completed' || txn.status === 'Under Verification') && (
+                        <button
+                          onClick={() => downloadTransactionReceipt(txn)}
+                          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-purple-600 transition"
+                          title="Download PDF Receipt"
+                        >
+                          <Receipt className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1287,7 +1526,18 @@ This is a computer-generated fee ledger statement.
                               <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">{txn.date} • {txn.time} ({txn.method})</p>
                               <span className="inline-block mt-1 px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-350 text-[9px] rounded font-semibold">{txn.feeCategory}</span>
                             </div>
-                            <span className="font-black text-emerald-600 dark:text-emerald-450 text-right">+{formatINR(txn.amount)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-emerald-600 dark:text-emerald-450 text-right">+{formatINR(txn.amount)}</span>
+                              {(txn.status === 'Paid' || txn.status === 'completed' || txn.status === 'Under Verification') && (
+                                <button
+                                  onClick={() => downloadTransactionReceipt(txn)}
+                                  className="p-1 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-indigo-200 dark:border-slate-700 text-indigo-700 dark:text-indigo-400 transition"
+                                  title="Download PDF Receipt"
+                                >
+                                  <Receipt className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))
                     )}
