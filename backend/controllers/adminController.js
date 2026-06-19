@@ -13,10 +13,34 @@ exports.getPendingStudents = async (req, res) => {
   }
 };
 
-// @desc    Get all approved students
+// @desc    Get all approved students with optional filtering and search
 exports.getApprovedStudents = async (req, res) => {
   try {
-    const approvedStudents = await Student.find({ approvalStatus: 'approved' });
+    const { department, semester, section, search } = req.query;
+    const query = { approvalStatus: 'approved' };
+    
+    if (department && department !== 'all') {
+      query.department = department;
+    }
+    if (semester && semester !== 'all') {
+      query.semester = String(semester);
+    }
+    if (section && section !== 'all') {
+      if (section === 'unassigned') {
+        query.section = { $in: [null, ''] };
+      } else {
+        query.section = section;
+      }
+    }
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { studentId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const approvedStudents = await Student.find(query);
     res.status(200).json({ success: true, count: approvedStudents.length, data: approvedStudents });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -144,7 +168,7 @@ exports.getAllCourses = async (req, res) => {
 // @desc    Create a new course
 exports.createCourse = async (req, res) => {
   try {
-    const { courseCode, courseName, department, semester, teacherId, description } = req.body;
+    const { courseCode, courseName, department, semester, teacherId, description, section } = req.body;
 
     if (!courseCode || !courseName || !department || !semester) {
       return res.status(400).json({ success: false, message: 'courseCode, courseName, department, semester are required' });
@@ -162,6 +186,7 @@ exports.createCourse = async (req, res) => {
       semester: String(semester),
       teacher: teacherId || null,
       description: description || '',
+      section: section || null,
     });
 
     if (teacherId) {
@@ -198,11 +223,16 @@ exports.enrollStudentsByCriteria = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    const students = await Student.find({
+    const studentQuery = {
       approvalStatus: 'approved',
       department,
       semester: String(semester),
-    });
+    };
+    if (course.section) {
+      studentQuery.section = course.section;
+    }
+
+    const students = await Student.find(studentQuery);
 
     if (students.length === 0) {
       return res.status(200).json({ success: true, message: 'No matching students found', enrolled: 0 });
@@ -384,3 +414,232 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Sync student course enrollments and teacher's assignedStudents list when section changes
+const syncStudentCoursesAndTeacherAssignments = async (studentId) => {
+  try {
+    const student = await Student.findById(studentId);
+    if (!student) return;
+
+    const { semester, department, section } = student;
+
+    // Find all active courses matching student's semester and branch/dept
+    const allSemesterCourses = await Course.find({
+      semester: String(semester),
+      department: department,
+      isActive: true
+    });
+
+    const targetCourses = [];
+    const coursesToRemove = [];
+
+    allSemesterCourses.forEach(course => {
+      if (!course.section || course.section === '' || course.section === 'null') {
+        targetCourses.push(course);
+      } else if (String(course.section).toUpperCase() === String(section || '').toUpperCase()) {
+        targetCourses.push(course);
+      } else {
+        coursesToRemove.push(course);
+      }
+    });
+
+    // Remove student from courses of other sections
+    const removeCourseIds = coursesToRemove.map(c => c._id);
+    if (removeCourseIds.length > 0) {
+      await Course.updateMany(
+        { _id: { $in: removeCourseIds } },
+        { $pull: { enrolledStudents: student._id } }
+      );
+    }
+
+    // Add student to matching courses
+    const targetCourseIds = targetCourses.map(c => c._id);
+    if (targetCourseIds.length > 0) {
+      await Course.updateMany(
+        { _id: { $in: targetCourseIds } },
+        { $addToSet: { enrolledStudents: student._id } }
+      );
+    }
+
+    // Rebuild student's enrolledCourses list in Student document
+    student.enrolledCourses = targetCourses.map(course => ({
+      courseId: course._id,
+      courseCode: course.courseCode,
+      courseName: course.courseName,
+      semester: course.semester,
+      department: course.department
+    }));
+
+    await student.save();
+
+    // Rebuild Teacher.assignedStudents lists
+    const allTeachers = await Teacher.find({});
+    for (const teacher of allTeachers) {
+      const teachesAny = teacher.assignedCourses.some(ac => 
+        targetCourseIds.some(tcId => String(tcId) === String(ac.courseId))
+      );
+
+      if (teachesAny) {
+        await Teacher.findByIdAndUpdate(teacher._id, {
+          $addToSet: { assignedStudents: student._id }
+        });
+      } else {
+        await Teacher.findByIdAndUpdate(teacher._id, {
+          $pull: { assignedStudents: student._id }
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing student courses:', err);
+  }
+};
+
+// ── Section Management Endpoints ─────────────────────────────────────────────
+
+// Manual single student assignment/update
+exports.assignSection = async (req, res) => {
+  try {
+    const { studentId, section, department, semester } = req.body;
+    if (!studentId) {
+      return res.status(400).json({ success: false, message: 'Student ID is required' });
+    }
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    if (section !== undefined) student.section = section || null;
+    if (department !== undefined) student.department = department;
+    if (semester !== undefined) student.semester = String(semester);
+
+    await student.save();
+    await syncStudentCoursesAndTeacherAssignments(student._id);
+
+    res.status(200).json({ success: true, message: 'Student details and course mapping updated successfully', data: student });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Bulk set section for multiple students
+exports.bulkAssignSection = async (req, res) => {
+  try {
+    const { studentIds, section } = req.body;
+    if (!studentIds || !Array.isArray(studentIds)) {
+      return res.status(400).json({ success: false, message: 'studentIds array is required' });
+    }
+
+    await Student.updateMany(
+      { _id: { $in: studentIds } },
+      { $set: { section: section || null } }
+    );
+
+    for (const id of studentIds) {
+      await syncStudentCoursesAndTeacherAssignments(id);
+    }
+
+    res.status(200).json({ success: true, message: `Successfully assigned section to ${studentIds.length} students` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Bulk distribute multiple students across sections based on group size
+exports.bulkDistribute = async (req, res) => {
+  try {
+    const { studentIds, groupSize, sections, sortBy } = req.body;
+    if (!studentIds || !Array.isArray(studentIds)) {
+      return res.status(400).json({ success: false, message: 'studentIds array is required' });
+    }
+    if (!groupSize || groupSize <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid groupSize is required' });
+    }
+    const targetSections = sections && Array.isArray(sections) && sections.length > 0 ? sections : ['A', 'B', 'C', 'D'];
+
+    // Fetch and sort students
+    const students = await Student.find({ _id: { $in: studentIds } });
+    students.sort((a, b) => {
+      if (sortBy === 'name') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      return (a.studentId || '').localeCompare(b.studentId || '');
+    });
+
+    const updatedIds = [];
+    for (let i = 0; i < students.length; i++) {
+      const sectionIndex = Math.floor(i / groupSize) % targetSections.length;
+      const assignedSection = targetSections[sectionIndex];
+      const student = students[i];
+      student.section = assignedSection;
+      await student.save();
+      updatedIds.push(student._id);
+    }
+
+    for (const id of updatedIds) {
+      await syncStudentCoursesAndTeacherAssignments(id);
+    }
+
+    res.status(200).json({ success: true, message: `Successfully distributed ${students.length} students into sections.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Bulk update semester
+exports.bulkUpdateSemester = async (req, res) => {
+  try {
+    const { studentIds, semester } = req.body;
+    if (!studentIds || !Array.isArray(studentIds)) {
+      return res.status(400).json({ success: false, message: 'studentIds array is required' });
+    }
+    if (!semester) {
+      return res.status(400).json({ success: false, message: 'semester is required' });
+    }
+
+    await Student.updateMany(
+      { _id: { $in: studentIds } },
+      { $set: { semester: String(semester) } }
+    );
+
+    for (const id of studentIds) {
+      await syncStudentCoursesAndTeacherAssignments(id);
+    }
+
+    res.status(200).json({ success: true, message: `Successfully updated semester to ${semester} for ${studentIds.length} students` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Bulk promote students to next semester (increments semester)
+exports.bulkPromote = async (req, res) => {
+  try {
+    const { studentIds } = req.body;
+    if (!studentIds || !Array.isArray(studentIds)) {
+      return res.status(400).json({ success: false, message: 'studentIds array is required' });
+    }
+
+    const students = await Student.find({ _id: { $in: studentIds } });
+    const updatedIds = [];
+    for (const student of students) {
+      const currentSem = parseInt(student.semester);
+      if (currentSem && currentSem < 8) {
+        student.semester = String(currentSem + 1);
+        await student.save();
+        updatedIds.push(student._id);
+      }
+    }
+
+    for (const id of updatedIds) {
+      await syncStudentCoursesAndTeacherAssignments(id);
+    }
+
+    res.status(200).json({ success: true, message: `Successfully promoted ${updatedIds.length} students.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Section management routes are correctly defined above.

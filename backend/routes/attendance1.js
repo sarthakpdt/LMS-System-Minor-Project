@@ -90,18 +90,18 @@ const buildSubjectsFromStats = (bySubject) =>
       safeLeavesRemaining: calculateSafeLeavesRemaining(effectivePresent, stats.total),
       classesNeededFor75: calculateClassesNeededForTarget(effectivePresent, stats.total),
       riskLevel: toRiskLevel(attendancePercentage),
-      activities: [{ type: 'LECTURE', percentage: Math.round(attendancePercentage) }],
+      activities: [{ type: 'LECTURE', percentage: Math.round(attendancePercentage), status: attendancePercentage >= 75 ? 'safe' : 'critical' }],
     };
   });
 
 const getDemoAttendancePayload = () => {
   const subjects = [
-    { subject: 'Machine Learning', courseCode: 'CS1138', present: 58, absent: 6, late: 0, total: 64, attendancePercentage: 90.63, predictedAttendance: 91.2, safeLeavesRemaining: 4, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 91 }] },
-    { subject: 'Communication and Identity', courseCode: 'CC1104', present: 24, absent: 2, late: 0, total: 26, attendancePercentage: 92.31, predictedAttendance: 92.8, safeLeavesRemaining: 2, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 92 }] },
-    { subject: 'Design and Analysis of Algorithms', courseCode: 'CS1105', present: 49, absent: 8, late: 0, total: 57, attendancePercentage: 85.96, predictedAttendance: 86.5, safeLeavesRemaining: 2, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 86 }] },
-    { subject: 'Optimization for Computer Science', courseCode: 'AS1113', present: 34, absent: 5, late: 1, total: 40, attendancePercentage: 87.5, predictedAttendance: 88.1, safeLeavesRemaining: 2, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 89 }, { type: 'PRACTICAL', percentage: 92 }] },
-    { subject: 'Data Structures', courseCode: 'CS201', present: 28, absent: 10, late: 2, total: 40, attendancePercentage: 75, predictedAttendance: 76.2, safeLeavesRemaining: 0, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 75 }] },
-    { subject: 'Database Systems', courseCode: 'CS301', present: 20, absent: 12, late: 1, total: 33, attendancePercentage: 63.64, predictedAttendance: 66.8, safeLeavesRemaining: 0, classesNeededFor75: 5, riskLevel: 'critical', activities: [{ type: 'LECTURE', percentage: 64 }] },
+    { subject: 'Machine Learning', courseCode: 'CS1138', present: 58, absent: 6, late: 0, total: 64, totalLectures: 64, attendancePercentage: 90.63, predictedAttendance: 91.2, safeLeavesRemaining: 4, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 91, status: 'safe' }] },
+    { subject: 'Communication and Identity', courseCode: 'CC1104', present: 24, absent: 2, late: 0, total: 26, totalLectures: 26, attendancePercentage: 92.31, predictedAttendance: 92.8, safeLeavesRemaining: 2, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 92, status: 'safe' }] },
+    { subject: 'Design and Analysis of Algorithms', courseCode: 'CS1105', present: 49, absent: 8, late: 0, total: 57, totalLectures: 57, attendancePercentage: 85.96, predictedAttendance: 86.5, safeLeavesRemaining: 2, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 86, status: 'safe' }] },
+    { subject: 'Optimization for Computer Science', courseCode: 'AS1113', present: 34, absent: 5, late: 1, total: 40, totalLectures: 40, attendancePercentage: 87.5, predictedAttendance: 88.1, safeLeavesRemaining: 2, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 89, status: 'safe' }, { type: 'PRACTICAL', percentage: 92, status: 'safe' }] },
+    { subject: 'Data Structures', courseCode: 'CS201', present: 28, absent: 10, late: 2, total: 40, totalLectures: 40, attendancePercentage: 75, predictedAttendance: 76.2, safeLeavesRemaining: 0, classesNeededFor75: 0, riskLevel: 'safe', activities: [{ type: 'LECTURE', percentage: 75, status: 'safe' }] },
+    { subject: 'Database Systems', courseCode: 'CS301', present: 20, absent: 12, late: 1, total: 33, totalLectures: 33, attendancePercentage: 63.64, predictedAttendance: 66.8, safeLeavesRemaining: 0, classesNeededFor75: 5, riskLevel: 'critical', activities: [{ type: 'LECTURE', percentage: 64, status: 'critical' }] },
   ];
 
   const presentCount = subjects.reduce((s, x) => s + x.present, 0);
@@ -155,15 +155,20 @@ router.get('/student/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
     const { courseId } = req.query;
+    // Convert to ObjectId if necessary
+    const mongoose = require('mongoose');
+    const studentObjectId = mongoose.Types.ObjectId.isValid(studentId) ? new mongoose.Types.ObjectId(studentId) : studentId;
+    console.log('Fetching attendance for studentId:', studentId, 'as ObjectId:', studentObjectId);
+
     const normalizedFutureClasses = Math.max(1, Number.parseInt(req.query.futureClasses, 10) || DEFAULT_FUTURE_CLASSES);
 
-    const attendanceFilter = { 'records.studentId': studentId };
+    const attendanceFilter = { 'records.studentId': studentObjectId };
     if (courseId) attendanceFilter.subject = courseId;
 
     const allRecords = await Attendance.find(attendanceFilter).sort({ date: -1 });
 
     const result = allRecords.map((a) => {
-      const studentRecord = a.records.find((r) => r.studentId.toString() === studentId);
+      const studentRecord = a.records.find((r) => r.studentId.toString() === studentObjectId.toString());
       return {
         date: a.date,
         subject: a.subject,
@@ -190,7 +195,7 @@ router.get('/student/:studentId', async (req, res) => {
       return res.json({ success: true, ...demo });
     }
 
-    const trend = buildTrendData(studentId, allRecords);
+    const trend = buildTrendData(studentObjectId.toString(), allRecords);
     const subjects = buildSubjectsFromStats(bySubject);
 
     res.json({

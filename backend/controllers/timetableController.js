@@ -523,6 +523,17 @@ exports.generateTimetable = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No active timetable configuration found.' });
     }
 
+    // Load and count approved students per branch, year, section
+    const studentsList = await Student.find({ approvalStatus: 'approved', isActive: { $ne: false } }, 'department semester section');
+    const studentCounts = {};
+    studentsList.forEach(s => {
+      const sem = Number(s.semester) || 1;
+      const year = Math.ceil(sem / 2);
+      const key = `${s.department}::${year}::${s.section || 'A'}`;
+      studentCounts[key] = (studentCounts[key] || 0) + 1;
+    });
+    config.studentCounts = studentCounts;
+
     const subjects = await TtSubject.find({ isActive: true });
     const rooms = await TtRoom.find({ isActive: true });
     const constraints = await TtFacultyConstraint.find();
@@ -618,17 +629,36 @@ exports.getTimetableById = async (req, res) => {
 // ── POST /api/timetable/engine/timetables/save ──
 exports.saveTimetable = async (req, res) => {
   try {
-    const { draftId, label, entries, conflicts } = req.body;
+    const { draftId, label, entries, conflicts, cloneFromId } = req.body;
+
+    const config = await TtConfig.findOne({ isActive: true });
+    if (!config) {
+      return res.status(400).json({ success: false, message: 'No active configuration found.' });
+    }
+
+    if (cloneFromId) {
+      const sourceToClone = await TtGenerated.findById(cloneFromId);
+      if (!sourceToClone) {
+        return res.status(404).json({ success: false, message: 'Source timetable to clone not found.' });
+      }
+      const cloned = await TtGenerated.create({
+        configId: config._id,
+        label: label || `${sourceToClone.label} (Clone)`,
+        status: 'draft',
+        isWorkingDraft: false,
+        aiOptimized: sourceToClone.aiOptimized,
+        validationSummary: sourceToClone.validationSummary,
+        conflicts: sourceToClone.conflicts,
+        entries: sourceToClone.entries,
+      });
+      return res.json({ success: true, timetable: cloned, message: 'Timetable cloned successfully.' });
+    }
+
     if (!draftId && (!entries || !Array.isArray(entries))) {
       return res.status(400).json({
         success: false,
         message: 'draftId or entries array is required.',
       });
-    }
-
-    const config = await TtConfig.findOne({ isActive: true });
-    if (!config) {
-      return res.status(400).json({ success: false, message: 'No active configuration found.' });
     }
 
     let source = draftId ? await TtGenerated.findById(draftId) : null;
@@ -736,6 +766,43 @@ exports.publishTimetable = async (req, res) => {
       academicYear: config.academicYear,
       entries: draft.entries
     });
+
+    // operational sync
+    const TimetableSlot = require('../models/Timetable');
+    
+    // Clear old operational slots matching this published draft's branches/semesters
+    const uniqueBranches = [...new Set(draft.entries.map(e => e.branch))];
+    const uniqueYears = [...new Set(draft.entries.map(e => e.year))];
+    const uniqueSemesters = uniqueYears.map(y => Number(semesterForYear(y)));
+
+    await TimetableSlot.deleteMany({
+      department: { $in: uniqueBranches },
+      semester: { $in: uniqueSemesters }
+    });
+
+    // Write entries to TimetableSlot
+    const slotsToCreate = [];
+    draft.entries.forEach(entry => {
+      if (entry.isFree || entry.isLunch || !entry.subjectName || !entry.facultyId) return;
+
+      slotsToCreate.push({
+        subject: entry.subjectName,
+        day: entry.day,
+        startTime: entry.timeSlot.startTime,
+        endTime: entry.timeSlot.endTime,
+        semester: Number(semesterForYear(entry.year)),
+        department: entry.branch,
+        section: entry.section || 'A', // Support section tracking
+        teacherId: entry.facultyId,
+        teacherName: entry.facultyName || '',
+        room: entry.roomName || '',
+        isActive: true
+      });
+    });
+
+    if (slotsToCreate.length > 0) {
+      await TimetableSlot.insertMany(slotsToCreate);
+    }
 
     res.json({ success: true, message: 'Timetable published successfully!', published });
   } catch (err) {

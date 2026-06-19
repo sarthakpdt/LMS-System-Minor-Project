@@ -6,11 +6,12 @@ const User = require('../models/User');
 // ── GET /api/timetable — get all slots (with optional filters) ──
 router.get('/', async (req, res) => {
   try {
-    const { semester, department, teacherId } = req.query;
+    const { semester, department, teacherId, section } = req.query;
     const filter = { isActive: true };
     if (semester) filter.semester = Number(semester);
     if (department) filter.department = department;
     if (teacherId) filter.teacherId = teacherId;
+    if (section) filter.section = section;
 
     const slots = await TimetableSlot.find(filter).sort({ day: 1, startTime: 1 });
     res.json({ success: true, slots });
@@ -35,41 +36,88 @@ router.get('/teacher/:teacherId', async (req, res) => {
 // ── POST /api/timetable — create a new slot ──────────────────
 router.post('/', async (req, res) => {
   try {
-    const { subject, day, startTime, endTime, semester, department, teacherId, teacherName, room } = req.body;
-
-    if (!subject || !teacherId) {
-      return res.status(400).json({ success: false, message: 'Subject and teacherId are required' });
+    const { subject, day, startTime, endTime, semester, department, teacherId, teacherName, room, section } = req.body;
+    // Validate required fields
+    if (!subject || !teacherId || !teacherName) {
+      return res.status(400).json({ success: false, message: 'Subject, teacherId, and teacherName are required' });
     }
 
-    // Check for duplicate (same subject+day+semester+department+teacherId)
+    const currentSection = section || 'A';
+
+    // Check for duplicate (same subject+day+semester+department+teacherId+section)
     const existing = await TimetableSlot.findOne({
-      subject, day, semester, department, teacherId, isActive: true
+      subject,
+      day,
+      semester: Number(semester),
+      department,
+      section: currentSection,
+      teacherId,
+      isActive: true,
     });
     if (existing) {
       return res.status(409).json({
         success: false,
-        message: `A slot for "${subject}" on ${day} already exists for this teacher. Try a different day.`
+        message: `A slot for "${subject}" on ${day} in section ${currentSection} already exists.`,
       });
     }
 
-    // Also check time conflict for the same teacher on same day
-    const conflict = await TimetableSlot.findOne({
-      teacherId, day, isActive: true,
+    // Check teacher time conflict
+    const teacherConflict = await TimetableSlot.findOne({
+      teacherId,
+      day,
+      isActive: true,
       $or: [
         { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
       ]
     });
-    if (conflict) {
+    if (teacherConflict) {
       return res.status(409).json({
         success: false,
-        message: `Time conflict: ${conflict.subject} is already scheduled ${conflict.startTime}–${conflict.endTime} on ${day} for this teacher.`
+        message: `Time conflict: ${teacherConflict.teacherName} is already assigned to "${teacherConflict.subject}" on ${day} (${teacherConflict.startTime}–${teacherConflict.endTime}).`,
       });
+    }
+
+    // Check section time conflict
+    const sectionConflict = await TimetableSlot.findOne({
+      department,
+      semester: Number(semester),
+      section: currentSection,
+      day,
+      isActive: true,
+      $or: [
+        { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+      ]
+    });
+    if (sectionConflict) {
+      return res.status(409).json({
+        success: false,
+        message: `Time conflict: Section ${currentSection} already has "${sectionConflict.subject}" scheduled on ${day} (${sectionConflict.startTime}–${sectionConflict.endTime}).`,
+      });
+    }
+
+    // Check room time conflict
+    if (room && room.trim()) {
+      const roomConflict = await TimetableSlot.findOne({
+        room,
+        day,
+        isActive: true,
+        $or: [
+          { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+        ]
+      });
+      if (roomConflict) {
+        return res.status(409).json({
+          success: false,
+          message: `Room conflict: Room ${room} is already booked for "${roomConflict.subject}" on ${day} (${roomConflict.startTime}–${roomConflict.endTime}).`,
+        });
+      }
     }
 
     const slot = await TimetableSlot.create({
       subject, day, startTime, endTime,
       semester: Number(semester),
       department,
+      section: currentSection,
       teacherId,
       teacherName: teacherName || '',
       room: room || '',

@@ -134,21 +134,36 @@ class SchedulingEngine {
       return [classroomRooms, labRooms];
     };
 
-    const pickRoom = (subject, day, startTime, endTime) => {
+    const getSectionStudentCount = (branch, year, section) => {
+      const key = `${branch}::${year}::${section}`;
+      return config.studentCounts?.[key] || 15; // default fallback if empty
+    };
+
+    const pickRoom = (subject, day, startTime, endTime, studentCount = 15) => {
       for (const pool of roomPoolsFor(subject)) {
-        const match = pool.find((r) => isRoomFree(r._id, day, startTime, endTime));
+        const eligible = pool
+          .filter(r => r.capacity >= studentCount && isRoomFree(r._id, day, startTime, endTime))
+          .sort((a, b) => a.capacity - b.capacity);
+        if (eligible.length > 0) return eligible[0];
+        
+        const match = pool
+          .filter(r => isRoomFree(r._id, day, startTime, endTime))
+          .sort((a, b) => b.capacity - a.capacity)[0];
         if (match) return match;
       }
       return null;
     };
 
-    const pickRoomForSlots = (subject, day, chosenSlots) => {
+    const pickRoomForSlots = (subject, day, chosenSlots, studentCount = 15) => {
       for (const pool of roomPoolsFor(subject)) {
-        const match = pool.find((r) =>
-          chosenSlots.every((cs) =>
-            isRoomFree(r._id, day, cs.slot.startTime, cs.slot.endTime),
-          ),
-        );
+        const eligible = pool
+          .filter(r => r.capacity >= studentCount && chosenSlots.every(cs => isRoomFree(r._id, day, cs.slot.startTime, cs.slot.endTime)))
+          .sort((a, b) => a.capacity - b.capacity);
+        if (eligible.length > 0) return eligible[0];
+
+        const match = pool
+          .filter(r => chosenSlots.every(cs => isRoomFree(r._id, day, cs.slot.startTime, cs.slot.endTime)))
+          .sort((a, b) => b.capacity - a.capacity)[0];
         if (match) return match;
       }
       return null;
@@ -159,12 +174,9 @@ class SchedulingEngine {
     const theorySubjects = subjects.filter(s => s.type === 'theory' && s.isActive);
 
     // --- STEP 2: SCHEDULE LABS ---
-    // Labs are high priority due to large, consecutive block constraints.
     labSubjects.forEach(sub => {
-      // Lab duration in terms of slots
       const slotsNeeded = Math.ceil((sub.labDuration * 60) / lectureDuration);
 
-      // Find all sections that need this subject
       const targetSections = [];
       const branchObj = config.branches.find(b => b.code === sub.branch);
       if (branchObj) {
@@ -180,12 +192,11 @@ class SchedulingEngine {
 
       targetSections.forEach(target => {
         let sessionsScheduled = 0;
+        const studentCount = getSectionStudentCount(target.branch, target.year, target.section);
 
-        // Schedule each required lab session for the week
         for (const day of workingDays) {
           if (sessionsScheduled >= sessionsPerWeek) break;
 
-          // Scan slots for consecutive free periods
           for (let i = 0; i <= timeSlots.length - slotsNeeded; i++) {
             let slotsValid = true;
             const chosenSlots = [];
@@ -194,13 +205,11 @@ class SchedulingEngine {
               const currentSlotIndex = i + j;
               const slot = timeSlots[currentSlotIndex];
 
-              // Cannot be a lunch break or any break
               if (slot.isBreak) {
                 slotsValid = false;
                 break;
               }
 
-              // Find current grid state for this section, day, and slotIndex
               const gridEntry = grid.find(e => 
                 e.branch === target.branch &&
                 e.year === target.year &&
@@ -209,13 +218,11 @@ class SchedulingEngine {
                 e.slotIndex === currentSlotIndex
               );
 
-              // Must be free
               if (!gridEntry || !gridEntry.isFree) {
                 slotsValid = false;
                 break;
               }
 
-              // Faculty must be free
               if (!isFacultyFree(sub.facultyId, day, slot.startTime, slot.endTime)) {
                 slotsValid = false;
                 break;
@@ -225,11 +232,9 @@ class SchedulingEngine {
             }
 
             if (slotsValid && chosenSlots.length === slotsNeeded) {
-              // Find a free lab room
-              const freeLabRoom = pickRoomForSlots(sub, day, chosenSlots);
+              const freeLabRoom = pickRoomForSlots(sub, day, chosenSlots, studentCount);
 
               if (freeLabRoom) {
-                // Book the lab!
                 chosenSlots.forEach(cs => {
                   cs.gridEntry.subjectId = sub._id;
                   cs.gridEntry.subjectName = sub.name;
@@ -272,6 +277,8 @@ class SchedulingEngine {
       targetSections.forEach(target => {
         let lecturesRemaining = sub.weeklyHours;
 
+        const studentCount = getSectionStudentCount(target.branch, target.year, target.section);
+
         // Try to distribute 1 lecture per day max
         const scheduledDays = new Set();
 
@@ -298,7 +305,7 @@ class SchedulingEngine {
             if (gridEntry && gridEntry.isFree) {
               if (isFacultyFree(sub.facultyId, day, slot.startTime, slot.endTime)) {
                 // Find a free classroom
-                const freeRoom = pickRoom(sub, day, slot.startTime, slot.endTime);
+                const freeRoom = pickRoom(sub, day, slot.startTime, slot.endTime, studentCount);
                 if (freeRoom) {
                   // Book the slot
                   gridEntry.subjectId = sub._id;
@@ -341,7 +348,7 @@ class SchedulingEngine {
 
               if (gridEntry && gridEntry.isFree) {
                 if (isFacultyFree(sub.facultyId, day, slot.startTime, slot.endTime)) {
-                  const freeRoom = pickRoom(sub, day, slot.startTime, slot.endTime);
+                  const freeRoom = pickRoom(sub, day, slot.startTime, slot.endTime, studentCount);
                   if (freeRoom) {
                     gridEntry.subjectId = sub._id;
                     gridEntry.subjectName = sub.name;

@@ -1,6 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import StudentAttendance from './StudentAttendance';
+import { AttendanceDashboard } from '../../components/attendance/AttendanceDashboard';
 
 export default function StudentAttendancePage() {
   const { user, loading } = useAuth();
@@ -26,14 +26,7 @@ export default function StudentAttendancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 p-6 sm:p-8">
-      <header className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Smart Analytics</p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Attendance Intelligence</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Subject-wise attendance, overall summary, predictions, and recovery planning.
-        </p>
-      </header>
-      <StudentAttendance studentId={user.id} />
+      <AttendanceDashboard />
     </div>
   );
 }

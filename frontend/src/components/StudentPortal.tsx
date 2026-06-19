@@ -1,7 +1,8 @@
-  import { useAuth } from '../contexts/AuthContext';
+  import { AttendanceStats } from './student/AttendanceStats';
   import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
   import { useNavigate } from 'react-router';
-  import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain } from 'lucide-react';
+  import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, CalendarCheck, ArrowRight } from 'lucide-react';
   import AILearningAssistant from './student/AILearningAssistant';
   import NotificationsPanel from './teacher/NotificationsPanel';
   import {
@@ -9,8 +10,8 @@
     PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
   } from 'recharts';
 
-  const BASE     = 'http://localhost:5000/api/admin';
-  const API      = 'http://localhost:5000/api';
+  const BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin`;
+  const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const DEFAULT_SKILLS = [
     { skill: 'Problem Solving', current: 0, target: 0 },
@@ -493,6 +494,12 @@
           onDismiss={handleDismiss}
         />
 
+        {/* ── Attendance Overview ── */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Attendance Overview</h3>
+          <AttendanceStats courses={enrolledCourses} />
+        </div>
+
         {/* ── Student Profile Card ── */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-8 mb-6 text-white">
           <div className="flex items-start justify-between mb-6">
@@ -524,7 +531,7 @@
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4 pt-6 border-t border-white/20">
+          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/20">
             <div>
               <p className="text-sm opacity-75 mb-1">Enrolled Courses</p>
               <p className="text-2xl font-bold">{loadingCourses ? '…' : enrolledCourses.length}</p>
@@ -534,8 +541,7 @@
               <p className="text-2xl font-bold">{avgScore}{avgScore !== '—' ? '%' : ''}</p>
             </div>
             <div>
-              <p className="text-sm opacity-75 mb-1">Attendance</p>
-              <p className="text-2xl font-bold">{avgAttendance}{avgAttendance !== '—' ? '%' : ''}</p>
+{/* Attendance card removed - now shown in Attendance Overview */}
             </div>
             <div>
               <p className="text-sm opacity-75 mb-1">Credits</p>

@@ -1,7 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, FileText } from 'lucide-react';
+import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, ArrowRight, FileText } from 'lucide-react';
 import AILearningAssistant from './student/AILearningAssistant';
 import NotificationsPanel from './teacher/NotificationsPanel';
 import {
@@ -114,6 +114,8 @@ export function StudentPortalNew() {
   const [showAI, setShowAI] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses'>('overview');
+  const [attendancePercentage, setAttendancePercentage] = useState<number | null>(null);
+  const [attendanceRisk, setAttendanceRisk] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -156,6 +158,21 @@ export function StudentPortalNew() {
       ]);
 
       setCompleted(assignmentsData.filter((a: any) => a.submitted));
+
+      // Fetch attendance statistics
+      const currentUserId = user?.id || (storedUser ? JSON.parse(storedUser).id : null);
+      if (currentUserId) {
+        const attendanceRes = await fetch(`${API}/attendance/student/${currentUserId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (attendanceRes.ok) {
+          const attendanceData = await attendanceRes.json();
+          if (attendanceData.success && attendanceData.analytics) {
+            setAttendancePercentage(attendanceData.analytics.attendancePercentage);
+            setAttendanceRisk(attendanceData.analytics.riskLevel);
+          }
+        }
+      }
     } catch (err) {
       console.error('Failed to load data', err);
     } finally {
@@ -219,6 +236,14 @@ export function StudentPortalNew() {
                 <Brain className="w-4 h-4" />
                 AI Assistant
               </Button>
+                        <Button
+              variant="secondary"
+              size="md"
+              onClick={() => navigate('/attendance')}
+            >
+              <Calendar className="w-4 h-4" /> Attendance
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
             </motion.div>
           </div>
         </motion.div>
@@ -273,7 +298,7 @@ export function StudentPortalNew() {
             className="space-y-8"
           >
             {/* Key Stats */}
-            <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StaggerList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               <StaggerItem>
                 <StatCard
                   icon={<BookOpen className="w-5 h-5" />}
@@ -312,6 +337,23 @@ export function StudentPortalNew() {
                   gradient="from-purple-500 to-indigo-600"
                   change={{ value: 5, isPositive: true }}
                 />
+              </StaggerItem>
+
+              <StaggerItem>
+                <div onClick={() => navigate('/attendance')} className="cursor-pointer">
+                  <StatCard
+                    icon={<Calendar className="w-5 h-5" />}
+                    label="My Attendance"
+                    value={attendancePercentage !== null ? `${attendancePercentage}%` : 'Loading...'}
+                    gradient={
+                      attendanceRisk === 'safe'
+                        ? 'from-emerald-500 to-teal-600'
+                        : attendanceRisk === 'warning'
+                        ? 'from-orange-500 to-amber-600'
+                        : 'from-rose-500 to-red-600'
+                    }
+                  />
+                </div>
               </StaggerItem>
             </StaggerList>
 

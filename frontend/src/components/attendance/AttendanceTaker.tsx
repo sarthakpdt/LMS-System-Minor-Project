@@ -48,7 +48,7 @@ import type {
   TimetableSlot,
 } from './attendanceTypes';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -183,7 +183,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
   const [showReminderBanner, setShowReminderBanner] = useState(false);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [sectionOptions, setSectionOptions] = useState<string[]>(['A', 'B', 'C']);
-  const [selectedSection, setSelectedSection] = useState('');
+  const [selectedSection, setSelectedSection] = useState('A');
 
   const selectedCourse = useMemo(
     () => teacherCourses.find((c) => c.courseId === selectedCourseId) || null,

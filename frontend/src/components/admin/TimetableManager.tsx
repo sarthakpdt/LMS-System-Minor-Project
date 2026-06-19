@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, Trash2, Loader2, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { TimetableGeneratorModal } from './TimetableGeneratorModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 const API = 'http://localhost:5000/api';
 
@@ -51,6 +53,10 @@ export default function TimetableManager() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  const { token } = useAuth();
+  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  const [showGenModal, setShowGenModal] = useState(false);
 
   // Filters
   const [filterSem, setFilterSem] = useState('');
@@ -156,7 +162,7 @@ export default function TimetableManager() {
       const ct = courseTeachers.find(c => c.teacherId === form.teacherId && c.courseName === form.subject);
       const res = await fetch(`${API}/timetable`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           subject: form.subject,
           day: form.day,
@@ -189,7 +195,7 @@ export default function TimetableManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Remove this timetable slot?')) return;
     try {
-      const res = await fetch(`${API}/timetable/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API}/timetable/${id}`, { method: 'DELETE', headers: { ...authHeaders } });
       const json = await res.json();
       if (json.success) {
         setSlots(prev => prev.filter(s => s._id !== id));
@@ -221,13 +227,24 @@ export default function TimetableManager() {
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">Create class schedules. Only courses with assigned teachers appear below.</p>
         </div>
-        <button
-          onClick={() => { setShowForm(!showForm); setError(''); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          {showForm ? 'Cancel' : 'Add Slot'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setShowForm(!showForm); setError(''); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            {showForm ? 'Cancel' : 'Add Slot'}
+          </button>
+          <button
+            onClick={() => setShowGenModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
+          >
+            <Clock className="w-4 h-4" />
+            Generate Timetable
+          </button>
+        </div>
+        {/* Timetable Generator Modal */}
+        <TimetableGeneratorModal open={showGenModal} onOpenChange={setShowGenModal} />
       </div>
 
       {error && (
@@ -285,7 +302,7 @@ export default function TimetableManager() {
               <label className="block text-xs font-medium text-gray-600 mb-1">Semester (auto-filled)</label>
               <select value={form.semester} onChange={e => setForm(p => ({ ...p, semester: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-                {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
               </select>
             </div>
 
@@ -335,7 +352,7 @@ export default function TimetableManager() {
         <select value={filterSem} onChange={e => setFilterSem(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">All Semesters</option>
-          {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
         </select>
         <select value={filterDept} onChange={e => setFilterDept(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
@@ -397,5 +414,6 @@ export default function TimetableManager() {
         </div>
       )}
     </div>
+
   );
 }

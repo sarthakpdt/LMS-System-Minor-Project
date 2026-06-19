@@ -11,13 +11,14 @@ const timetableSlotSchema = new mongoose.Schema({
   endTime: { type: String, required: true },   // e.g. "10:00"
   semester: { type: Number, required: true },
   department: { type: String, required: true },
+  section: { type: String, default: 'A' }, // Added to support section management
   teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   teacherName: { type: String },
   room: { type: String, default: '' },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// A subject can only be in one slot per day/semester/department/teacher combo
-timetableSlotSchema.index({ subject: 1, day: 1, semester: 1, department: 1, teacherId: 1 }, { unique: true });
+// A subject can only be in one slot per day/semester/department/teacher/section combo
+timetableSlotSchema.index({ subject: 1, day: 1, semester: 1, department: 1, teacherId: 1, section: 1 }, { unique: true });
 
 module.exports = mongoose.model('TimetableSlot', timetableSlotSchema);
