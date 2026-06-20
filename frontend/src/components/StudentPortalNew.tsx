@@ -144,9 +144,10 @@ export function StudentPortalNew() {
       const assignmentsRes = await fetch(`${API}/assignments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      let fetchedAssignments = [];
       if (assignmentsRes.ok) {
-        const assignmentsData = await assignmentsRes.json();
-        setAssignments(assignmentsData);
+        fetchedAssignments = await assignmentsRes.json();
+        setAssignments(fetchedAssignments);
       }
 
       // Mock performance data
@@ -158,7 +159,7 @@ export function StudentPortalNew() {
         { week: 'W5', score: 85, target: 85 },
       ]);
 
-      setCompleted(assignmentsData.filter((a: any) => a.submitted));
+      setCompleted(fetchedAssignments.filter((a: any) => a.submitted));
 
       // Fetch student fee record
       const studentId = user?.studentId || 'STU002';
@@ -198,7 +199,7 @@ export function StudentPortalNew() {
 
   const allAssignments = Array.isArray(assignments) ? assignments : [];
   const pendingAssignments = allAssignments.filter(a => !a.submitted);
-  const completionRate = enrolled.length > 0 ? Math.round((completed.length / allAssignments.length) * 100) : 0;
+  const completionRate = enrolled.length > 0 && allAssignments.length > 0 ? Math.round((completed.length / allAssignments.length) * 100) : 0;
 
   return (
     <PageTransition className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/20">

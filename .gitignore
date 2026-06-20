@@ -1,3 +1,8 @@
 node_modules
 .vite
 .env
+
+# Local testing/seeding utilities
+backend/setupTestData.js
+backend/testAnalytics.js
+backend/listUsers.js

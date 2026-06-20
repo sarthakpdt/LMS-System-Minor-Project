@@ -14,6 +14,7 @@ export function StudentLayout() {
     { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quizzes & Tests' },
     { to: '/my-progress', icon: ClipboardList, label: 'My Progress & Level' },
+    { to: '/student-risk', icon: TrendingUp, label: 'Academic Risk Report' },
     { to: '/fees', icon: Wallet, label: 'Fee Payment' },
   ];
 
@@ -27,7 +28,7 @@ export function StudentLayout() {
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-lg">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col overflow-hidden shadow-lg">
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-md">

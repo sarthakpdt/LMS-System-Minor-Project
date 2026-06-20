@@ -32,6 +32,8 @@ import { StudentBucketProgress } from "./components/student/StudentBucketProgres
 import StudentAttendancePage from "./components/student/StudentAttendancePage";
 import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
 import { StudentFeePayment } from "./components/student/StudentFeePayment";
+import { StudentRiskReport } from "./components/student/StudentRiskReport";
+import { FacultyInsights } from "./components/teacher/FacultyInsights";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
 
 function ProtectedStudentLayout() {
@@ -69,8 +71,9 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "quizzes", Component: StudentQuizList },
         { path: "quiz/:id", Component: StudentQuizTake },
         { path: "fees", Component: StudentFeePayment },
-        // NEW: student progress page
+        // NEW: student progress page (Student Risk Report)
         { path: "my-progress", Component: StudentBucketProgress },
+        { path: "student-risk", Component: StudentRiskReport },
         // ai-assistant route removed - now accessible via AI icon on Dashboard
         { path: "*", Component: NotFound },
         ],
@@ -100,6 +103,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { path: "grading", Component: AutoGrading },
           { path: "performance-levels", Component: PerformanceLevels },
           { path: "analytics", Component: Analytics },
+          { path: "faculty-insights", Component: FacultyInsights },
           { path: "notifications", Component: TeacherNotifications },
           // NEW: bucket management dashboard
           { path: "bucket-dashboard", Component: BucketDashboard },

@@ -25,6 +25,7 @@ const teacherRoutes      = require('./routes/teacherRoutes');
 const assignmentRoutes   = require('./routes/assignmentRoutes');
 const feeRoutes          = require('./routes/feeRoutes');
 const paymentRoutes      = require('./routes/paymentRoutes');
+const analyticsRoutes    = require('./routes/analyticsRoutes');
 
 // ── Route registration ─────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
@@ -40,6 +41,7 @@ app.use('/api/buckets',       bucketRoutes);
 app.use('/api/courses',       courseRoutes);    
 app.use('/api/teachers',      teacherRoutes);     
 app.use('/api/assignments',   assignmentRoutes);
+app.use('/api/analytics',     analyticsRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

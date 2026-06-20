@@ -135,6 +135,7 @@ export function TeacherLayoutNew() {
     { to: '/quiz-management', icon: Sparkles, label: 'Quiz Creator' },
     { to: '/quiz-monitor', icon: TrendingUp, label: 'Quiz Monitor' },
     { to: '/subject-marks', icon: BarChart3, label: 'Marks Entry' },
+    { to: '/faculty-insights', icon: BarChart3, label: 'Faculty Insights' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },
   ];
 
