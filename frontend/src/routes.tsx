@@ -32,7 +32,7 @@ import { StudentBucketProgress } from "./components/student/StudentBucketProgres
 import StudentAttendancePage from "./components/student/StudentAttendancePage";
 import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
 import { StudentFeePayment } from "./components/student/StudentFeePayment";
-import { StudentRiskReport } from "./components/student/StudentRiskReport";
+import { StudentAcademicHealth } from "./components/student/StudentAcademicHealth";
 import { FacultyInsights } from "./components/teacher/FacultyInsights";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
 
@@ -71,9 +71,9 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "quizzes", Component: StudentQuizList },
         { path: "quiz/:id", Component: StudentQuizTake },
         { path: "fees", Component: StudentFeePayment },
-        // NEW: student progress page (Student Risk Report)
+        // NEW: student progress page
         { path: "my-progress", Component: StudentBucketProgress },
-        { path: "student-risk", Component: StudentRiskReport },
+        { path: "academic-health", Component: StudentAcademicHealth },
         // ai-assistant route removed - now accessible via AI icon on Dashboard
         { path: "*", Component: NotFound },
         ],

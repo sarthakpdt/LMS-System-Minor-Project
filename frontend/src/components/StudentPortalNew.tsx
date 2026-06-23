@@ -1,7 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, FileText, Wallet } from 'lucide-react';
+import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, FileText, Wallet, Activity } from 'lucide-react';
 import AILearningAssistant from './student/AILearningAssistant';
 import { StudentFeePayment } from './student/StudentFeePayment';
 import NotificationsPanel from './teacher/NotificationsPanel';
@@ -226,6 +226,15 @@ export function StudentPortalNew() {
               </div>
             </div>
             <motion.div whileHover={{ scale: 1.05 }} className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => navigate('/academic-health')}
+                className="bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 dark:bg-violet-950/20 dark:text-violet-400 dark:border-violet-900/30 flex items-center gap-1.5"
+              >
+                <Activity className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                Academic Health
+              </Button>
               <Button
                 variant="secondary"
                 size="md"
