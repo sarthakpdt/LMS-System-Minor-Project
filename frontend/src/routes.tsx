@@ -31,6 +31,7 @@ import { StudentBucketProgress } from "./components/student/StudentBucketProgres
 import StudentAttendancePage from "./components/student/StudentAttendancePage";
 import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
+import TimetableDashboard from './components/timetable/TimetableDashboard';
 
 function ProtectedStudentLayout() {
   return (
@@ -128,6 +129,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "performance-levels", Component: PerformanceLevels },
         { path: "notifications", Component: TeacherNotifications },
         { path: "analytics", Component: Analytics },
+        { path: "timetable", Component: TimetableDashboard },
         { path: "*", Component: NotFound },
       ],
     },

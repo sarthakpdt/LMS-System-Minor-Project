@@ -145,10 +145,14 @@ class ConflictDetector {
       if (entry.roomId && entry.roomName) {
         const key = `${entry.branch}::${entry.year}::${entry.section}`;
         const strength = studentCounts[key] || 15; // default fallback count if no students enrolled yet
-        
-        // Find the room from the room pool or config if passed, else skip
-        // Wait, room objects are not passed directly except if we search
-        // We can just find the room by name or ID in the rooms list. Let's do a capacity check if we have the rooms.
+        const capacity = entry.roomCapacity;
+        if (capacity && strength > capacity) {
+          conflicts.push({
+            type: 'room_capacity',
+            description: `Room capacity violation: Room "${entry.roomName}" (Capacity: ${capacity}) is too small for section ${entry.branch} Year ${entry.year} Section ${entry.section} (Student count: ${strength}) on ${entry.day} ${entry.timeSlot.label}.`,
+            severity: 'warning'
+          });
+        }
       }
     });
 
@@ -280,8 +284,49 @@ class ConflictDetector {
       });
     });
 
+    // --- 8. LAB SCHEDULING VALIDATION ---
+    // Rule: Every lab subject must have exactly one continuous session per week per section (never split into multiple days/sessions)
+    const sectionLabSessions = {};
+    activeEntries.forEach(entry => {
+      if (entry.subjectType === 'lab' && entry.subjectId) {
+        const key = `${entry.branch}::${entry.year}::${entry.section}::${entry.subjectId.toString()}`;
+        if (!sectionLabSessions[key]) sectionLabSessions[key] = [];
+        sectionLabSessions[key].push(entry);
+      }
+    });
+
+    Object.entries(sectionLabSessions).forEach(([key, list]) => {
+      const daysUsed = new Set(list.map(e => e.day));
+      const subjectName = list[0].subjectName;
+      const [branch, year, section] = key.split('::');
+
+      if (daysUsed.size > 1) {
+        conflicts.push({
+          type: 'lab',
+          description: `Lab scheduling violation: Lab "${subjectName}" for ${branch} Year ${year} Section ${section} is split across multiple days (${Array.from(daysUsed).join(', ')}). A lab must be a single session on one day.`,
+          severity: 'error'
+        });
+      } else {
+        list.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
+        let isContinuous = true;
+        for (let i = 0; i < list.length - 1; i++) {
+          if (list[i + 1].slotIndex !== list[i].slotIndex + 1) {
+            isContinuous = false;
+          }
+        }
+        if (!isContinuous) {
+          conflicts.push({
+            type: 'lab',
+            description: `Lab scheduling violation: Lab "${subjectName}" for ${branch} Year ${year} Section ${section} on ${list[0].day} is not continuous.`,
+            severity: 'error'
+          });
+        }
+      }
+    });
+
     return conflicts;
   }
 }
 
 module.exports = ConflictDetector;
+

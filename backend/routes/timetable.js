@@ -148,4 +148,8 @@ router.delete('/:id', async (req, res) => {
 const engineRouter = require('./timetableEngineRoutes');
 router.use('/engine', engineRouter);
 
+// Timetable management sub-routes (Phase 1)
+const manageRouter = require('./timetable/ttManageIndex');
+router.use('/manage', manageRouter);
+
 module.exports = router;

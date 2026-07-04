@@ -3,6 +3,21 @@ const AssignmentSubmission = require('../models/AssignmentSubmission');
 const fs                   = require('fs');
 const path                 = require('path');
 
+// ── GET /api/assignments ───────────────────────────────────────
+exports.getAssignments = async (req, res) => {
+  try {
+    const assignments = await Assignment.find().sort({ createdAt: -1 });
+    // Since frontend expects an array directly: await assignmentsRes.json()
+    // Wait, some other places might expect { success: true, ... }
+    // But StudentPortalNew.tsx does `const assignmentsData = await assignmentsRes.json(); setAssignments(assignmentsData);`
+    // So if it's expecting an array directly, we return `res.json(assignments)`.
+    // Wait, let's just check if it expects array or object. It uses `.filter` on it immediately, so it expects an array.
+    res.json(assignments);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // ── Anthropic Claude helper (preferred for AI insights) ───────
 async function callClaude(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;

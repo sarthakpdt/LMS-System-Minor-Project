@@ -1,4 +1,4 @@
-import AttendanceTaker from '../attendance/AttendanceTaker';
+import TeacherScheduleDashboard from './TeacherScheduleDashboard';
 
 interface Props {
   teacherId?: string;
@@ -6,5 +6,12 @@ interface Props {
 }
 
 export default function AttendanceManager({ teacherId, teacherName }: Props) {
-  return <AttendanceTaker teacherId={teacherId} teacherName={teacherName} />;
+  if (!teacherId) {
+    return (
+      <div className="p-8 text-center text-slate-400">
+        Please sign in as a teacher to manage schedule and attendance.
+      </div>
+    );
+  }
+  return <TeacherScheduleDashboard teacherId={teacherId} teacherName={teacherName} />;
 }

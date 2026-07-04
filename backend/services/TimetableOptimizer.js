@@ -217,6 +217,7 @@ class TimetableOptimizer {
       'facultyName',
       'roomId',
       'roomName',
+      'roomCapacity',
       'isFree',
     ];
 

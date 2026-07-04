@@ -17,12 +17,13 @@ const ttEntrySchema = new mongoose.Schema({
   facultyName: { type: String, default: '' },
   roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'TtRoom', default: null },
   roomName: { type: String, default: '' },
+  roomCapacity: { type: Number, default: null },
   isLunch: { type: Boolean, default: false },
   isFree: { type: Boolean, default: false }
 });
 
 const ttConflictSchema = new mongoose.Schema({
-  type: { type: String, enum: ['teacher', 'room', 'section', 'lab', 'missing', 'unassigned'], required: true },
+  type: { type: String, enum: ['teacher', 'room', 'section', 'lab', 'missing', 'unassigned', 'lunch', 'room_capacity'], required: true },
   description: { type: String, required: true },
   severity: { type: String, enum: ['error', 'warning'], required: true }
 });
@@ -31,9 +32,14 @@ const ttGeneratedSchema = new mongoose.Schema({
   configId: { type: mongoose.Schema.Types.ObjectId, ref: 'TtConfig', required: true },
   label: { type: String, default: 'Working Draft' },
   generatedAt: { type: Date, default: Date.now },
-  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  status: { type: String, enum: ['draft', 'approved', 'published', 'archived'], default: 'draft' },
   isWorkingDraft: { type: Boolean, default: false },
   aiOptimized: { type: Boolean, default: false },
+  version: { type: Number, default: 1 },
+  versionGroupId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  parentVersionId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  generationScope: { type: mongoose.Schema.Types.Mixed, default: null },
+  generationReport: { type: mongoose.Schema.Types.Mixed, default: null },
   validationSummary: {
     errorCount: { type: Number, default: 0 },
     warningCount: { type: Number, default: 0 },

@@ -15,6 +15,17 @@ class SchedulingEngine {
     const timeSlots = config.timeSlots; // e.g. [{ label, startTime, endTime, isBreak, breakType }]
     const lectureDuration = config.lectureDuration || 50;
 
+    // ── College Timing Rules ──────────────────────────────────────────────
+    const COLLEGE_START = '09:00';
+    const COLLEGE_END   = '17:00';
+    const LUNCH_WINDOW_START = '12:00';
+    const LUNCH_WINDOW_END   = '14:00';
+
+    // Filter out slots outside college hours
+    const validTimeSlots = timeSlots.filter(slot => {
+      return slot.startTime >= COLLEGE_START && slot.endTime <= COLLEGE_END;
+    });
+
     // Build map of faculty constraints
     const constraintsMap = new Map();
     if (facultyConstraints) {
@@ -37,7 +48,7 @@ class SchedulingEngine {
       branch.years.forEach(year => {
         year.sections.forEach(section => {
           workingDays.forEach(day => {
-            timeSlots.forEach((slot, slotIndex) => {
+            validTimeSlots.forEach((slot, slotIndex) => {
               const isLunch = slot.isBreak && slot.breakType === 'lunch';
               
               const entry = {
@@ -58,6 +69,7 @@ class SchedulingEngine {
                 facultyName: '',
                 roomId: null,
                 roomName: '',
+                roomCapacity: null,
                 isLunch: isLunch,
                 isFree: !isLunch
               };
@@ -69,9 +81,61 @@ class SchedulingEngine {
       });
     });
 
+    // ── Step 1.5: AI-Optimized Lunch Assignment ───────────────────────────
+    // For each section on each day, assign exactly ONE lunch break in the
+    // 12:00–14:00 window. The AI picks 12–1 or 1–2 based on morning workload:
+    //   - If the section has ≥2 morning lectures (before 12:00) → earlier lunch (12:00)
+    //   - Otherwise → later lunch (13:00) to allow more morning slots
+    // This guarantees exactly one lunch per section per day.
+    const lunchWindowSlots = validTimeSlots.filter(slot =>
+      slot.startTime >= LUNCH_WINDOW_START && slot.endTime <= LUNCH_WINDOW_END
+    );
+
+    // If no explicit lunch slot in config, dynamically find best lunch slot per section/day
+    const hasConfigLunch = validTimeSlots.some(s => s.isBreak && s.breakType === 'lunch');
+    if (!hasConfigLunch && lunchWindowSlots.length > 0) {
+      config.branches.forEach(branch => {
+        branch.years.forEach(year => {
+          year.sections.forEach(section => {
+            workingDays.forEach(day => {
+              // Count morning lectures already planned (before 12:00)
+              const morningSlotCount = validTimeSlots.filter(
+                s => s.endTime <= LUNCH_WINDOW_START && !s.isBreak
+              ).length;
+
+              // AI decision: early lunch if heavy morning (>=2 morning slots), else late lunch
+              const pickEarlyLunch = morningSlotCount >= 2;
+              const preferredLunch = pickEarlyLunch
+                ? lunchWindowSlots.find(s => s.startTime === '12:00')
+                : lunchWindowSlots.find(s => s.startTime === '13:00');
+              const chosenLunch = preferredLunch || lunchWindowSlots[0];
+
+              // Mark this slot as lunch for the section/day in grid
+              const gridEntry = grid.find(e =>
+                e.branch === branch.code &&
+                e.year === year.yearNumber &&
+                e.section === section &&
+                e.day === day &&
+                e.timeSlot.startTime === chosenLunch.startTime
+              );
+              if (gridEntry && gridEntry.isFree) {
+                gridEntry.subjectName = 'Lunch Break';
+                gridEntry.subjectType = 'lunch';
+                gridEntry.isLunch = true;
+                gridEntry.isFree = false;
+              }
+            });
+          });
+        });
+      });
+    }
+
     // Helper functions to check if resources are free
     const isFacultyFree = (facultyId, day, startTime, endTime) => {
       if (!facultyId) return true;
+
+      // Reject slots outside college hours (9 AM – 5 PM)
+      if (startTime < '09:00' || endTime > '17:00') return false;
       
       // Check if scheduled in any grid slot at this time
       const busy = grid.some(e => 
@@ -173,6 +237,9 @@ class SchedulingEngine {
     const labSubjects = subjects.filter(s => s.type === 'lab' && s.isActive);
     const theorySubjects = subjects.filter(s => s.type === 'theory' && s.isActive);
 
+    // Use validTimeSlots for scheduling (enforces 9AM-5PM)
+    const scheduleSlots = validTimeSlots;
+
     // --- STEP 2: SCHEDULE LABS ---
     labSubjects.forEach(sub => {
       const slotsNeeded = Math.ceil((sub.labDuration * 60) / lectureDuration);
@@ -188,7 +255,8 @@ class SchedulingEngine {
         }
       }
 
-      const sessionsPerWeek = Math.max(1, sub.weeklyHours || 1);
+      // Every laboratory subject gets exactly one lab session per week
+      const sessionsPerWeek = 1;
 
       targetSections.forEach(target => {
         let sessionsScheduled = 0;
@@ -197,25 +265,32 @@ class SchedulingEngine {
         for (const day of workingDays) {
           if (sessionsScheduled >= sessionsPerWeek) break;
 
-          for (let i = 0; i <= timeSlots.length - slotsNeeded; i++) {
+          for (let i = 0; i <= scheduleSlots.length - slotsNeeded; i++) {
             let slotsValid = true;
             const chosenSlots = [];
 
             for (let j = 0; j < slotsNeeded; j++) {
               const currentSlotIndex = i + j;
-              const slot = timeSlots[currentSlotIndex];
+              const slot = scheduleSlots[currentSlotIndex];
 
               if (slot.isBreak) {
                 slotsValid = false;
                 break;
               }
 
+              // Skip slots outside college hours
+              if (slot.startTime < '09:00' || slot.endTime > '17:00') {
+                slotsValid = false;
+                break;
+              }
+
+              // Find entry in grid using startTime (since validTimeSlots rebases slotIndex)
               const gridEntry = grid.find(e => 
                 e.branch === target.branch &&
                 e.year === target.year &&
                 e.section === target.section &&
                 e.day === day &&
-                e.slotIndex === currentSlotIndex
+                e.timeSlot.startTime === slot.startTime
               );
 
               if (!gridEntry || !gridEntry.isFree) {
@@ -243,6 +318,7 @@ class SchedulingEngine {
                   cs.gridEntry.facultyName = sub.facultyName || 'Faculty';
                   cs.gridEntry.roomId = freeLabRoom._id;
                   cs.gridEntry.roomName = freeLabRoom.name;
+                  cs.gridEntry.roomCapacity = freeLabRoom.capacity;
                   cs.gridEntry.isFree = false;
 
                   incrementFacultyHours(sub.facultyId, day, 1);
@@ -290,16 +366,19 @@ class SchedulingEngine {
           if (scheduledDays.has(day)) continue;
 
           // Find a free classroom
-          for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {
-            const slot = timeSlots[slotIndex];
+          for (let slotIndex = 0; slotIndex < scheduleSlots.length; slotIndex++) {
+            const slot = scheduleSlots[slotIndex];
             if (slot.isBreak) continue;
+
+            // Enforce college hours
+            if (slot.startTime < '09:00' || slot.endTime > '17:00') continue;
 
             const gridEntry = grid.find(e => 
               e.branch === target.branch &&
               e.year === target.year &&
               e.section === target.section &&
               e.day === day &&
-              e.slotIndex === slotIndex
+              e.timeSlot.startTime === slot.startTime
             );
 
             if (gridEntry && gridEntry.isFree) {
@@ -315,6 +394,7 @@ class SchedulingEngine {
                   gridEntry.facultyName = sub.facultyName || 'Faculty';
                   gridEntry.roomId = freeRoom._id;
                   gridEntry.roomName = freeRoom.name;
+                  gridEntry.roomCapacity = freeRoom.capacity;
                   gridEntry.isFree = false;
 
                   incrementFacultyHours(sub.facultyId, day, 1);
@@ -333,17 +413,20 @@ class SchedulingEngine {
           for (const day of orderedDays) {
             if (lecturesRemaining <= 0) break;
 
-            for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {
+            for (let slotIndex = 0; slotIndex < scheduleSlots.length; slotIndex++) {
               if (lecturesRemaining <= 0) break;
-              const slot = timeSlots[slotIndex];
+              const slot = scheduleSlots[slotIndex];
               if (slot.isBreak) continue;
+
+              // Enforce college hours
+              if (slot.startTime < '09:00' || slot.endTime > '17:00') continue;
 
               const gridEntry = grid.find(e => 
                 e.branch === target.branch &&
                 e.year === target.year &&
                 e.section === target.section &&
                 e.day === day &&
-                e.slotIndex === slotIndex
+                e.timeSlot.startTime === slot.startTime
               );
 
               if (gridEntry && gridEntry.isFree) {
@@ -357,6 +440,7 @@ class SchedulingEngine {
                     gridEntry.facultyName = sub.facultyName || 'Faculty';
                     gridEntry.roomId = freeRoom._id;
                     gridEntry.roomName = freeRoom.name;
+                    gridEntry.roomCapacity = freeRoom.capacity;
                     gridEntry.isFree = false;
 
                     incrementFacultyHours(sub.facultyId, day, 1);

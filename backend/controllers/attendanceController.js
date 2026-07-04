@@ -233,19 +233,31 @@ exports.getStudents = async (req, res) => {
         return res.status(access.status).json({ success: false, message: access.message });
       }
 
-      const course = await Course.findById(courseId)
-        .populate('enrolledStudents', '_id name email studentId department semester section approvalStatus')
-        .lean();
-
-      let enrolled = (course?.enrolledStudents || [])
-        .filter((s) => s && s._id && s.approvalStatus === 'approved');
-
-      if (section) {
-        enrolled = enrolled.filter((s) => String(s.section || '') === String(section));
-      } else if (course?.section) {
-        enrolled = enrolled.filter((s) => String(s.section || '') === String(course.section));
+      const course = await Course.findById(courseId).lean();
+      if (!course) {
+        return res.status(404).json({ success: false, message: 'Course not found' });
       }
 
+      const studentFilter = {
+        approvalStatus: 'approved',
+        semester: course.semester,
+      };
+
+      if (course.timetableBranch) {
+        studentFilter.$or = [
+          { timetableBranch: course.timetableBranch },
+          { department: course.timetableBranch }
+        ];
+      } else if (course.department) {
+        studentFilter.department = course.department;
+      }
+
+      const activeSection = section || course.section;
+      if (activeSection) {
+        studentFilter.section = activeSection;
+      }
+
+      const enrolled = await Student.find(studentFilter).lean();
       const students = enrolled.map(mapStudentRow);
 
       return res.json({
@@ -414,8 +426,24 @@ exports.getTeacherAnalytics = async (req, res) => {
     let enrolledStudentIds = null;
     if (subject && isValidObjectId(teacherId)) {
       const course = await Course.findOne({ courseName: subject, teacher: teacherId }).lean();
-      if (course && course.enrolledStudents) {
-        enrolledStudentIds = new Set(course.enrolledStudents.map(id => String(id)));
+      if (course) {
+        const studentFilter = {
+          approvalStatus: 'approved',
+          semester: course.semester,
+        };
+        if (course.timetableBranch) {
+          studentFilter.$or = [
+            { timetableBranch: course.timetableBranch },
+            { department: course.timetableBranch }
+          ];
+        } else if (course.department) {
+          studentFilter.department = course.department;
+        }
+        if (course.section) {
+          studentFilter.section = course.section;
+        }
+        const dynamicStudents = await Student.find(studentFilter).select('_id').lean();
+        enrolledStudentIds = new Set(dynamicStudents.map(s => String(s._id)));
       }
     }
 
@@ -475,8 +503,24 @@ exports.getTeacherSummary = async (req, res) => {
     let enrolledStudentIds = null;
     if (subject && isValidObjectId(teacherId)) {
       const course = await Course.findOne({ courseName: subject, teacher: teacherId }).lean();
-      if (course && course.enrolledStudents) {
-        enrolledStudentIds = new Set(course.enrolledStudents.map(id => String(id)));
+      if (course) {
+        const studentFilter = {
+          approvalStatus: 'approved',
+          semester: course.semester,
+        };
+        if (course.timetableBranch) {
+          studentFilter.$or = [
+            { timetableBranch: course.timetableBranch },
+            { department: course.timetableBranch }
+          ];
+        } else if (course.department) {
+          studentFilter.department = course.department;
+        }
+        if (course.section) {
+          studentFilter.section = course.section;
+        }
+        const dynamicStudents = await Student.find(studentFilter).select('_id').lean();
+        enrolledStudentIds = new Set(dynamicStudents.map(s => String(s._id)));
       }
     }
 

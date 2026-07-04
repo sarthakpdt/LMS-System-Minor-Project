@@ -53,8 +53,9 @@ export default function TimetableManager() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
-  const { token } = useAuth();
-  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+  const { user } = useAuth();
+  const token = user?.token ?? null;
+  const authHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
   const [showGenModal, setShowGenModal] = useState(false);
 

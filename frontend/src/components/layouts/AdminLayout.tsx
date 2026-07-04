@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { LayoutDashboard, Users, BookOpen, FileText, BarChart3, Shield, FolderOpen, ClipboardCheck, Sparkles, GraduationCap, UserCheck, Bell, Moon, Sun, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, FileText, BarChart3, Shield, FolderOpen, ClipboardCheck, Sparkles, GraduationCap, UserCheck, Bell, Moon, Sun, Menu, X, CalendarDays } from 'lucide-react';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useTheme } from '../../theme/ThemeProvider';
 import { motion } from 'framer-motion';
@@ -23,6 +23,7 @@ export function AdminLayout() {
     { to: '/performance-levels', icon: BarChart3, label: 'Performance Levels' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/timetable', icon: CalendarDays, label: 'Timetable' },
   ];
 
   return (

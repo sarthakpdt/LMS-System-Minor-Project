@@ -151,6 +151,46 @@ router.get('/teacher/:teacherId', attendanceController.getTeacherRecords);
 router.get('/teacher/:teacherId/analytics', attendanceController.getTeacherAnalytics);
 router.get('/summary/:teacherId', attendanceController.getTeacherSummary);
 
+// Phase 5 integration: Auto-fetch student list by branch, semester, and section
+router.get('/students-by-section', async (req, res) => {
+  try {
+    const { branch, semester, section } = req.query;
+    if (!branch || !semester || !section) {
+      return res.status(400).json({ success: false, message: 'branch, semester, and section are required parameters' });
+    }
+
+    const Student = require('../models/Student');
+    const filter = {
+      approvalStatus: 'approved',
+      semester: String(semester),
+      section: String(section),
+      $or: [
+        { timetableBranch: branch },
+        { department: branch }
+      ]
+    };
+
+    const students = await Student.find(filter)
+      .select('_id name email semester department studentId section')
+      .lean();
+
+    res.json({
+      success: true,
+      students: students.map(s => ({
+        _id: s._id,
+        name: s.name,
+        email: s.email,
+        studentId: s.studentId,
+        department: s.department,
+        semester: s.semester,
+        section: s.section || null,
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 router.get('/student/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
