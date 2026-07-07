@@ -17,6 +17,13 @@ const feeRecordSchema = new mongoose.Schema({
   dueAmount: { type: Number, required: true },
   feeStatus: { type: String, enum: ['paid', 'partial', 'pending', 'overdue'], default: 'pending' },
   lastPaymentDate: { type: String, default: '-' },
+  scholarship: {
+    id: { type: String, default: '' },
+    name: { type: String, default: '' },
+    amount: { type: Number, default: 0 },
+    type: { type: String, enum: ['merit', 'need-based', 'sports', 'other', ''], default: '' },
+    status: { type: String, enum: ['active', 'applied', 'inactive', ''], default: '' }
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

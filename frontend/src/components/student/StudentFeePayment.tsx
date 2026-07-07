@@ -447,6 +447,16 @@ export function StudentFeePayment({ embedMode = false }: { embedMode?: boolean }
             </div>
           </div>
 
+          {record.scholarship && record.scholarship.amount > 0 && (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-lg flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-350">
+              <span className="font-semibold flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <span>Scholarship Applied: <strong>{record.scholarship.name}</strong></span>
+              </span>
+              <span className="font-black text-sm">-{formatINR(record.scholarship.amount)}</span>
+            </div>
+          )}
+
           {/* Big Totals */}
           <div className="grid grid-cols-3 gap-4 pt-2">
             <div>

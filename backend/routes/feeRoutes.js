@@ -3,6 +3,21 @@ const router = express.Router();
 const FeeRecord = require('../models/FeeRecord');
 const Transaction = require('../models/Transaction');
 
+const calculateGpaScholarship = (gpa, academicFee) => {
+  if (!gpa || gpa < 7.5) return { amount: 0, pct: 0 };
+  let pct = 0;
+  if (gpa >= 9.5) pct = 100;
+  else if (gpa >= 9.0) pct = 75;
+  else if (gpa >= 8.5) pct = 50;
+  else if (gpa >= 8.0) pct = 25;
+  else if (gpa >= 7.5) pct = 15;
+  
+  return {
+    amount: Math.round(academicFee * (pct / 100)),
+    pct
+  };
+};
+
 // Sync helper to bridge registered student DB with the Accounts DB
 const syncFeeRecords = async () => {
   try {
@@ -21,12 +36,12 @@ const syncFeeRecords = async () => {
       if (!student.studentId) continue;
 
       let record = await FeeRecord.findOne({ studentId: student.studentId });
+      const program = student.department === 'CS' ? 'B.Tech (CSE)' : 
+                      student.department === 'IT' ? 'B.Tech (IT)' : 
+                      student.department === 'MBA' ? 'MBA' : 'Other';
+      const semester = Number(student.semester) || 1;
+
       if (!record) {
-        const program = student.department === 'CS' ? 'B.Tech (CSE)' : 
-                        student.department === 'IT' ? 'B.Tech (IT)' : 
-                        student.department === 'MBA' ? 'MBA' : 'Other';
-        const semester = Number(student.semester) || 1;
-        
         record = new FeeRecord({
           studentId: student.studentId,
           rollNo: student.studentId,
@@ -38,20 +53,53 @@ const syncFeeRecords = async () => {
           hostelFee: 36000,
           messFee: 24000,
           otherCharges: 6500,
-          totalFee: 159000,
           paidAmount: 0,
-          dueAmount: 159000,
-          feeStatus: 'pending',
           lastPaymentDate: '-'
         });
-        try {
-          await record.save();
-        } catch (saveErr) {
-          if (saveErr.code !== 11000) {
-            throw saveErr;
-          }
+      }
+
+      // Sync updated fields
+      record.name = student.name;
+      record.program = program;
+      record.semester = semester;
+
+      // Calculate GPA-based scholarship
+      const hasManualScholarship = record.scholarship && record.scholarship.id && record.scholarship.id !== 'AUTO_GPA';
+      if (!hasManualScholarship) {
+        const { amount: autoAmt, pct: autoPct } = calculateGpaScholarship(student.gpa, record.academicFee);
+        if (autoPct > 0) {
+          record.scholarship = {
+            id: 'AUTO_GPA',
+            name: `GPA Merit Scholarship (${autoPct}%)`,
+            amount: autoAmt,
+            type: 'merit',
+            status: 'active'
+          };
+        } else {
+          record.scholarship = {
+            id: '',
+            name: '',
+            amount: 0,
+            type: '',
+            status: ''
+          };
         }
       }
+
+      // Recalculate totalFee, dueAmount and status
+      const baseFee = record.academicFee + record.hostelFee + record.messFee + record.otherCharges;
+      record.totalFee = baseFee - (record.scholarship ? record.scholarship.amount : 0);
+      record.dueAmount = Math.max(0, record.totalFee - record.paidAmount);
+
+      if (record.dueAmount === 0) {
+        record.feeStatus = 'paid';
+      } else if (record.paidAmount > 0) {
+        record.feeStatus = 'partial';
+      } else {
+        record.feeStatus = 'pending';
+      }
+
+      await record.save();
     }
     console.log('🔄 Synced Accounts DB FeeRecords with Student DB successfully.');
   } catch (error) {
@@ -139,43 +187,11 @@ router.post('/accounts/remind', async (req, res) => {
 router.get('/student/fee-record/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
-    let record = await FeeRecord.findOne({ studentId });
-    
-    // If not found, let's create a dynamic default record for this student based on their model info
+    await syncFeeRecords();
+    const record = await FeeRecord.findOne({ studentId });
     if (!record) {
-      const User = require('../models/User'); // Or Student
-      const Student = require('../models/Student');
-      const studentObj = await Student.findOne({ studentId });
-      
-      if (studentObj) {
-        const program = studentObj.department === 'CS' ? 'B.Tech (CSE)' : 
-                        studentObj.department === 'IT' ? 'B.Tech (IT)' : 
-                        studentObj.department === 'MBA' ? 'MBA' : 'Other';
-        const semester = Number(studentObj.semester) || 1;
-        
-        record = new FeeRecord({
-          studentId: studentObj.studentId,
-          rollNo: studentObj.studentId,
-          name: studentObj.name,
-          program: program,
-          semester: semester,
-          paymentPlan: 'semester',
-          academicFee: 92500,
-          hostelFee: 36000,
-          messFee: 24000,
-          otherCharges: 6500,
-          totalFee: 159000,
-          paidAmount: 0,
-          dueAmount: 159000,
-          feeStatus: 'pending',
-          lastPaymentDate: '-'
-        });
-        await record.save();
-      } else {
-        return res.status(404).json({ success: false, message: 'Student details not found' });
-      }
+      return res.status(404).json({ success: false, message: 'Student fee record not found' });
     }
-    
     res.json({ success: true, record });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -314,42 +330,66 @@ router.put('/accounts/transactions/:id/status', async (req, res) => {
 router.get('/accounts/student/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
-    let record = await FeeRecord.findOne({ studentId });
-    
+    await syncFeeRecords();
+    const record = await FeeRecord.findOne({ studentId });
     if (!record) {
-      const Student = require('../models/Student');
-      const studentObj = await Student.findOne({ studentId });
-      
-      if (studentObj) {
-        const program = studentObj.department === 'CS' ? 'B.Tech (CSE)' : 
-                        studentObj.department === 'IT' ? 'B.Tech (IT)' : 
-                        studentObj.department === 'MBA' ? 'MBA' : 'Other';
-        const semester = Number(studentObj.semester) || 1;
-        
-        record = new FeeRecord({
-          studentId: studentObj.studentId,
-          rollNo: studentObj.studentId,
-          name: studentObj.name,
-          program: program,
-          semester: semester,
-          paymentPlan: 'semester',
-          academicFee: 92500,
-          hostelFee: 36000,
-          messFee: 24000,
-          otherCharges: 6500,
-          totalFee: 159000,
-          paidAmount: 0,
-          dueAmount: 159000,
-          feeStatus: 'pending',
-          lastPaymentDate: '-'
-        });
-        await record.save();
-      } else {
-        return res.status(404).json({ success: false, message: 'Student details not found' });
-      }
+      return res.status(404).json({ success: false, message: 'Student fee record not found' });
     }
-    
     res.json({ success: true, record });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Admin Route to Apply/Override Scholarship
+router.post('/accounts/student/:studentId/scholarship', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { name, amount, type, status } = req.body;
+
+    await syncFeeRecords();
+    const record = await FeeRecord.findOne({ studentId });
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Fee record not found' });
+    }
+
+    const scholAmt = Number(amount) || 0;
+
+    // Apply manual scholarship
+    if (name || scholAmt > 0) {
+      record.scholarship = {
+        id: `MANUAL_${Date.now()}`,
+        name: name || 'Custom Scholarship',
+        amount: scholAmt,
+        type: type || 'other',
+        status: status || 'applied'
+      };
+    } else {
+      // Clear manual scholarship (so it falls back to auto GPA on next sync)
+      record.scholarship = {
+        id: '',
+        name: '',
+        amount: 0,
+        type: '',
+        status: ''
+      };
+    }
+
+    // Recalculate totalFee, dueAmount and status
+    const baseFee = record.academicFee + record.hostelFee + record.messFee + record.otherCharges;
+    record.totalFee = baseFee - record.scholarship.amount;
+    record.dueAmount = Math.max(0, record.totalFee - record.paidAmount);
+
+    if (record.dueAmount === 0) {
+      record.feeStatus = 'paid';
+    } else if (record.paidAmount > 0) {
+      record.feeStatus = 'partial';
+    } else {
+      record.feeStatus = 'pending';
+    }
+
+    await record.save();
+    res.json({ success: true, message: 'Scholarship applied successfully', record });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

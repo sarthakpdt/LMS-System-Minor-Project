@@ -27,6 +27,7 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   CheckCircle,
+  ShieldCheck,
   CreditCard,
   Landmark,
   Smartphone
@@ -66,6 +67,13 @@ interface StudentFeeRecord {
   dueAmount: number;
   feeStatus: 'paid' | 'partial' | 'pending' | 'overdue';
   lastPaymentDate: string;
+  scholarship?: {
+    id: string;
+    name: string;
+    amount: number;
+    type: string;
+    status: string;
+  };
 }
 
 interface TransactionRecord {
@@ -145,6 +153,14 @@ export function Accounts() {
   const [paymentCategory, setPaymentCategory] = useState<'Academic' | 'Hostel' | 'Mess' | 'Other'>('Academic');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'NEFT' | 'RTGS' | 'Card' | 'Cash'>('UPI');
   const [submittingPayment, setSubmittingPayment] = useState(false);
+
+  // Scholarship form states
+  const [showScholarshipForm, setShowScholarshipForm] = useState(false);
+  const [scholarshipName, setScholarshipName] = useState("");
+  const [scholarshipAmount, setScholarshipAmount] = useState("");
+  const [scholarshipType, setScholarshipType] = useState<'merit' | 'need-based' | 'sports' | 'other'>('merit');
+  const [scholarshipStatus, setScholarshipStatus] = useState<'active' | 'applied' | 'inactive'>('applied');
+  const [submittingScholarship, setSubmittingScholarship] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -531,6 +547,43 @@ This is a computer-generated fee ledger statement.
       toast.error("Error connecting to payment server.");
     } finally {
       setSubmittingPayment(false);
+    }
+  };
+
+  const handleApplyScholarship = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+    try {
+      setSubmittingScholarship(true);
+      const res = await fetch(`http://localhost:5000/api/accounts/student/${selectedStudent.studentId}/scholarship`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: scholarshipName,
+          amount: Number(scholarshipAmount) || 0,
+          type: scholarshipType,
+          status: scholarshipStatus
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(Number(scholarshipAmount) > 0 ? "Scholarship applied successfully!" : "Scholarship cleared successfully!");
+        setShowScholarshipForm(false);
+        setScholarshipName("");
+        setScholarshipAmount("");
+        
+        await fetchData(); // Refresh directories/stats
+        
+        if (data.record) {
+          setSelectedStudent(data.record);
+        }
+      } else {
+        toast.error(data.message || "Failed to update scholarship.");
+      }
+    } catch (error) {
+      toast.error("Error connecting to server.");
+    } finally {
+      setSubmittingScholarship(false);
     }
   };
 
@@ -1071,7 +1124,15 @@ This is a computer-generated fee ledger statement.
                   {currentStudents.map((student) => (
                     <tr key={student._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-750/30 transition">
                       <td className="px-4 py-3 font-mono text-gray-400 dark:text-slate-500">{student.rollNo}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{student.name}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
+                        <div>{student.name}</div>
+                        {student.scholarship && student.scholarship.amount > 0 && (
+                          <div className="text-[9px] text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/20 px-1.5 py-0.5 rounded mt-0.5 inline-flex items-center gap-1 border border-purple-100 dark:border-purple-900/30">
+                            <ShieldCheck className="h-3 w-3 text-purple-500" />
+                            <span>{student.scholarship.name} (-{formatINR(student.scholarship.amount)})</span>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
                           {student.program}
@@ -1356,29 +1417,38 @@ This is a computer-generated fee ledger statement.
                   </div>
 
                   {/* Summary Totals */}
-                  <div className="p-3.5 rounded-xl border border-gray-100 dark:border-slate-700/30 space-y-2.5 bg-gray-50/50 dark:bg-slate-900/10">
+                  <div className="p-3.5 rounded-xl border border-gray-150 dark:border-slate-700/40 space-y-2.5 bg-gray-50/70 dark:bg-slate-900/15 shadow-inner">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-505 dark:text-slate-400">Total Invoice</span>
-                      <span className="font-bold text-gray-950 dark:text-slate-100">{formatINR(selectedStudent.totalFee)}</span>
+                      <span className="text-gray-500 dark:text-slate-400">Total Invoice</span>
+                      <span className="font-bold text-gray-900 dark:text-slate-100">{formatINR(selectedStudent.totalFee)}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-550 dark:text-slate-400">Paid Amount</span>
+                      <span className="text-gray-500 dark:text-slate-400">Paid Amount</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatINR(selectedStudent.paidAmount)}</span>
                     </div>
-                    <div className="flex justify-between items-center border-t border-dashed border-gray-200 dark:border-slate-700/40 pt-2 text-xs">
-                      <span className="font-semibold text-gray-700 dark:text-slate-300">Remaining Balance</span>
-                      <span className={`font-black ${selectedStudent.dueAmount > 0 ? 'text-red-650 dark:text-red-400' : 'text-gray-400 dark:text-slate-500'}`}>
-                        {formatINR(selectedStudent.dueAmount)}
+                    {selectedStudent.scholarship && selectedStudent.scholarship.amount > 0 && (
+                      <div className="flex justify-between items-center text-xs text-purple-650 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-950/20 p-2 rounded-lg border border-purple-100 dark:border-purple-900/30">
+                        <span className="font-semibold flex items-center gap-1.5">
+                          <ShieldCheck className="h-4 w-4 text-purple-500" />
+                          <span>Scholarship Applied ({selectedStudent.scholarship.name})</span>
+                        </span>
+                        <span className="font-black text-sm">-{formatINR(selectedStudent.scholarship.amount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center border-t border-dashed border-gray-200 dark:border-slate-700/40 pt-2.5 text-xs">
+                      <span className="font-bold text-gray-800 dark:text-slate-205 flex items-center gap-2">
+                        <span>Remaining Balance</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold border capitalize ${
+                          selectedStudent.feeStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30' :
+                          selectedStudent.feeStatus === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30' :
+                          selectedStudent.feeStatus === 'overdue' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30' :
+                          'bg-gray-100 text-gray-650 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
+                        }`}>
+                          {selectedStudent.feeStatus}
+                        </span>
                       </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold border capitalize ${
-                        selectedStudent.feeStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30' :
-                        selectedStudent.feeStatus === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30' :
-                        selectedStudent.feeStatus === 'overdue' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30' :
-                        'bg-gray-100 text-gray-650 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
-                      }`}>
-                        {selectedStudent.feeStatus}
+                      <span className={`text-sm font-black ${selectedStudent.dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-slate-500'}`}>
+                        {formatINR(selectedStudent.dueAmount)}
                       </span>
                     </div>
                   </div>
@@ -1387,10 +1457,13 @@ This is a computer-generated fee ledger statement.
                 {/* Accountant Actions Panel */}
                 <div className="space-y-3">
                   <h5 className="text-xs font-bold text-gray-400 dark:text-slate-450 uppercase tracking-wider">Accountant Actions</h5>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     <button
-                      onClick={() => setShowPaymentForm(!showPaymentForm)}
-                      className="p-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold text-center transition shadow flex flex-col items-center justify-center gap-1"
+                      onClick={() => {
+                        setShowPaymentForm(!showPaymentForm);
+                        setShowScholarshipForm(false);
+                      }}
+                      className="p-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold text-center transition shadow flex flex-col items-center justify-center gap-1 hover:shadow-md"
                     >
                       <CreditCard className="h-4 w-4" />
                       <span>Pay Dues</span>
@@ -1409,6 +1482,16 @@ This is a computer-generated fee ledger statement.
                     >
                       <Download className="h-4 w-4 text-emerald-650 dark:text-emerald-400" />
                       <span>Invoice</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowScholarshipForm(!showScholarshipForm);
+                        setShowPaymentForm(false);
+                      }}
+                      className="p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750/30 text-gray-750 dark:text-slate-300 text-[11px] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+                    >
+                      <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <span>Scholarship</span>
                     </button>
                   </div>
 
@@ -1505,6 +1588,123 @@ This is a computer-generated fee ledger statement.
                         >
                           {submittingPayment ? "Processing payment..." : "Confirm Payment"}
                         </button>
+                      </motion.form>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Inline Apply Scholarship Form */}
+                  <AnimatePresence>
+                    {showScholarshipForm && (
+                      <motion.form
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        onSubmit={handleApplyScholarship}
+                        className="p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 bg-purple-50/30 dark:bg-purple-950/5 space-y-3 overflow-hidden text-xs text-gray-700 dark:text-slate-205 mt-2"
+                      >
+                        <div className="flex justify-between items-center border-b border-purple-100/50 dark:border-purple-900/20 pb-1.5">
+                          <h6 className="font-bold text-purple-900 dark:text-purple-450 font-semibold">Manage Student Scholarship</h6>
+                          <button
+                            type="button"
+                            onClick={() => setShowScholarshipForm(false)}
+                            className="text-gray-400 hover:text-gray-650 dark:hover:text-slate-350"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+
+                        {/* Name */}
+                        <div className="space-y-1">
+                          <label className="font-semibold text-gray-655 dark:text-slate-300">Scholarship Name</label>
+                          <input
+                            type="text"
+                            value={scholarshipName}
+                            onChange={(e) => setScholarshipName(e.target.value)}
+                            placeholder="e.g. Merit Scholarship, Sports Quota..."
+                            className="w-full h-8 rounded border border-gray-200 dark:border-slate-750 bg-white dark:bg-slate-900 px-2.5 focus:outline-none focus:border-purple-650 text-xs text-gray-800 dark:text-slate-200"
+                          />
+                        </div>
+
+                        {/* Amount */}
+                        <div className="space-y-1">
+                          <label className="font-semibold text-gray-655 dark:text-slate-300">Scholarship Amount (INR)</label>
+                          <input
+                            type="number"
+                            value={scholarshipAmount}
+                            onChange={(e) => setScholarshipAmount(e.target.value)}
+                            placeholder="Enter amount to deduct..."
+                            className="w-full h-8 rounded border border-gray-200 dark:border-slate-750 bg-white dark:bg-slate-900 px-2.5 focus:outline-none focus:border-purple-650 text-xs text-gray-800 dark:text-slate-200"
+                          />
+                        </div>
+
+                        {/* Type */}
+                        <div className="space-y-1">
+                          <label className="font-semibold text-gray-655 dark:text-slate-300">Scholarship Category</label>
+                          <select
+                            value={scholarshipType}
+                            onChange={(e) => setScholarshipType(e.target.value as any)}
+                            className="w-full h-8 rounded border border-gray-200 dark:border-slate-750 bg-white dark:bg-slate-900 px-2 focus:outline-none focus:border-purple-650 text-xs text-gray-800 dark:text-slate-200"
+                          >
+                            <option value="merit">Merit Academic Scholarship</option>
+                            <option value="need-based">Need-Based Financial Aid</option>
+                            <option value="sports">Sports Quota Discount</option>
+                            <option value="other">Other Waiver</option>
+                          </select>
+                        </div>
+
+                        {/* Status */}
+                        <div className="space-y-1">
+                          <label className="font-semibold text-gray-655 dark:text-slate-300">Status</label>
+                          <select
+                            value={scholarshipStatus}
+                            onChange={(e) => setScholarshipStatus(e.target.value as any)}
+                            className="w-full h-8 rounded border border-gray-200 dark:border-slate-750 bg-white dark:bg-slate-900 px-2 focus:outline-none focus:border-purple-650 text-xs text-gray-800 dark:text-slate-200"
+                          >
+                            <option value="applied">Applied / Active</option>
+                            <option value="inactive">Inactive / Suspended</option>
+                          </select>
+                        </div>
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setScholarshipName("");
+                              setScholarshipAmount("");
+                              try {
+                                setSubmittingScholarship(true);
+                                const res = await fetch(`http://localhost:5000/api/accounts/student/${selectedStudent.studentId}/scholarship`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ name: "", amount: 0, type: "other", status: "inactive" })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast.success("Scholarship cleared! (Falling back to GPA auto-scholarship if eligible)");
+                                  setShowScholarshipForm(false);
+                                  await fetchData();
+                                  if (data.record) setSelectedStudent(data.record);
+                                } else {
+                                  toast.error(data.message || "Failed to clear scholarship.");
+                                }
+                              } catch {
+                                toast.error("Error clearing scholarship.");
+                              } finally {
+                                setSubmittingScholarship(false);
+                              }
+                            }}
+                            className="flex-1 h-8 rounded border border-gray-200 dark:border-slate-750 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition text-xs font-semibold"
+                          >
+                            Clear / Reset
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={submittingScholarship}
+                            className="flex-1 h-8 bg-purple-600 hover:bg-purple-750 text-white rounded font-semibold transition disabled:opacity-50 text-xs"
+                          >
+                            {submittingScholarship ? "Saving..." : "Apply"}
+                          </button>
+                        </div>
                       </motion.form>
                     )}
                   </AnimatePresence>
