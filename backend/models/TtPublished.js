@@ -17,6 +17,7 @@ const ttPublishedEntrySchema = new mongoose.Schema({
   facultyName: { type: String, default: '' },
   roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'TtRoom', default: null },
   roomName: { type: String, default: '' },
+  roomCapacity: { type: Number, default: null },
   isLunch: { type: Boolean, default: false },
   isFree: { type: Boolean, default: false }
 });

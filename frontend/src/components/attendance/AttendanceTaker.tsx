@@ -48,7 +48,7 @@ import type {
   TimetableSlot,
 } from './attendanceTypes';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -145,12 +145,22 @@ const riskBadge: Record<string, string> = {
 interface Props {
   teacherId?: string;
   teacherName?: string;
+  autoSelectedSlot?: {
+    _id?: string;
+    subject: string;
+    day: string;
+    startTime: string;
+    endTime: string;
+    semester: number;
+    department: string;
+    section: string;
+  } | null;
 }
 
 type TabId = 'take' | 'analytics' | 'history';
 type FilterId = 'all' | 'risk' | 'critical' | 'absent_today';
 
-export default function AttendanceTaker({ teacherId, teacherName }: Props) {
+export default function AttendanceTaker({ teacherId, teacherName, autoSelectedSlot }: Props) {
   const { user } = useAuth();
   const [tab, setTab] = useState<TabId>('take');
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
@@ -183,11 +193,22 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
   const [showReminderBanner, setShowReminderBanner] = useState(false);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [sectionOptions, setSectionOptions] = useState<string[]>(['A', 'B', 'C']);
-  const [selectedSection, setSelectedSection] = useState('');
+  const [selectedSection, setSelectedSection] = useState('A');
 
   const selectedCourse = useMemo(
-    () => teacherCourses.find((c) => c.courseId === selectedCourseId) || null,
-    [teacherCourses, selectedCourseId]
+    () => {
+      if (autoSelectedSlot) {
+        return {
+          courseId: autoSelectedSlot._id || 'temp-id',
+          courseCode: autoSelectedSlot.subject,
+          courseName: autoSelectedSlot.subject,
+          semester: String(autoSelectedSlot.semester),
+          department: autoSelectedSlot.department,
+        };
+      }
+      return teacherCourses.find((c) => c.courseId === selectedCourseId) || null;
+    },
+    [teacherCourses, selectedCourseId, autoSelectedSlot]
   );
 
   const draftKey = teacherId && selectedCourseId && date
@@ -308,15 +329,33 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
   }, [teacherId, user?.assignedCourses, user?.token]);
 
   useEffect(() => {
-    if (!selectedCourse || timetableSlots.length === 0) return;
-    const match = timetableSlots.find((s) => s.subject === selectedCourse.courseName);
-    if (match) setSelectedSlot(match);
-  }, [selectedCourse, timetableSlots]);
+    if (autoSelectedSlot) {
+      setSelectedSlot({
+        _id: autoSelectedSlot._id || 'temp-slot-id',
+        subject: autoSelectedSlot.subject,
+        day: autoSelectedSlot.day,
+        startTime: autoSelectedSlot.startTime,
+        endTime: autoSelectedSlot.endTime,
+        semester: autoSelectedSlot.semester,
+        department: autoSelectedSlot.department,
+        section: autoSelectedSlot.section || 'A',
+      });
+      setSelectedCourseId(autoSelectedSlot._id || 'temp-slot-id');
+      if (autoSelectedSlot.section) {
+        setSelectedSection(autoSelectedSlot.section);
+      }
+    } else if (selectedCourse && timetableSlots.length === 0) {
+      // Keep loading
+    } else if (selectedCourse) {
+      const match = timetableSlots.find((s) => s.subject === selectedCourse.courseName);
+      if (match) setSelectedSlot(match);
+    }
+  }, [selectedCourse, timetableSlots, autoSelectedSlot]);
 
   const loadStudentsAndSession = useCallback(async () => {
     if (!teacherId || !selectedCourseId) return;
 
-    if (!isValidObjectId(selectedCourseId)) {
+    if (!isValidObjectId(selectedCourseId) && !autoSelectedSlot) {
       setStudents([]);
       setAttendance({});
       setUseDemoStudents(false);
@@ -335,16 +374,34 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
       return;
     }
 
+    const currentSlot = selectedSlot || (autoSelectedSlot ? {
+      department: autoSelectedSlot.department,
+      semester: autoSelectedSlot.semester,
+      section: autoSelectedSlot.section || 'A'
+    } : null);
+
     try {
-      const { data } = await axios.get(`${API}/attendance/students`, {
-        params: {
-          courseId: selectedCourseId,
-          teacherId,
-          section: selectedSection || undefined,
-          semester: selectedSlot?.semester,
-          department: selectedSlot?.department,
-        },
-      });
+      let data;
+      if (currentSlot && currentSlot.department && currentSlot.semester) {
+        const branch = currentSlot.department;
+        const sem = currentSlot.semester;
+        const sec = autoSelectedSlot?.section || selectedSection || 'A';
+        const res = await axios.get(`${API}/attendance/students-by-section`, {
+          params: { branch, semester: sem, section: sec },
+        });
+        data = res.data;
+      } else {
+        const res = await axios.get(`${API}/attendance/students`, {
+          params: {
+            courseId: selectedCourseId,
+            teacherId,
+            section: selectedSection || undefined,
+            semester: currentSlot?.semester,
+            department: currentSlot?.department,
+          },
+        });
+        data = res.data;
+      }
 
       if (!data.success) {
         setError(data.message || 'Could not load students for this course.');
@@ -488,7 +545,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
 
   const submitAttendance = async (isUpdate = false) => {
     if (!teacherId || !selectedCourseId) return;
-    if (!isValidObjectId(selectedCourseId)) {
+    if (!isValidObjectId(selectedCourseId) && !autoSelectedSlot) {
       setError('Invalid course. Select a course from the dropdown.');
       return;
     }
@@ -514,13 +571,13 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
       const payload: Record<string, unknown> = {
         date,
         subject: subjectName,
-        courseId: selectedCourseId,
+        courseId: isValidObjectId(selectedCourseId) ? selectedCourseId : undefined,
         teacherId,
         teacherName,
         records,
         isDraft: false,
       };
-      if (selectedSlot?._id && isValidObjectId(selectedSlot._id)) {
+      if (selectedSlot?._id && isValidObjectId(selectedSlot._id) && selectedSlot._id !== 'temp-slot-id') {
         payload.timetableSlotId = selectedSlot._id;
       }
 
@@ -533,6 +590,18 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
         reminderShownRef.current = null;
         if (draftKey) localStorage.removeItem(draftKey);
         toast.success(isUpdate ? 'Attendance updated' : 'Attendance saved');
+
+        if (autoSelectedSlot && autoSelectedSlot._id && isValidObjectId(autoSelectedSlot._id)) {
+          try {
+            await axios.patch(`${API}/teachers/schedule/attendance-slots/${autoSelectedSlot._id}/status`, {
+              status: 'completed',
+              attendanceRecordId: data.attendance?._id || data.session?._id,
+            });
+          } catch (slotErr) {
+            console.error('Failed to sync slot status:', slotErr);
+          }
+        }
+
         setTimeout(() => setSaved(false), 3000);
         if (isUpdate) setConfirmUpdate(false);
         if (tab === 'analytics') loadAnalytics();

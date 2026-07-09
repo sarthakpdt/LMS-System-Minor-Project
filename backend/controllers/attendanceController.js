@@ -233,19 +233,31 @@ exports.getStudents = async (req, res) => {
         return res.status(access.status).json({ success: false, message: access.message });
       }
 
-      const course = await Course.findById(courseId)
-        .populate('enrolledStudents', '_id name email studentId department semester section approvalStatus')
-        .lean();
-
-      let enrolled = (course?.enrolledStudents || [])
-        .filter((s) => s && s._id && s.approvalStatus === 'approved');
-
-      if (section) {
-        enrolled = enrolled.filter((s) => String(s.section || '') === String(section));
-      } else if (course?.section) {
-        enrolled = enrolled.filter((s) => String(s.section || '') === String(course.section));
+      const course = await Course.findById(courseId).lean();
+      if (!course) {
+        return res.status(404).json({ success: false, message: 'Course not found' });
       }
 
+      const studentFilter = {
+        approvalStatus: 'approved',
+        semester: course.semester,
+      };
+
+      if (course.timetableBranch) {
+        studentFilter.$or = [
+          { timetableBranch: course.timetableBranch },
+          { department: course.timetableBranch }
+        ];
+      } else if (course.department) {
+        studentFilter.department = course.department;
+      }
+
+      const activeSection = section || course.section;
+      if (activeSection) {
+        studentFilter.section = activeSection;
+      }
+
+      const enrolled = await Student.find(studentFilter).lean();
       const students = enrolled.map(mapStudentRow);
 
       return res.json({
@@ -411,9 +423,34 @@ exports.getTeacherAnalytics = async (req, res) => {
     const studentMap = new Map();
     const relevantSessions = subject ? sessions.filter((s) => s.subject === subject) : sessions;
 
+    let enrolledStudentIds = null;
+    if (subject && isValidObjectId(teacherId)) {
+      const course = await Course.findOne({ courseName: subject, teacher: teacherId }).lean();
+      if (course) {
+        const studentFilter = {
+          approvalStatus: 'approved',
+          semester: course.semester,
+        };
+        if (course.timetableBranch) {
+          studentFilter.$or = [
+            { timetableBranch: course.timetableBranch },
+            { department: course.timetableBranch }
+          ];
+        } else if (course.department) {
+          studentFilter.department = course.department;
+        }
+        if (course.section) {
+          studentFilter.section = course.section;
+        }
+        const dynamicStudents = await Student.find(studentFilter).select('_id').lean();
+        enrolledStudentIds = new Set(dynamicStudents.map(s => String(s._id)));
+      }
+    }
+
     relevantSessions.forEach((session) => {
       session.records.forEach((r) => {
         const id = String(r.studentId);
+        if (enrolledStudentIds && !enrolledStudentIds.has(id)) return;
         if (!studentMap.has(id)) studentMap.set(id, { studentId: id, studentName: r.studentName });
       });
     });
@@ -463,9 +500,34 @@ exports.getTeacherSummary = async (req, res) => {
     const records = await Attendance.find(filter);
     const summary = {};
 
+    let enrolledStudentIds = null;
+    if (subject && isValidObjectId(teacherId)) {
+      const course = await Course.findOne({ courseName: subject, teacher: teacherId }).lean();
+      if (course) {
+        const studentFilter = {
+          approvalStatus: 'approved',
+          semester: course.semester,
+        };
+        if (course.timetableBranch) {
+          studentFilter.$or = [
+            { timetableBranch: course.timetableBranch },
+            { department: course.timetableBranch }
+          ];
+        } else if (course.department) {
+          studentFilter.department = course.department;
+        }
+        if (course.section) {
+          studentFilter.section = course.section;
+        }
+        const dynamicStudents = await Student.find(studentFilter).select('_id').lean();
+        enrolledStudentIds = new Set(dynamicStudents.map(s => String(s._id)));
+      }
+    }
+
     records.forEach((a) => {
       a.records.forEach((r) => {
         const key = String(r.studentId);
+        if (enrolledStudentIds && !enrolledStudentIds.has(key)) return;
         if (!summary[key]) {
           summary[key] = { studentId: key, name: r.studentName, present: 0, absent: 0, late: 0, total: 0 };
         }
@@ -486,4 +548,126 @@ exports.getTeacherSummary = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// ── Student Attendance Routing Interceptor ───────────────────────────────────
+
+const express = require('express');
+const originalRouterGet = express.Router.get || express.Router.prototype.get;
+let attendanceStudentHijacked = false;
+
+express.Router.prototype.get = function(path, ...args) {
+  // We identify the attendance router when it registers '/student/:studentId'
+  if (!attendanceStudentHijacked && path === '/student/:studentId') {
+    attendanceStudentHijacked = true;
+    console.log('⚡ Antigravity: Intercepted attendance router. Injecting Student Analytics wrapper...');
+    
+    const originalHandler = args[args.length - 1];
+    
+    const wrappedHandler = async (req, res) => {
+      const originalJson = res.json;
+      
+      res.json = async function(data) {
+        if (data && data.success && data.analytics) {
+          try {
+            const Student = require('../models/Student');
+            const student = await Student.findById(req.params.studentId).lean();
+            if (student) {
+              const enrolledCourses = student.enrolledCourses || [];
+              const enrolledNames = new Set(enrolledCourses.map(c => c.courseName));
+
+              // 1. Filter out subjects that are not enrolled
+              if (data.subjects) {
+                data.subjects = data.subjects.filter(s => enrolledNames.has(s.subject));
+              }
+
+              // 2. Filter out stats keys
+              if (data.stats) {
+                Object.keys(data.stats).forEach(subj => {
+                  if (!enrolledNames.has(subj)) {
+                    delete data.stats[subj];
+                  }
+                });
+              }
+
+              // 3. Add newly enrolled courses that do not have records yet
+              enrolledCourses.forEach(c => {
+                if (data.subjects && !data.subjects.some(s => s.subject === c.courseName)) {
+                  data.subjects.push({
+                    subject: c.courseName,
+                    courseCode: c.courseCode,
+                    present: 0,
+                    absent: 0,
+                    late: 0,
+                    total: 0,
+                    attendancePercentage: 0,
+                    predictedAttendance: 0,
+                    safeLeavesRemaining: 0,
+                    classesNeededFor75: 0,
+                    riskLevel: 'critical', // 0% attendance
+                    activities: [{ type: 'LECTURE', percentage: 0 }],
+                  });
+                }
+                if (data.stats && !data.stats[c.courseName]) {
+                  data.stats[c.courseName] = { present: 0, absent: 0, late: 0, total: 0 };
+                }
+              });
+
+              // 4. Re-calculate overall analytics based on the filtered subjects
+              if (data.subjects && data.subjects.length > 0) {
+                let totalPresent = 0;
+                let totalAbsent = 0;
+                let totalLate = 0;
+                let totalClasses = 0;
+                data.subjects.forEach(s => {
+                  totalPresent += s.present;
+                  totalAbsent += s.absent;
+                  totalLate += s.late;
+                  totalClasses += s.total;
+                });
+
+                const effectivePresent = totalPresent + totalLate;
+                const percentage = totalClasses > 0 ? Number(((effectivePresent / totalClasses) * 100).toFixed(2)) : 0;
+
+                data.analytics.attendancePercentage = percentage;
+                data.analytics.presentCount = totalPresent;
+                data.analytics.absentCount = totalAbsent;
+                data.analytics.lateCount = totalLate;
+                data.analytics.totalClasses = totalClasses;
+                data.analytics.riskLevel = percentage >= 75 ? 'safe' : (percentage >= 65 ? 'warning' : 'critical');
+                
+                const minPercentage = 75;
+                data.analytics.safeLeavesRemaining = totalClasses === 0 ? 0 : Math.max(0, Math.floor((effectivePresent * 100) / minPercentage) - totalClasses);
+                data.analytics.classesNeededFor75 = totalClasses === 0 ? 0 : (percentage >= minPercentage ? 0 : Math.max(0, Math.ceil(((minPercentage * totalClasses) - (100 * effectivePresent)) / (100 - minPercentage))));
+                const rate = totalClasses === 0 ? 0 : Math.max(0.3, Math.min(1, effectivePresent / totalClasses));
+                const expectedFuturePresents = Math.round(6 * rate);
+                data.analytics.predictedAttendance = totalClasses === 0 ? 0 : Number((((effectivePresent + expectedFuturePresents) / (totalClasses + 6)) * 100).toFixed(2));
+              } else {
+                data.analytics = {
+                  attendancePercentage: 0,
+                  presentCount: 0,
+                  absentCount: 0,
+                  lateCount: 0,
+                  totalClasses: 0,
+                  predictedAttendance: 0,
+                  safeLeavesRemaining: 0,
+                  classesNeededFor75: 0,
+                  riskLevel: 'critical',
+                  trend: []
+                };
+              }
+            }
+          } catch (err) {
+            console.error('Error in student analytics wrapper:', err);
+          }
+        }
+        return originalJson.apply(res, [data]);
+      };
+      
+      return originalHandler(req, res);
+    };
+
+    args[args.length - 1] = wrappedHandler;
+  }
+  return originalRouterGet.apply(this, [path, ...args]);
 };

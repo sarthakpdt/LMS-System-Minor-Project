@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, FileText, BarChart3,
   Shield, FolderOpen, ClipboardCheck, Sparkles, UserCheck,
-  Bell, Moon, Sun, Menu, X, LogOut, ChevronUp, ChevronRight
+  Bell, Moon, Sun, Menu, X, LogOut, ChevronUp, ChevronRight, CalendarDays
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/ThemeProvider';

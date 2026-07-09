@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, Download, Award, Target, TrendingUp, Users } from 'lucide-react';
+import { Search, Download, Award, Target, TrendingUp, Users, Grid } from 'lucide-react';
+import { SectionManagement } from './admin/SectionManagement';
 
 export function Students() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const [activeTab, setActiveTab] = useState<'levels' | 'sections'>(isAdmin ? 'levels' : 'levels');
   const [allStudents, setAllStudents] = useState<any[]>([]);
   const [teacherCourses, setTeacherCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
@@ -57,7 +60,7 @@ export function Students() {
     fetchData();
   }, [user]);
 
-  // ── Filtering ────────────────────────────────────────────────────────────────
+  // ----------------------------------------------------
   const filteredStudents = allStudents.filter((student) => {
     const matchesSearch =
       student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,7 +97,35 @@ export function Students() {
 
   return (
     <div className="p-8">
-      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+      {isAdmin && (
+        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-slate-700/50">
+          <button
+            onClick={() => setActiveTab('levels')}
+            className={`px-4 py-2 font-semibold text-sm border-b-2 transition-all ${
+              activeTab === 'levels'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Student Directory
+          </button>
+          <button
+            onClick={() => setActiveTab('sections')}
+            className={`px-4 py-2 font-semibold text-sm border-b-2 transition-all ${
+              activeTab === 'sections'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            <Grid className="w-4 h-4 inline-block mr-2" />
+            Section Management
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'levels' ? (
+        <>
+          <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-4 mb-2">
             <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
@@ -110,7 +141,7 @@ export function Students() {
         </div>
       </div>
 
-      {/* ── Level Distribution Cards ── */}
+      {/* — Level Distribution Cards — */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-[1.5rem] p-8 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
           <div className="flex items-center justify-between mb-6">
@@ -155,7 +186,7 @@ export function Students() {
         </div>
       </div>
 
-      {/* ── Promotion Rules (admin / teacher info) ── */}
+      {/* — Promotion Rules (admin / teacher info) — */}
       <div className="bg-blue-50 border border-blue-200 rounded-[1.5rem] p-6 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <h3 className="font-semibold text-blue-900 mb-3">Automatic Promotion Rules</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
@@ -168,10 +199,10 @@ export function Students() {
             <div><p className="font-medium">Intermediate → Advanced:</p><p>Score ≥ 82% in <strong>3 consecutive quizzes</strong></p></div>
           </div>
         </div>
-        <p className="text-xs text-blue-700 mt-3 italic">⚠️ Promotion is automatic and cannot be manually overridden.</p>
+        <p className="text-xs text-blue-700 mt-3 italic">⭐ Promotion is automatic and cannot be manually overridden.</p>
       </div>
 
-      {/* ── Controls ── */}
+      {/* — Controls — */}
       <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -219,7 +250,7 @@ export function Students() {
         </div>
       </div>
 
-      {/* ── Students Table ── */}
+      {/* — Students Table — */}
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading students...</div>
       ) : (
@@ -261,6 +292,10 @@ export function Students() {
             <div className="text-center py-12 text-gray-500">No students found matching your criteria.</div>
           )}
         </div>
+      )}
+        </>
+      ) : (
+        <SectionManagement />
       )}
     </div>
   );

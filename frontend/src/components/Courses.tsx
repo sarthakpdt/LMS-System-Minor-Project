@@ -39,7 +39,7 @@ export function Courses() {
 
   // Create modal
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '' });
+  const [createForm, setCreateForm] = useState({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '' });
   const [creating, setCreating] = useState(false);
 
   // Enroll modal
@@ -120,7 +120,7 @@ export function Courses() {
       if (!res.ok) { toast.error(json.message); return; }
       toast.success('Course created!');
       setShowCreateModal(false);
-      setCreateForm({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '' });
+      setCreateForm({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '' });
       fetchCourses();
     } catch { toast.error('Server error'); }
     finally { setCreating(false); }
@@ -239,6 +239,11 @@ export function Courses() {
                         <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">
                           Semester {course.semester}
                         </span>
+                        {course.section && (
+                          <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold border border-emerald-100">
+                            Section {course.section}
+                          </span>
+                        )}
 
                         {/* ── Teacher name — the key fix ── */}
                         {course.teacher?.name ? (
@@ -347,6 +352,11 @@ export function Courses() {
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">{deptLabel(course.department)}</span>
                         <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">Semester {course.semester}</span>
+                        {course.section && (
+                          <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold border border-emerald-100">
+                            Section {course.section}
+                          </span>
+                        )}
                         {course.teacher?.name ? (
                           <span className="text-gray-600 text-sm flex items-center gap-1">
                             <UserCheck className="w-3.5 h-3.5 text-green-500" /> {course.teacher.name}
@@ -476,13 +486,26 @@ export function Courses() {
                   </select>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Teacher (optional)</label>
-                <select value={createForm.teacherId} onChange={e => setCreateForm({ ...createForm, teacherId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">No teacher yet</option>
-                  {teachers.map(t => <option key={t._id} value={t._id}>{t.name} — {t.department}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign Teacher (optional)</label>
+                  <select value={createForm.teacherId} onChange={e => setCreateForm({ ...createForm, teacherId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">No teacher yet</option>
+                    {teachers.map(t => <option key={t._id} value={t._id}>{t.name} — {t.department}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Section (optional)</label>
+                  <select value={createForm.section} onChange={e => setCreateForm({ ...createForm, section: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Common / All Sections</option>
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                    <option value="D">Section D</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>

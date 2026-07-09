@@ -1,6 +1,6 @@
 import {
   TtConfig, TtSubject, TtRoom, TtFacultyConstraint, TtGenerated, TtEntry,
-  TtConflict, ValidationSummary,
+  TtConflict, ValidationSummary, GenerationScope, GenerationReport,
 } from './types';
 
 const BASE_URL = 'http://localhost:5000/api/timetable/engine';
@@ -106,18 +106,53 @@ export const api = {
   }),
   getTeachers: () => request<{ data: any[] }>('/teachers'),
 
-  // Engine Actions
-  generate: (timetableId?: string) => request<{
-    draftId: string;
-    conflicts: any[];
-    entries: TtEntry[];
-    validationSummary?: ValidationSummary;
-    validationIssues?: Array<{ type: string; message: string; severity?: string }>;
-    aiOptimized?: boolean;
-  }>('/generate', {
-    method: 'POST',
-    body: JSON.stringify(timetableId ? { timetableId } : {}),
-  }),
+  // Engine Actions — Phase 3
+  generate: (payload?: { timetableId?: string; scope?: GenerationScope; academicYearId?: string }) =>
+    request<{
+      draftId: string;
+      conflicts: TtConflict[];
+      entries: TtEntry[];
+      validationSummary?: ValidationSummary;
+      validationIssues?: Array<{ type: string; message: string; severity?: string }>;
+      aiOptimized?: boolean;
+      generationReport?: GenerationReport;
+      suggestions?: Array<{ conflictDescription: string; recommendation: string; actionType: string; applyPayload?: unknown }>;
+      version?: number;
+      versionGroupId?: string;
+    }>('/generate', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    }),
+
+  regenerate: (payload: { timetableId?: string; scope: GenerationScope; academicYearId?: string }) =>
+    request<{
+      draftId: string;
+      entries: TtEntry[];
+      conflicts: TtConflict[];
+      validationSummary?: ValidationSummary;
+      generationReport?: GenerationReport;
+      suggestions?: unknown[];
+      version?: number;
+      scope: GenerationScope;
+    }>('/regenerate', { method: 'POST', body: JSON.stringify(payload) }),
+
+  approveTimetable: (id: string) =>
+    request<{ timetable: TtGenerated; message: string }>(`/timetables/${id}/approve`, { method: 'POST' }),
+
+  listVersions: (id: string) =>
+    request<{ versions: TtGenerated[]; currentVersion: number }>(`/timetables/${id}/versions`),
+
+  restoreVersion: (id: string) =>
+    request<{ timetable: TtGenerated; message: string }>(`/timetables/${id}/restore`, { method: 'POST' }),
+
+  getGenerationReport: (id: string) =>
+    request<{ report: GenerationReport }>(`/timetables/${id}/report`),
+
+  applyClashResolution: (id: string, applyPayload: unknown) =>
+    request<{ entries: TtEntry[]; conflicts: TtConflict[]; validationSummary: ValidationSummary }>(
+      `/timetables/${id}/apply-resolution`,
+      { method: 'POST', body: JSON.stringify({ applyPayload }) },
+    ),
 
   listTimetables: (status?: string) => {
     const qs = status ? `?status=${status}` : '';
@@ -156,5 +191,116 @@ export const api = {
     }
     return request<{ entries: TtEntry[] }>(`/published?${params.toString()}`);
   },
-  getPublishedForStudent: (studentId: string) => request<{ entries: TtEntry[]; studentMeta: any }>(`/published/student/${studentId}`)
+  getPublishedForStudent: (studentId: string) => request<{ entries: TtEntry[]; studentMeta: any }>(`/published/student/${studentId}`),
+
+  // ── NEW: Interactive Canvas ──
+  swapEntries: (id: string, entryIndexA: number, entryIndexB: number) =>
+    request<{ conflicts: TtConflict[]; validationSummary: ValidationSummary; message: string }>(
+      `/timetables/${id}/swap`,
+      { method: 'POST', body: JSON.stringify({ entryIndexA, entryIndexB }) }
+    ),
+
+  editEntry: (id: string, entryIndex: number, updates: Partial<TtEntry>) =>
+    request<{ entry: TtEntry; conflicts: TtConflict[]; validationSummary: ValidationSummary }>(
+      `/timetables/${id}/entry/${entryIndex}`,
+      { method: 'PATCH', body: JSON.stringify(updates) }
+    ),
+
+  // ── NEW: AI Clash Resolution ──
+  getClashResolutions: (id: string) =>
+    request<{
+      suggestions: Array<{
+        conflictDescription: string;
+        conflictType: string;
+        severity: string;
+        recommendation: string;
+        actionType: string;
+        targetDays?: string[];
+        alternativeRooms?: Array<{ id: string; name: string; capacity: number; type: string }>;
+      }>;
+      totalConflicts: number;
+    }>(`/timetables/${id}/clash-resolution`),
+
+  // ── NEW: Semester Cloning ──
+  cloneSemester: (payload: {
+    sourceBranch: string;
+    sourceYear: number;
+    targetBranch: string;
+    targetYear: number;
+    prefixCode?: string;
+    newFacultyMap?: Record<string, string>;
+  }) =>
+    request<{
+      created: number;
+      skipped: number;
+      skippedList: Array<{ code: string; reason: string }>;
+      message: string;
+    }>('/clone', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // ── NEW: AI Slot Recommendations ──
+  recommendSlots: (params: { subjectId: string; branch?: string; year?: number; section?: string }) => {
+    const qs = new URLSearchParams();
+    qs.append('subjectId', params.subjectId);
+    if (params.branch) qs.append('branch', params.branch);
+    if (params.year) qs.append('year', String(params.year));
+    if (params.section) qs.append('section', params.section);
+    return request<{
+      subject: { name: string; code: string; type: string };
+      recommendations: Array<{
+        day: string;
+        timeSlot: { label: string; startTime: string; endTime: string };
+        score: number;
+        reasons: string[];
+      }>;
+    }>(`/recommend-slots?${qs.toString()}`);
+  },
+
+  // ── NEW: Analytics ──
+  getRoomUtilization: () =>
+    request<{
+      rooms: Array<{
+        roomId: string;
+        roomName: string;
+        roomType: string;
+        capacity: number;
+        usedSlots: number;
+        totalSlots: number;
+        utilizationPct: number;
+        byDay: Record<string, number>;
+        byType: { theory: number; lab: number };
+        status: 'high' | 'medium' | 'low';
+      }>;
+      summary: {
+        totalRooms: number;
+        avgUtilization: number;
+        highUtilization: number;
+        underutilized: number;
+        workingDays: string[];
+        timeSlotsPerDay: number;
+      };
+    }>('/analytics/rooms'),
+
+  getFacultyWorkload: () =>
+    request<{
+      faculty: Array<{
+        teacherId: string;
+        teacherName: string;
+        department: string;
+        weeklyHours: number;
+        maxWeekly: number;
+        loadPct: number;
+        byDay: Record<string, number>;
+        byType: { theory: number; lab: number };
+        gapCount: number;
+        status: 'overloaded' | 'balanced' | 'underloaded';
+        overloadedDays: string[];
+      }>;
+      summary: {
+        totalFaculty: number;
+        avgLoadPct: number;
+        overloaded: number;
+        underloaded: number;
+        balanced: number;
+      };
+    }>('/analytics/faculty-workload'),
 };

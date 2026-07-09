@@ -23,7 +23,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   useEffect(() => {
     if (embeddedStep) setActiveSubTab(embeddedStep);
   }, [embeddedStep]);
-  
+
   // Data states
   const [config, setConfig] = useState<TtConfig | null>(null);
   const [subjects, setSubjects] = useState<TtSubject[]>([]);
@@ -40,7 +40,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   // Form states
   const [branchForm, setBranchForm] = useState({ code: '', name: '', yearsCount: 4, defaultSectionCount: 2 });
   const [roomForm, setRoomForm] = useState({ id: '', name: '', type: 'classroom' as 'classroom' | 'lab', capacity: 60, labType: '' });
-  const [subjectForm, setSubjectForm] = useState({ id: '', name: '', code: '', type: 'theory' as 'theory' | 'lab', branch: '', year: 1, weeklyHours: 3, labDuration: 2, facultyId: '' });
+  const [subjectForm, setSubjectForm] = useState({ id: '', name: '', code: '', type: 'theory' as 'theory' | 'lab', branch: '', year: 1, semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' });
   const [constraintForm, setConstraintForm] = useState({ facultyId: '', maxHoursPerDay: 6, maxHoursPerWeek: 24, day: 'Monday', startTime: '09:00', endTime: '11:00', reason: 'Other engagement' });
 
   // Fetch all setup data
@@ -115,7 +115,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
 
   const addBranch = () => {
     if (!config || !branchForm.code.trim() || !branchForm.name.trim()) return;
-    
+
     // Prepare years structure
     const years = [];
     for (let i = 1; i <= branchForm.yearsCount; i++) {
@@ -153,11 +153,11 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
         b.code !== branchCode
           ? b
           : {
-              ...b,
-              years: b.years.map((y) =>
-                y.yearNumber === yearNumber ? { ...y, sections } : y,
-              ),
-            },
+            ...b,
+            years: b.years.map((y) =>
+              y.yearNumber === yearNumber ? { ...y, sections } : y,
+            ),
+          },
       ),
     });
   };
@@ -226,13 +226,15 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
         code: subjectForm.code.toUpperCase(),
         type: subjectForm.type,
         branch: subjectForm.branch,
-        year: Number(subjectForm.year),
+        year: Math.ceil(Number(subjectForm.semester) / 2),
+        semester: Number(subjectForm.semester),
+        credits: Number(subjectForm.credits),
         weeklyHours: Number(subjectForm.weeklyHours),
         labDuration: Number(subjectForm.labDuration),
         facultyId: subjectForm.facultyId || null,
         facultyName: ''
       });
-      setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', year: 1, weeklyHours: 3, labDuration: 2, facultyId: '' });
+      setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', year: 1, semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' });
       loadData();
       showSuccessMessage('Subject details saved successfully!');
     } catch (err: any) {
@@ -242,14 +244,16 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
     }
   };
 
-  const handleEditSubject = (sub: TtSubject) => {
+  const handleEditSubject = (sub: any) => {
     setSubjectForm({
       id: sub._id || '',
       name: sub.name,
       code: sub.code,
       type: sub.type,
       branch: sub.branch,
-      year: sub.year,
+      year: sub.year || Math.ceil((sub.semester || 1) / 2),
+      semester: sub.semester || 1,
+      credits: sub.credits || 4,
       weeklyHours: sub.weeklyHours,
       labDuration: sub.labDuration || 2,
       facultyId: sub.facultyId || ''
@@ -275,7 +279,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
     try {
       const existing = constraints.find(c => c.facultyId === constraintForm.facultyId);
       const unavailSlots = existing ? [...existing.unavailableSlots] : [];
-      
+
       // If user filled unavailability fields, push it
       if (constraintForm.startTime && constraintForm.endTime) {
         unavailSlots.push({
@@ -292,7 +296,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
         maxHoursPerWeek: Number(constraintForm.maxHoursPerWeek),
         unavailableSlots: unavailSlots
       });
-      
+
       setConstraintForm({
         facultyId: '',
         maxHoursPerDay: 6,
@@ -302,7 +306,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
         endTime: '11:00',
         reason: 'Other engagement'
       });
-      
+
       loadData();
       showSuccessMessage('Faculty constraint saved.');
     } catch (err: any) {
@@ -351,7 +355,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {!hideHeader ? (
         <div className="bg-gradient-to-r from-purple-700 to-indigo-800 p-6 text-white">
           <h3 className="text-lg font-bold flex items-center gap-2">
@@ -370,11 +374,10 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
               <button
                 key={tab.id}
                 onClick={() => setActiveSubTab(tab.id as ConfigWizardStep)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeSubTab === tab.id
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${activeSubTab === tab.id
                     ? 'bg-white text-purple-900 shadow-md font-bold'
                     : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
+                  }`}
               >
                 <tab.icon className="w-4 h-4" /> {tab.label}
               </button>
@@ -434,7 +437,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   <select
                     value={branchForm.yearsCount}
                     onChange={e => setBranchForm({ ...branchForm, yearsCount: Number(e.target.value) })}
-                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                   >
                     {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y !== 1 ? 's' : ''}</option>)}
                   </select>
@@ -470,7 +473,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {config.branches.map(branch => (
-                      <div key={branch.code} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm hover:shadow transition space-y-3 relative group dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                      <div key={branch.code} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm hover:shadow transition space-y-3 relative group">
                         <button
                           onClick={() => removeBranch(branch.code)}
                           className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
@@ -568,7 +571,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   <select
                     value={roomForm.type}
                     onChange={e => setRoomForm({ ...roomForm, type: e.target.value as any })}
-                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                   >
                     <option value="classroom">Classroom (Theory)</option>
                     <option value="lab">Specialized Lab</option>
@@ -609,7 +612,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
               {/* Room Inventory */}
               <div className="md:col-span-2 space-y-4">
                 <h4 className="font-bold text-gray-800 text-sm border-b pb-2">Room Assets Inventory ({rooms.length})</h4>
-                
+
                 {rooms.length === 0 ? (
                   <div className="text-center py-10 text-gray-400 text-xs">No rooms available in registry. Add one to the left.</div>
                 ) : (
@@ -629,9 +632,8 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                           <tr key={room._id} className="hover:bg-gray-50/50 transition">
                             <td className="py-2.5 px-3 font-semibold text-gray-800">{room.name}</td>
                             <td className="py-2.5 px-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                room.type === 'lab' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${room.type === 'lab' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
+                                }`}>
                                 {room.type}
                               </span>
                             </td>
@@ -702,7 +704,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                     <select
                       value={subjectForm.branch}
                       onChange={e => setSubjectForm({ ...subjectForm, branch: e.target.value })}
-                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                       required
                     >
                       <option value="">Select Branch...</option>
@@ -712,14 +714,14 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Academic Year *</label>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Semester *</label>
                     <select
-                      value={subjectForm.year}
-                      onChange={e => setSubjectForm({ ...subjectForm, year: Number(e.target.value) })}
-                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                      value={subjectForm.semester}
+                      onChange={e => setSubjectForm({ ...subjectForm, semester: Number(e.target.value) })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                       required
                     >
-                      {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>Year {y}</option>)}
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                     </select>
                   </div>
                 </div>
@@ -730,42 +732,55 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                     <select
                       value={subjectForm.type}
                       onChange={e => setSubjectForm({ ...subjectForm, type: e.target.value as any })}
-                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                     >
                       <option value="theory">Theory Lecture</option>
                       <option value="lab">Consecutive Lab</option>
                     </select>
                   </div>
                   <div>
-                    {subjectForm.type === 'theory' ? (
-                      <>
-                        <label className="block text-[11px] font-semibold text-gray-500 mb-1">Hours / Week *</label>
-                        <input
-                          type="number"
-                          value={subjectForm.weeklyHours}
-                          onChange={e => setSubjectForm({ ...subjectForm, weeklyHours: Number(e.target.value) })}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
-                          min="1"
-                          max="10"
-                          required
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <label className="block text-[11px] font-semibold text-gray-500 mb-1">Lab Duration (hrs) *</label>
-                        <select
-                          value={subjectForm.labDuration}
-                          onChange={e => setSubjectForm({ ...subjectForm, labDuration: Number(e.target.value), weeklyHours: Number(e.target.value) })}
-                          className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
-                          required
-                        >
-                          <option value="2">2 Hour block</option>
-                          <option value="3">3 Hour block</option>
-                          <option value="4">4 Hour block</option>
-                        </select>
-                      </>
-                    )}
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Credits *</label>
+                    <input
+                      type="number"
+                      value={subjectForm.credits}
+                      onChange={e => setSubjectForm({ ...subjectForm, credits: Number(e.target.value) })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      min="1"
+                      max="6"
+                      required
+                    />
                   </div>
+                </div>
+
+                <div>
+                  {subjectForm.type === 'theory' ? (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-500 mb-1">Weekly Classes *</label>
+                      <input
+                        type="number"
+                        value={subjectForm.weeklyHours}
+                        onChange={e => setSubjectForm({ ...subjectForm, weeklyHours: Number(e.target.value) })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        min="1"
+                        max="10"
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-500 mb-1">Lab Duration (hrs) *</label>
+                      <select
+                        value={subjectForm.labDuration}
+                        onChange={e => setSubjectForm({ ...subjectForm, labDuration: Number(e.target.value), weeklyHours: Number(e.target.value) })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        required
+                      >
+                        <option value="2">2 Hour block</option>
+                        <option value="3">3 Hour block</option>
+                        <option value="4">4 Hour block</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -773,7 +788,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   <select
                     value={subjectForm.facultyId}
                     onChange={e => setSubjectForm({ ...subjectForm, facultyId: e.target.value })}
-                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                   >
                     <option value="">No Instructor Assigned</option>
                     {teachers.map(t => (
@@ -793,7 +808,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   {subjectForm.id && (
                     <button
                       type="button"
-                      onClick={() => setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', year: 1, weeklyHours: 3, labDuration: 2, facultyId: '' })}
+                    onClick={() => setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', year: 1, semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' })}
                       className="border border-gray-200 hover:bg-gray-100 rounded-lg px-3 py-2 text-xs text-gray-500"
                     >
                       Clear
@@ -805,7 +820,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
               {/* Subject registry view */}
               <div className="md:col-span-2 space-y-4">
                 <h4 className="font-bold text-gray-800 text-sm border-b pb-2">Course Subjects Registry ({subjects.length})</h4>
-                
+
                 {subjects.length === 0 ? (
                   <div className="text-center py-10 text-gray-400 text-xs">No subjects available in database. Add one to the left.</div>
                 ) : (
@@ -814,7 +829,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 font-bold uppercase text-[10px]">
                           <th className="py-2.5 px-3">Subject</th>
-                          <th className="py-2.5 px-3">Branch & Year</th>
+                          <th className="py-2.5 px-3">Branch & Semester (Credits)</th>
                           <th className="py-2.5 px-3 text-center">Type</th>
                           <th className="py-2.5 px-3 text-center">Weekly Hours</th>
                           <th className="py-2.5 px-3">Assigned Faculty</th>
@@ -829,12 +844,11 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                               <span className="block text-gray-500 text-[10px]">{sub.name}</span>
                             </td>
                             <td className="py-2.5 px-3 text-gray-600">
-                              {sub.branch} (Year {sub.year})
+                              {sub.branch} (Sem {sub.semester || Math.ceil((sub.year || 1) * 2 - 1)}, {sub.credits || 4} credits)
                             </td>
                             <td className="py-2.5 px-3 text-center">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                sub.type === 'lab' ? 'bg-amber-50 text-amber-700' : 'bg-purple-50 text-purple-700'
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sub.type === 'lab' ? 'bg-amber-50 text-amber-700' : 'bg-purple-50 text-purple-700'
+                                }`}>
                                 {sub.type}
                               </span>
                             </td>
@@ -892,7 +906,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                         maxHoursPerWeek: match?.maxHoursPerWeek || 24
                       });
                     }}
-                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                     required
                   >
                     <option value="">Select Faculty...</option>
@@ -931,7 +945,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                       <select
                         value={constraintForm.day}
                         onChange={e => setConstraintForm({ ...constraintForm, day: e.target.value })}
-                        className="w-full border border-gray-200/80 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                       >
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
                           <option key={d} value={d}>{d}</option>
@@ -982,13 +996,13 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
               {/* View constraints list */}
               <div className="md:col-span-2 space-y-4">
                 <h4 className="font-bold text-gray-800 text-sm border-b pb-2">Configured Availability Guidelines ({constraints.length})</h4>
-                
+
                 {constraints.length === 0 ? (
                   <div className="text-center py-10 text-gray-400 text-xs">No active constraint rules set. Define one to the left.</div>
                 ) : (
                   <div className="space-y-3">
                     {constraints.map(c => (
-                      <div key={c._id} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm space-y-2 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                      <div key={c._id} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
                             <h5 className="font-bold text-gray-800 text-xs">{c.facultyName}</h5>

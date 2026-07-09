@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Menu, X, Sun, Moon, Brain } from 'lucide-react';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Menu, X, Sun, Moon, Brain, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import AILearningAssistant from '../student/AILearningAssistant';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,6 +27,7 @@ export function StudentLayout() {
       label: 'LEARNING',
       items: [
         { to: '/courses', icon: BookOpen, label: 'My Courses' },
+        { to: '/attendance', icon: Calendar, label: 'My Attendance' },
         { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
       ]
     },

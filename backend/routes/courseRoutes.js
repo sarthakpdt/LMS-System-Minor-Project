@@ -87,8 +87,8 @@ router.post('/:courseId/enroll', async (req, res) => {
 router.post('/:courseId/enroll-semester', async (req, res) => {
   try {
     const { semester } = req.body;
-    const User = require('../models/User');
-    const students = await User.find({ role: 'student', semester, approvalStatus: 'approved' });
+    const Student = require('../models/Student');
+    const students = await Student.find({ role: 'student', semester, approvalStatus: 'approved' });
     const studentIds = students.map(s => s._id);
     const course = await Course.findByIdAndUpdate(
       req.params.courseId,

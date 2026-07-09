@@ -2,9 +2,10 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, FileText } from 'lucide-react';
+import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, TrendingUp, CheckCircle, Zap, Award, Calendar, ArrowRight, FileText } from 'lucide-react';
 import AILearningAssistant from './student/AILearningAssistant';
 import NotificationsPanel from './teacher/NotificationsPanel';
+import StudentTimetable from './timetable/StudentTimetable';
 import {
   LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar
@@ -115,7 +116,10 @@ export function StudentPortalNew() {
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [showAI, setShowAI] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses' | 'timetable'>('overview');
+  const [attendancePercentage, setAttendancePercentage] = useState<number | null>(null);
+  const [attendanceRisk, setAttendanceRisk] = useState<string | null>(null);
+  const [timetableEntries, setTimetableEntries] = useState<any[]>([]);
 
   const cardStyle = theme === 'dark' ? {
     backgroundColor: '#1f2937',
@@ -152,6 +156,7 @@ export function StudentPortalNew() {
       if (assignmentsRes.ok) {
         const assignmentsData = await assignmentsRes.json();
         setAssignments(assignmentsData);
+        setCompleted(assignmentsData.filter((a: any) => a.submitted));
       }
 
       // Mock performance data
@@ -163,12 +168,83 @@ export function StudentPortalNew() {
         { week: 'W5', score: 85, target: 85 },
       ]);
 
-      setCompleted(assignmentsData.filter((a: any) => a.submitted));
+      // Fetch attendance statistics
+      const currentUserId = user?.id || (storedUser ? JSON.parse(storedUser).id : null);
+      if (currentUserId) {
+        const attendanceRes = await fetch(`${API}/attendance/student/${currentUserId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (attendanceRes.ok) {
+          const attendanceData = await attendanceRes.json();
+          if (attendanceData.success && attendanceData.analytics) {
+            setAttendancePercentage(attendanceData.analytics.attendancePercentage);
+            setAttendanceRisk(attendanceData.analytics.riskLevel);
+          }
+        }
+
+        // Schedule fetching is handled inside <StudentTimetable /> component
+        // But we need the timetable entries for the portal overview
+        try {
+          const ttRes = await fetch(`${API}/timetable/engine/published/student/${currentUserId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (ttRes.ok) {
+            const ttData = await ttRes.json();
+            setTimetableEntries(ttData.entries || []);
+          } else {
+            setTimetableEntries([]);
+          }
+        } catch (e) {
+          console.error("Failed to fetch timetable for portal overview", e);
+          setTimetableEntries([]);
+        }
+      }
     } catch (err) {
       console.error('Failed to load data', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUpcomingClass = () => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const now = new Date();
+    const currentDay = days[now.getDay()];
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Today's upcoming classes
+    const todayClasses = timetableEntries
+      .filter((e: any) => e.day === currentDay && !e.isFree && !e.isLunch)
+      .filter((e: any) => {
+        if (!e.timeSlot?.startTime) return false;
+        const [h, m] = e.timeSlot.startTime.split(':').map(Number);
+        return (h * 60 + m) > currentMinutes;
+      })
+      .sort((a: any, b: any) => {
+        const [ha, ma] = a.timeSlot.startTime.split(':').map(Number);
+        const [hb, mb] = b.timeSlot.startTime.split(':').map(Number);
+        return (ha * 60 + ma) - (hb * 60 + mb);
+      });
+
+    if (todayClasses.length > 0) return todayClasses[0];
+
+    // Otherwise, check subsequent days
+    for (let i = 1; i <= 7; i++) {
+      const nextDayIndex = (now.getDay() + i) % 7;
+      const nextDayName = days[nextDayIndex];
+      const nextClasses = timetableEntries
+        .filter((e: any) => e.day === nextDayName && !e.isFree && !e.isLunch)
+        .sort((a: any, b: any) => {
+          const [ha, ma] = a.timeSlot.startTime.split(':').map(Number);
+          const [hb, mb] = b.timeSlot.startTime.split(':').map(Number);
+          return (ha * 60 + ma) - (hb * 60 + mb);
+        });
+      if (nextClasses.length > 0) {
+        return { ...nextClasses[0], isNextDay: true, dayName: nextDayName };
+      }
+    }
+
+    return null;
   };
 
   if (loading) {
@@ -215,6 +291,8 @@ export function StudentPortalNew() {
                 </p>
               </div>
             </div>
+            </div>
+          </div>
           </div>
         </motion.div>
 
@@ -239,6 +317,7 @@ export function StudentPortalNew() {
         >
           {[
             { id: 'overview' as const, label: 'Overview', icon: TrendingUp },
+            { id: 'timetable' as const, label: 'My Timetable', icon: Calendar },
             { id: 'assignments' as const, label: 'Assignments', icon: FileText },
             { id: 'courses' as const, label: 'Courses', icon: BookOpen },
           ].map(({ id, label, icon: Icon }) => (
@@ -267,8 +346,56 @@ export function StudentPortalNew() {
             animate="animate"
             className="space-y-8"
           >
+            {/* Upcoming Class Indicator */}
+            {timetableEntries.length === 0 ? (
+              <motion.div
+                variants={animationVariants.slideInUp}
+                initial="initial"
+                animate="animate"
+                className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-sm mb-6 text-slate-500"
+              >
+                <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-slate-400" />
+                </div>
+                <span className="text-sm font-medium">No timetable generated yet.</span>
+              </motion.div>
+            ) : getUpcomingClass() ? (
+              <motion.div
+                variants={animationVariants.slideInUp}
+                initial="initial"
+                animate="animate"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md mb-6"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/20 rounded-xl animate-bounce">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase tracking-wider font-bold bg-white/25 px-2 py-0.5 rounded-full">
+                      Next Upcoming Class
+                    </span>
+                    <h4 className="text-sm font-bold mt-1.5">
+                      {getUpcomingClass()?.subjectName}
+                    </h4>
+                    <p className="text-xs opacity-90 mt-0.5">
+                      {getUpcomingClass()?.isNextDay 
+                        ? `Scheduled for ${getUpcomingClass()?.dayName} at ${getUpcomingClass()?.timeSlot.startTime}`
+                        : `Today at ${getUpcomingClass()?.timeSlot.startTime}`
+                      } · Room {getUpcomingClass()?.roomName} · Instructor: {getUpcomingClass()?.facultyName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('timetable')}
+                  className="px-4 py-2 bg-white text-indigo-700 font-bold text-xs rounded-xl shadow hover:bg-indigo-50 transition flex-shrink-0"
+                >
+                  View Full Timetable
+                </button>
+              </motion.div>
+            ) : null}
+
             {/* Key Stats */}
-            <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StaggerList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               <StaggerItem>
                 <StatCard
                   icon={<BookOpen className="w-5 h-5" />}
@@ -311,6 +438,23 @@ export function StudentPortalNew() {
                   change={{ value: 5, isPositive: true }}
                   style={cardStyle}
                 />
+              </StaggerItem>
+
+              <StaggerItem>
+                <div onClick={() => navigate('/attendance')} className="cursor-pointer">
+                  <StatCard
+                    icon={<Calendar className="w-5 h-5" />}
+                    label="My Attendance"
+                    value={attendancePercentage !== null ? `${attendancePercentage}%` : 'Loading...'}
+                    gradient={
+                      attendanceRisk === 'safe'
+                        ? 'from-emerald-500 to-teal-600'
+                        : attendanceRisk === 'warning'
+                        ? 'from-orange-500 to-amber-600'
+                        : 'from-rose-500 to-red-600'
+                    }
+                  />
+                </div>
               </StaggerItem>
             </StaggerList>
 
@@ -519,6 +663,17 @@ export function StudentPortalNew() {
                 ))}
               </StaggerList>
             )}
+          </motion.div>
+        )}
+        {/* TIMETABLE TAB */}
+        {activeTab === 'timetable' && (
+          <motion.div
+            variants={animationVariants.slideInUp}
+            initial="initial"
+            animate="animate"
+            className="space-y-4"
+          >
+            <StudentTimetable />
           </motion.div>
         )}
       </div>

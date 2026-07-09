@@ -5,7 +5,9 @@ const ttSubjectSchema = new mongoose.Schema({
   code: { type: String, required: true },
   type: { type: String, enum: ['theory', 'lab'], required: true },
   branch: { type: String, required: true }, // uppercase code, e.g. "BTECH"
-  year: { type: Number, required: true }, // e.g. 1, 2, 3, 4
+  year: { type: Number }, // e.g. 1, 2, 3, 4 (derived from semester)
+  semester: { type: Number, required: true }, // e.g. 1, 2, 3, 4, 5, 6, 7, 8
+  credits: { type: Number, required: true }, // e.g. 4
   weeklyHours: { type: Number, required: true }, // theory slots/week OR lab sessions/week
   labDuration: { type: Number, default: 2 }, // consecutive hours per lab session
   lectureDuration: { type: Number, default: null }, // optional override (minutes)
@@ -20,7 +22,23 @@ const ttSubjectSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Ensure unique code within branch/year combo or globally
-ttSubjectSchema.index({ code: 1, branch: 1, year: 1 }, { unique: true });
+// Ensure unique code within branch/semester combo
+ttSubjectSchema.index({ code: 1, branch: 1, semester: 1 }, { unique: true });
+
+// Auto-derive year from semester
+ttSubjectSchema.pre('save', function (next) {
+  if (this.semester) {
+    this.year = Math.ceil(this.semester / 2);
+  }
+  next();
+});
+
+ttSubjectSchema.pre('validate', function (next) {
+  if (this.semester) {
+    this.year = Math.ceil(this.semester / 2);
+  }
+  next();
+});
 
 module.exports = mongoose.model('TtSubject', ttSubjectSchema);
+

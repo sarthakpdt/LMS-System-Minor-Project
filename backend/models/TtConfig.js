@@ -32,6 +32,14 @@ const ttConfigSchema = new mongoose.Schema({
     endTime: { type: String, required: true } // "14:00"
   },
   lectureDuration: { type: Number, required: true, default: 50 }, // in minutes
+  schedulingRules: {
+    maxClassesPerDay: { type: Number, default: 6 },
+    maxConsecutiveLectures: { type: Number, default: 3 },
+    maxLabsPerDay: { type: Number, default: 2 },
+    lectureDuration: { type: Number, default: 50 },
+    dayStartTime: { type: String, default: '09:00' },
+    dayEndTime: { type: String, default: '17:00' },
+  },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

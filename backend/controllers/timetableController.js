@@ -4,12 +4,96 @@ const TtRoom = require('../models/TtRoom');
 const TtFacultyConstraint = require('../models/TtFacultyConstraint');
 const TtGenerated = require('../models/TtGenerated');
 const TtPublished = require('../models/TtPublished');
+const TtAttendanceSlot = require('../models/TtAttendanceSlot');
 const Teacher = require('../models/Teacher');
 const Student = require('../models/Student');
 const Course = require('../models/Course');
 const SchedulingEngine = require('../services/SchedulingEngine');
 const TimetableOptimizer = require('../services/TimetableOptimizer');
 const { mapMongoError, mongoErrorStatus } = require('../utils/mongoErrorMapper');
+
+// ─── Helper: get the next N weekday dates for a given day name ─────────────
+const getNextDatesForDay = (dayName, weeksAhead = 4) => {
+  const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(dayName);
+  if (dayIndex === -1) return [];
+  const dates = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let w = 0; w < weeksAhead; w++) {
+    const d = new Date(today);
+    const diff = (dayIndex - d.getDay() + 7) % 7 || (w === 0 ? 7 : 0);
+    d.setDate(d.getDate() + diff + w * 7);
+    // Only include future or today
+    if (d >= today) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+  }
+  return [...new Set(dates)]; // dedupe
+};
+
+// ─── Helper: auto-create TtAttendanceSlot docs after publish ─────────────────
+const autoCreateAttendanceSlots = async (draft, config) => {
+  try {
+    const WEEKS_AHEAD = 4;
+    const ops = [];
+
+    for (const entry of draft.entries) {
+      if (entry.isFree || entry.isLunch || !entry.subjectId || !entry.facultyId) continue;
+
+      const dates = getNextDatesForDay(entry.day, WEEKS_AHEAD);
+      for (const date of dates) {
+        ops.push({
+          updateOne: {
+            filter: {
+              date,
+              day: entry.day,
+              startTime: entry.timeSlot.startTime,
+              facultyId: entry.facultyId,
+              // Use a string-based sectionId fallback so ObjectId is not required
+              sectionLabel: `${entry.branch}-${entry.year}-${entry.section || 'A'}`,
+            },
+            update: {
+              $set: {
+                timetableEntryRef: draft._id,
+                date,
+                day: entry.day,
+                startTime: entry.timeSlot.startTime,
+                endTime: entry.timeSlot.endTime,
+                subjectName: entry.subjectName,
+                subjectId: entry.subjectId || null,
+                facultyId: entry.facultyId,
+                facultyName: entry.facultyName || '',
+                branch: entry.branch,
+                year: entry.year,
+                section: entry.section || 'A',
+                room: entry.roomName || '',
+                lectureType: entry.subjectType || 'theory',
+                sectionLabel: `${entry.branch}-${entry.year}-${entry.section || 'A'}`,
+                attendanceStatus: 'pending',
+                isActive: true,
+              },
+            },
+            upsert: true,
+          },
+        });
+      }
+    }
+
+    if (ops.length > 0) {
+      // Use the flexible model if TtAttendanceSlot unique index conflicts
+      try {
+        await TtAttendanceSlot.bulkWrite(ops, { ordered: false });
+      } catch (bulkErr) {
+        // Log but don't fail publish — attendance slots are supplementary
+        console.warn('[autoCreateAttendanceSlots] Some slots skipped:', bulkErr.message);
+      }
+    }
+    console.log(`[autoCreateAttendanceSlots] Created/updated ${ops.length} attendance slots`);
+  } catch (err) {
+    console.error('[autoCreateAttendanceSlots] Error:', err.message);
+    // Non-fatal — don't throw
+  }
+};
 
 const stripConfigMeta = (body = {}) => {
   const { __v, createdAt, updatedAt, ...rest } = body;
@@ -195,7 +279,7 @@ const validateBeforeGenerate = (config, subjects, rooms) => {
 
 const upsertSubjectRecord = async (payload) => {
   const {
-    id, _id, name, code, type, branch, year, weeklyHours, labDuration,
+    id, _id, name, code, type, branch, year, semester, credits, weeklyHours, labDuration,
     lectureDuration, facultyId, hasLab, labSessionsPerWeek,
     preferredDays, preferredSlots, roomType,
   } = payload;
@@ -207,7 +291,9 @@ const upsertSubjectRecord = async (payload) => {
     code: String(code).toUpperCase(),
     type,
     branch: String(branch).toUpperCase(),
-    year: Number(year),
+    year: year ? Number(year) : Math.ceil(Number(semester) / 2),
+    semester: Number(semester),
+    credits: Number(credits) || 4,
     weeklyHours: Number(weeklyHours),
     labDuration: Number(labDuration) || 2,
     lectureDuration: lectureDuration ? Number(lectureDuration) : null,
@@ -290,12 +376,13 @@ exports.getActiveConfig = async (req, res) => {
           { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', isBreak: false },
           { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', isBreak: false },
           { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', isBreak: false },
-          { label: '12:00 - 12:50', startTime: '12:00', endTime: '12:50', isBreak: false },
-          { label: '13:00 - 14:00', startTime: '13:00', endTime: '14:00', isBreak: true, breakType: 'lunch' },
+          { label: '12:00 - 13:00', startTime: '12:00', endTime: '13:00', isBreak: true, breakType: 'lunch' },
+          { label: '13:00 - 13:50', startTime: '13:00', endTime: '13:50', isBreak: false },
           { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', isBreak: false },
-          { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', isBreak: false }
+          { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', isBreak: false },
+          { label: '16:00 - 16:50', startTime: '16:00', endTime: '16:50', isBreak: false }
         ],
-        lunchBreak: { startTime: '13:00', endTime: '14:00' },
+        lunchBreak: { startTime: '12:00', endTime: '13:00' },
         lectureDuration: 50,
         isActive: true
       });
@@ -523,6 +610,17 @@ exports.generateTimetable = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No active timetable configuration found.' });
     }
 
+    // Load and count approved students per branch, year, section
+    const studentsList = await Student.find({ approvalStatus: 'approved', isActive: { $ne: false } }, 'department semester section');
+    const studentCounts = {};
+    studentsList.forEach(s => {
+      const sem = Number(s.semester) || 1;
+      const year = Math.ceil(sem / 2);
+      const key = `${s.department}::${year}::${s.section || 'A'}`;
+      studentCounts[key] = (studentCounts[key] || 0) + 1;
+    });
+    config.studentCounts = studentCounts;
+
     const subjects = await TtSubject.find({ isActive: true });
     const rooms = await TtRoom.find({ isActive: true });
     const constraints = await TtFacultyConstraint.find();
@@ -618,17 +716,36 @@ exports.getTimetableById = async (req, res) => {
 // ── POST /api/timetable/engine/timetables/save ──
 exports.saveTimetable = async (req, res) => {
   try {
-    const { draftId, label, entries, conflicts } = req.body;
+    const { draftId, label, entries, conflicts, cloneFromId } = req.body;
+
+    const config = await TtConfig.findOne({ isActive: true });
+    if (!config) {
+      return res.status(400).json({ success: false, message: 'No active configuration found.' });
+    }
+
+    if (cloneFromId) {
+      const sourceToClone = await TtGenerated.findById(cloneFromId);
+      if (!sourceToClone) {
+        return res.status(404).json({ success: false, message: 'Source timetable to clone not found.' });
+      }
+      const cloned = await TtGenerated.create({
+        configId: config._id,
+        label: label || `${sourceToClone.label} (Clone)`,
+        status: 'draft',
+        isWorkingDraft: false,
+        aiOptimized: sourceToClone.aiOptimized,
+        validationSummary: sourceToClone.validationSummary,
+        conflicts: sourceToClone.conflicts,
+        entries: sourceToClone.entries,
+      });
+      return res.json({ success: true, timetable: cloned, message: 'Timetable cloned successfully.' });
+    }
+
     if (!draftId && (!entries || !Array.isArray(entries))) {
       return res.status(400).json({
         success: false,
         message: 'draftId or entries array is required.',
       });
-    }
-
-    const config = await TtConfig.findOne({ isActive: true });
-    if (!config) {
-      return res.status(400).json({ success: false, message: 'No active configuration found.' });
     }
 
     let source = draftId ? await TtGenerated.findById(draftId) : null;
@@ -737,6 +854,46 @@ exports.publishTimetable = async (req, res) => {
       entries: draft.entries
     });
 
+    // operational sync
+    const TimetableSlot = require('../models/Timetable');
+    
+    // Clear old operational slots matching this published draft's branches/semesters
+    const uniqueBranches = [...new Set(draft.entries.map(e => e.branch))];
+    const uniqueYears = [...new Set(draft.entries.map(e => e.year))];
+    const uniqueSemesters = uniqueYears.map(y => Number(semesterForYear(y)));
+
+    await TimetableSlot.deleteMany({
+      department: { $in: uniqueBranches },
+      semester: { $in: uniqueSemesters }
+    });
+
+    // Write entries to TimetableSlot
+    const slotsToCreate = [];
+    draft.entries.forEach(entry => {
+      if (entry.isFree || entry.isLunch || !entry.subjectName || !entry.facultyId) return;
+
+      slotsToCreate.push({
+        subject: entry.subjectName,
+        day: entry.day,
+        startTime: entry.timeSlot.startTime,
+        endTime: entry.timeSlot.endTime,
+        semester: Number(semesterForYear(entry.year)),
+        department: entry.branch,
+        section: entry.section || 'A', // Support section tracking
+        teacherId: entry.facultyId,
+        teacherName: entry.facultyName || '',
+        room: entry.roomName || '',
+        isActive: true
+      });
+    });
+
+    if (slotsToCreate.length > 0) {
+      await TimetableSlot.insertMany(slotsToCreate);
+    }
+
+    // ── Phase 5: Auto-create attendance slots for next 4 weeks ──
+    await autoCreateAttendanceSlots(draft, config);
+
     res.json({ success: true, message: 'Timetable published successfully!', published });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -787,7 +944,12 @@ exports.getPublishedForStudent = async (req, res) => {
   try {
     const student = await Student.findById(req.params.studentId);
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found.' });
+      // If a non-student (like an admin) views the portal, return an empty preview
+      return res.json({ 
+        success: true, 
+        entries: [], 
+        studentMeta: { department: 'Preview', timetableBranch: 'Preview', section: 'A', year: 1, semester: 1 } 
+      });
     }
 
     const published = await TtPublished.findOne().sort({ createdAt: -1 });

@@ -1,10 +1,13 @@
 import React from 'react';
 import { TtConfig, TimeSlot } from './types';
-import { Clock, Plus, Trash2, CalendarDays } from 'lucide-react';
+import { Clock, Plus, Trash2, CalendarDays, AlertCircle, RefreshCw } from 'lucide-react';
 
 const ALL_DAYS = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
 ] as const;
+
+const COLLEGE_START = '09:00';
+const COLLEGE_END   = '17:00';
 
 const formatLabel = (start: string, end: string) => `${start} - ${end}`;
 
@@ -73,10 +76,16 @@ export default function OperationalSettings({ config, onChange }: Props) {
       const endMins = startMins + (config.lectureDuration || 50);
       const endH = String(Math.floor(endMins / 60)).padStart(2, '0');
       const endM = String(endMins % 60).padStart(2, '0');
+      const newStart = `${startH}:${startM}`;
+      const newEnd   = `${endH}:${endM}`;
+      // Enforce college end time
+      if (newStart >= COLLEGE_END) {
+        return; // cannot add more slots after 5 PM
+      }
       newSlot = {
-        label: formatLabel(`${startH}:${startM}`, `${endH}:${endM}`),
-        startTime: `${startH}:${startM}`,
-        endTime: `${endH}:${endM}`,
+        label: formatLabel(newStart, newEnd > COLLEGE_END ? COLLEGE_END : newEnd),
+        startTime: newStart,
+        endTime: newEnd > COLLEGE_END ? COLLEGE_END : newEnd,
         isBreak: false,
         breakType: null,
       };
@@ -84,6 +93,27 @@ export default function OperationalSettings({ config, onChange }: Props) {
       newSlot = emptySlot(config.lectureDuration || 50);
     }
     onChange({ ...config, timeSlots: [...config.timeSlots, newSlot] });
+  };
+
+  // Auto-generate standard 9 AM to 5 PM timetable with 50-min lectures + 12-1 lunch
+  const autoGenerateSlots = () => {
+    const dur = config.lectureDuration || 50;
+    const slots: TimeSlot[] = [
+      { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', isBreak: false, breakType: null },
+      { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', isBreak: false, breakType: null },
+      { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', isBreak: false, breakType: null },
+      { label: '12:00 - 13:00', startTime: '12:00', endTime: '13:00', isBreak: true,  breakType: 'lunch' },
+      { label: '13:00 - 13:50', startTime: '13:00', endTime: '13:50', isBreak: false, breakType: null },
+      { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', isBreak: false, breakType: null },
+      { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', isBreak: false, breakType: null },
+      { label: '16:00 - 16:50', startTime: '16:00', endTime: '16:50', isBreak: false, breakType: null },
+    ];
+    onChange({
+      ...config,
+      lectureDuration: 50,
+      timeSlots: slots,
+      lunchBreak: { startTime: '12:00', endTime: '13:00' },
+    });
   };
 
   const removeSlot = (index: number) => {
@@ -215,14 +245,36 @@ export default function OperationalSettings({ config, onChange }: Props) {
           <h5 className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-purple-600" /> Daily Time Slots
           </h5>
-          <button
-            type="button"
-            onClick={addSlot}
-            className="flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-[10px] font-semibold hover:bg-purple-100 transition"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Slot
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={autoGenerateSlots}
+              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-semibold hover:bg-indigo-100 transition"
+              title="Reset to standard 9 AM–5 PM college schedule"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Reset to 9–5 Schedule
+            </button>
+            <button
+              type="button"
+              onClick={addSlot}
+              className="flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-[10px] font-semibold hover:bg-purple-100 transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Slot
+            </button>
+          </div>
         </div>
+
+        {/* College timing rule notice */}
+        <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] text-amber-800">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <span>
+            <strong>College Rules:</strong> Lectures must be between <strong>9:00 AM – 5:00 PM</strong>.
+            Lecture duration: <strong>50 minutes</strong>.
+            Each section gets exactly <strong>one lunch break</strong> between 12 PM – 2 PM
+            (AI picks 12–1 or 1–2 per section).
+          </span>
+        </div>
+
         <p className="text-[10px] text-gray-500">
           Define the college bell schedule. Mark one slot as lunch break for the generator.
         </p>
