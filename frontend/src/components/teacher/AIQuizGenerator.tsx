@@ -93,7 +93,7 @@ function QuestionCard({ q, index, onUpdate, onRemove }: {
         </div>
       </div>
 
-      <div className="bg-white px-4 py-3 space-y-3">
+      <div className="bg-white px-4 py-3 space-y-3 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         {editing ? (
           <>
             <textarea className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -316,7 +316,7 @@ export function AIQuizGenerator({ courses, onClose, onSaved }: AIQuizGeneratorPr
       <div className="p-6 space-y-6" style={{ overflowY: 'auto', flex: '1 1 0', minHeight: 0 }}>
 
         {/* ── Generation Config ── */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <div className="bg-white border border-gray-200/80 rounded-xl p-5 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-purple-600" /> Generation Settings
           </h4>
@@ -369,7 +369,7 @@ export function AIQuizGenerator({ courses, onClose, onSaved }: AIQuizGeneratorPr
                     <span>{bucket.value}</span>
                     <span className="text-xs font-normal opacity-75">{bucket.desc}</span>
                     {isSelected && (
-                      <span className="mt-0.5 text-xs px-2 py-0.5 bg-white/70 rounded-full">✓ Selected</span>
+                      <span className="mt-0.5 text-xs px-2 py-0.5 bg-white/70 rounded-full dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">✓ Selected</span>
                     )}
                   </button>
                 );
@@ -483,7 +483,7 @@ export function AIQuizGenerator({ courses, onClose, onSaved }: AIQuizGeneratorPr
 
         {/* ── Quiz Settings ── */}
         {questions.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+          <div className="bg-white border border-gray-200/80 rounded-xl p-5 space-y-4 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             <h4 className="font-semibold text-gray-900">Quiz Settings</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

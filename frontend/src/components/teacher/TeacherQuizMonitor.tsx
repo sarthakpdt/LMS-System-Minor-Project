@@ -269,16 +269,23 @@ export function TeacherQuizMonitor() {
         Back to Quiz Management
       </Link>
 
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Live Quiz Monitoring</h2>
-        <p className="text-gray-600">
-          Real-time monitoring of quiz attempts with anti-cheating detection.
-          {quizTitle && <span className="ml-2 font-medium text-gray-800">— {quizTitle}</span>}
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Eye className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Live Quiz Monitoring</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+            Real-time monitoring of quiz attempts with anti-cheating detection.
+            {quizTitle && <span className="ml-2 font-medium text-gray-800 dark:text-gray-300">— {quizTitle}</span>}
+          </p>
+        </div>
       </div>
 
       {/* Quiz Info Card */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-lg p-6 mb-6 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-[1.5rem] p-8 mb-10 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-2xl font-bold mb-1">{quizTitle || 'Quiz Monitor'}</h3>
@@ -288,7 +295,7 @@ export function TeacherQuizMonitor() {
                 : 'Your assigned courses'}
             </p>
           </div>
-          <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">
+          <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             Active Now
           </span>
         </div>
@@ -313,8 +320,8 @@ export function TeacherQuizMonitor() {
       </div>
 
       {/* Monitoring Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -327,7 +334,7 @@ export function TeacherQuizMonitor() {
           <p className="text-xs text-gray-500">Total detected violations</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Camera className="w-5 h-5 text-purple-600" />
@@ -340,7 +347,7 @@ export function TeacherQuizMonitor() {
           <p className="text-xs text-gray-500">AI proctoring alerts</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-600" />
@@ -353,7 +360,7 @@ export function TeacherQuizMonitor() {
           <p className="text-xs text-gray-500">No violations detected</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-orange-600" />
@@ -397,7 +404,7 @@ export function TeacherQuizMonitor() {
       )}
 
       {/* Student Monitoring Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Student Submission Review</h3>
           <span className="text-sm text-gray-500">{submittedCount} submission{submittedCount !== 1 ? 's' : ''}</span>

@@ -56,12 +56,15 @@ export default function StudentTimetable() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-purple-600" /> My Class Timetable
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">My Class Timetable</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
             Weekly schedule for {studentMeta?.department} | Year {studentMeta?.year} | Semester {studentMeta?.semester}
           </p>
         </div>
@@ -74,7 +77,7 @@ export default function StudentTimetable() {
       </div>
 
       {entries.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-20 text-center space-y-3 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 py-20 text-center space-y-3 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <Calendar className="w-12 h-12 mx-auto text-gray-300" />
           <div>
             <h4 className="font-bold text-gray-800 text-sm">No Timetable Published</h4>

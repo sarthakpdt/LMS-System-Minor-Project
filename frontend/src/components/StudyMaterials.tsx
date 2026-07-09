@@ -107,9 +107,9 @@ function MaterialCard({
   onPreview: (url: string, name: string) => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-      <div className="flex items-start justify-between p-4 pb-2">
-        <div className="w-10 h-10 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center flex-shrink-0">
+    <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+      <div className="flex items-start justify-between p-6 pb-2">
+        <div className="w-12 h-12 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center flex-shrink-0">
           <FileIcon type={m.fileType} />
         </div>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${FILE_TYPE_COLORS[m.fileType] || 'bg-gray-100 text-gray-600'}`}>
@@ -117,7 +117,7 @@ function MaterialCard({
         </span>
       </div>
 
-      <div className="px-4 pb-4 flex-1 flex flex-col">
+      <div className="px-6 pb-6 flex-1 flex flex-col">
         <h4 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 min-h-[2.5rem] mb-1">
           {m.title}
         </h4>
@@ -217,11 +217,11 @@ function SubjectSection({
   });
 
   return (
-    <div className="mb-6 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="mb-8 bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       {/* Subject Header */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 transition"
+        className="w-full flex items-center justify-between px-6 py-5 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 transition"
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -246,7 +246,7 @@ function SubjectSection({
       </button>
 
       {open && (
-        <div className="p-4">
+        <div className="p-6">
           {/* Type filter tabs */}
           <div className="flex gap-2 flex-wrap mb-4">
             {FILE_TYPE_TABS.map(t => (
@@ -265,7 +265,7 @@ function SubjectSection({
           {filtered.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-6">No {typeFilter !== 'All' ? typeFilter : ''} materials yet</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {filtered.map(m => (
                 <MaterialCard key={m._id} m={m}
                   isTeacher={isTeacher} isAdmin={isAdmin}
@@ -518,13 +518,18 @@ export function StudyMaterials() {
   const totalDownloads = materials.reduce((s, m) => s + (m.downloadCount || 0), 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-8">
 
       {/* ── Header ── */}
-      <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Study Materials</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Study Materials</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
             {isStudent
               ? 'Materials for your enrolled courses, grouped by subject.'
               : 'Upload and manage lecture notes, references, and resources.'}
@@ -553,26 +558,30 @@ export function StudyMaterials() {
       )}
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
         {[
-          { label: 'Total Materials', value: materials.length,                                   bg: 'bg-blue-50',   icon: FolderOpen, ic: 'text-blue-600'   },
-          { label: 'PDFs',            value: materials.filter(m => m.fileType === 'pdf').length,  bg: 'bg-red-50',    icon: FileText,   ic: 'text-red-600'    },
-          { label: 'Links',           value: materials.filter(m => m.fileType === 'link').length, bg: 'bg-purple-50', icon: Link,       ic: 'text-purple-600' },
-          { label: 'Total Downloads', value: totalDownloads,                                     bg: 'bg-green-50',  icon: Download,   ic: 'text-green-600'  },
-        ].map(({ label, value, bg, icon: Icon, ic }) => (
-          <div key={label} className={`${bg} rounded-xl p-4`}>
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mb-2 shadow-sm">
-              <Icon className={`w-4 h-4 ${ic}`} />
+          { label: 'Total Materials', value: materials.length,                                   bg: 'bg-blue-500',   icon: FolderOpen },
+          { label: 'PDFs',            value: materials.filter(m => m.fileType === 'pdf').length,  bg: 'bg-red-500',    icon: FileText },
+          { label: 'Links',           value: materials.filter(m => m.fileType === 'link').length, bg: 'bg-purple-500', icon: Link },
+          { label: 'Total Downloads', value: totalDownloads,                                     bg: 'bg-green-500',  icon: Download },
+        ].map(({ label, value, bg, icon: Icon }) => (
+          <div key={label} className={`bg-white dark:bg-slate-900/50 rounded-[1.5rem] p-8 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
+            <div className="flex justify-between items-start mb-6">
+              <div className={`${bg} rounded-xl flex items-center justify-center shadow-md`} style={{ width: '3.5rem', height: '3.5rem' }}>
+                <Icon className="w-6 h-6 text-white" />
+              </div>
             </div>
-            <p className="text-xl font-bold text-gray-900">{value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+            <div className="flex flex-col">
+              <h3 className="text-4xl font-black leading-none mb-2 tracking-tight dynamic-text-white">{value}</h3>
+              <p className="text-sm font-bold uppercase tracking-widest dynamic-text-muted">{label}</p>
+            </div>
           </div>
         ))}
       </div>
 
       {/* ── Upload Form (teacher / admin only) ── */}
       {showForm && (isTeacher || isAdmin) && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm p-5 mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="font-semibold text-gray-800 text-sm mb-3">
             {isTeacher ? '📚 Upload to your assigned courses' : '📚 Upload Material'}
           </h3>
@@ -605,7 +614,7 @@ export function StudyMaterials() {
                 </div>
               ) : (
                 <select value={courseId} onChange={e => setCourseId(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <option value="">Select course...</option>
                   {courses.map(c => (
                     <option key={c._id || c.courseId} value={c._id || c.courseId}>
@@ -618,7 +627,7 @@ export function StudyMaterials() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
               <select value={category} onChange={e => setCategory(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                 <option value="">Select category...</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -719,12 +728,13 @@ export function StudyMaterials() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by title or course..."
-            className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            className="w-full border border-gray-200 rounded-lg pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+            style={{ paddingLeft: '2.5rem' }} />
         </div>
         {/* Type filter only for teacher/admin flat view */}
         {!isStudent && (
           <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+            className="border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             {FILE_TYPE_TABS.map(t => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -738,7 +748,7 @@ export function StudyMaterials() {
           <Loader2 className="w-5 h-5 animate-spin" /> Loading materials...
         </div>
       ) : materials.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400">
+        <div className="bg-white rounded-xl border border-gray-200/80 py-16 text-center text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium text-sm">
             {isStudent ? 'No materials available for your courses yet' : 'No materials uploaded yet'}
@@ -751,7 +761,7 @@ export function StudyMaterials() {
         // ── STUDENT VIEW: grouped by subject ──────────────────
         <>
           {Object.keys(filteredGrouped).length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400">
+            <div className="bg-white rounded-xl border border-gray-200/80 py-16 text-center text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium text-sm">No results found</p>
             </div>
@@ -773,12 +783,12 @@ export function StudyMaterials() {
       ) : (
         // ── TEACHER / ADMIN VIEW: flat grid with filters ───────
         filtered.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400">
+          <div className="bg-white rounded-xl border border-gray-200/80 py-16 text-center text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium text-sm">No results found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {filtered.map(m => (
               <MaterialCard key={m._id} m={m}
                 isTeacher={isTeacher} isAdmin={isAdmin}
@@ -792,7 +802,7 @@ export function StudyMaterials() {
       {/* ── PDF Preview Modal ── */}
       {previewUrl && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl h-[88vh] flex flex-col overflow-hidden shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[88vh] flex flex-col overflow-hidden shadow-2xl hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
             <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2 min-w-0">
                 <FileText className="w-4 h-4 text-red-500 flex-shrink-0" />

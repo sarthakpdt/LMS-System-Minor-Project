@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
   CheckCircle, XCircle, Clock, User, Mail, Phone,
-  GraduationCap, Calendar, Search, Filter, HelpCircle
+  GraduationCap, Calendar, Search, Filter, HelpCircle, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
@@ -153,22 +153,27 @@ export function StudentApprovals() {
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 relative">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-wide flex items-center gap-3">
-            Student Approvals
-            <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-black px-3 py-1 rounded-full border border-purple-200/50 dark:border-purple-800/30">
-              {pendingStudents.length} Pending
-            </span>
-          </h1>
-          <p className="text-gray-500 dark:text-slate-400 text-sm mt-1.5">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <UserCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+              Student Approvals
+              <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-black px-3 py-1 rounded-full border border-purple-200/50 dark:border-purple-800/30">
+                {pendingStudents.length} Pending
+              </span>
+            </h1>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
             Review and verify student registrations before granting access to institutional portals.
           </p>
         </div>
       </div>
 
       {/* Filter and Search controls */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm flex flex-col md:flex-row items-center gap-4">
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm flex flex-col md:flex-row items-center gap-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         {/* Search */}
         <div className="relative w-full md:flex-1">
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -204,7 +209,7 @@ export function StudentApprovals() {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs"
+            className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             <div className="w-20 h-20 bg-purple-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-5 border border-purple-100 dark:border-slate-800">
               <Clock className="w-10 h-10 text-purple-600 dark:text-purple-400" />
@@ -227,12 +232,12 @@ export function StudentApprovals() {
                 variants={cardVariants}
                 exit="exit"
                 layoutId={student.id}
-                className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between"
+                className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               >
                 {/* Card Top */}
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700/50 bg-gradient-to-r from-purple-500/5 to-indigo-500/5 dark:from-purple-950/20 dark:to-indigo-950/20">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-black shadow-md border border-purple-400/20">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-black shadow-md border border-purple-400/20 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                       {student.name?.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -311,7 +316,7 @@ export function StudentApprovals() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-gray-200/80 dark:border-slate-700/50"
+              className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-gray-200/80 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className="flex items-center gap-3 mb-4 text-purple-600 dark:text-purple-400">
                 <HelpCircle className="w-6 h-6" />

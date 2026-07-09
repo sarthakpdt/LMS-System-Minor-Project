@@ -1,7 +1,7 @@
   import { useAuth } from '../contexts/AuthContext';
   import { useState, useEffect, useRef } from 'react';
   import { useNavigate } from 'react-router';
-  import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain } from 'lucide-react';
+  import { BookOpen, AlertCircle, Clock, Target, Lightbulb, Bell, X, Brain, LayoutDashboard } from 'lucide-react';
   import AILearningAssistant from './student/AILearningAssistant';
   import NotificationsPanel from './teacher/NotificationsPanel';
   import {
@@ -481,10 +481,19 @@
     const totalCredits  = enrolledCourses.reduce((s, c) => s + (c.credits || 0), 0);
 
     return (
-      <div className="p-8 bg-gray-50 min-h-screen">
-        <div className="mb-8">
-          <h2 className="text-3xl font-semibold text-gray-900 mb-2">Student Portal</h2>
-          <p className="text-gray-600">Personalized dashboard with performance insights and learning recommendations.</p>
+      <div className="p-8 bg-gray-50 min-h-screen space-y-8">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+                <LayoutDashboard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Student Portal</h2>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+              Personalized dashboard with performance insights and learning recommendations.
+            </p>
+          </div>
         </div>
 
         {/* ── Deadline Alarm Banners ── */}
@@ -494,10 +503,10 @@
         />
 
         {/* ── Student Profile Card ── */}
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-8 mb-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center dark:bg-slate-800">
                 <span className="text-2xl font-bold">{getInitials(user?.name)}</span>
               </div>
               <div>
@@ -516,7 +525,7 @@
               <button
                 onClick={() => setShowAIPanel(true)}
                 title="AI Performance Insights"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-lg text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-[1.5rem] text-xs font-medium transition-colors dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               >
                 <Brain className="w-3.5 h-3.5" />
                 <span>AI Insights</span>
@@ -544,11 +553,11 @@
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* Quiz Star Summary */}
           {quizStarSummary.total > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Quiz Performance Stars</h3>
@@ -589,7 +598,7 @@
           )}
 
           {/* Performance Trend */}
-          <div className="lg:col-span-2 bg-white rounded-lg p-6 border border-gray-200">
+          <div className="lg:col-span-2 bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">My Performance Trend</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={performanceTrend}>
@@ -603,7 +612,7 @@
           </div>
 
           {/* ── Upcoming Deadlines — REAL DATA ── */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
@@ -655,7 +664,7 @@
         </div>
 
         {/* Student Notifications (teacher/admin announcements) */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center gap-2 mb-4">
             <Bell className="w-5 h-5 text-indigo-600" />
             <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
@@ -669,15 +678,15 @@
         </div>
 
         {/* Recommendations */}
-        <div className="mb-6">
+        <div>
           <div className="flex items-center gap-2 mb-4">
             <Lightbulb className="w-6 h-6 text-yellow-500" />
             <h3 className="text-lg font-semibold text-gray-900">Personalized Learning Recommendations</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {recommendations.map((rec, i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col">
-                <div className={`w-12 h-12 ${rec.color} rounded-lg flex items-center justify-center mb-4`}>
+              <div key={i} className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 h-full flex flex-col hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+                <div className={`w-14 h-14 ${rec.color} rounded-xl flex items-center justify-center mb-6`}>
                   <rec.icon className="w-6 h-6" />
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">{rec.title}</h4>
@@ -694,9 +703,9 @@
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Skills Analysis */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Analysis & Growth Areas</h3>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={skillsRadar}>
@@ -711,7 +720,7 @@
           </div>
 
           {/* Weak Areas */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex items-center gap-2 mb-4">
               <AlertCircle className="w-5 h-5 text-orange-600" />
               <h3 className="text-lg font-semibold text-gray-900">Areas Requiring Improvement</h3>
@@ -749,7 +758,7 @@
         </div>
 
         {/* Enrolled Courses */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">My Courses</h3>        {loadingCourses ? (
             <p className="text-gray-500 text-sm">Loading your courses...</p>
           ) : enrolledCourses.length === 0 ? (
@@ -807,7 +816,7 @@
         {/* ── AI Performance Insights Modal ── */}
         {showAIPanel && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
               <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <Brain className="w-5 h-5 text-white" />

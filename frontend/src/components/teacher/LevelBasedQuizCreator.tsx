@@ -32,7 +32,7 @@ export function LevelBasedQuizCreator() {
   const [customWeakArea, setCustomWeakArea] = useState('');
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       <div className="mb-6">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Create Level-Based Quiz</h3>
         <p className="text-sm text-gray-600">Design quizzes tailored to specific performance levels and student needs.</p>
@@ -114,7 +114,7 @@ export function LevelBasedQuizCreator() {
         </div>
         <div className="space-y-2">
           {questionDifficulty[selectedLevel as keyof typeof questionDifficulty].map((item, index) => (
-            <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3">
+            <div key={index} className="flex items-center justify-between bg-white rounded-[1.5rem] p-3 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <div>
                 <p className="font-medium text-gray-900">{item.type}</p>
                 <p className="text-xs text-gray-600">{item.description}</p>

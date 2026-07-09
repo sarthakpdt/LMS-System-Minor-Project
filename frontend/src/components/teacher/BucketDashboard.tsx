@@ -119,11 +119,18 @@ export function BucketDashboard() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Student Bucket Dashboard</h2>
-        <p className="text-gray-500 text-sm mt-1">
-          View student difficulty levels per subject, set promotion thresholds, and track promotions.
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Student Bucket Dashboard</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+            View student difficulty levels per subject, set promotion thresholds, and track promotions.
+          </p>
+        </div>
       </div>
 
       {/* Course selector */}
@@ -149,7 +156,7 @@ export function BucketDashboard() {
       </div>
 
       {/* Threshold Panel */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+      <div className="bg-white rounded-xl border border-gray-200/80 p-5 mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-blue-600" />
@@ -240,7 +247,7 @@ export function BucketDashboard() {
                       {students.length} students
                     </span>
                   </div>
-                  <div className="h-2 bg-white rounded-full overflow-hidden mb-2">
+                  <div className="h-2 bg-white rounded-full overflow-hidden mb-2 dark:bg-slate-800">
                     <div className={`h-full rounded-full ${style.dot}`} style={{ width: `${pct}%` }} />
                   </div>
                   <p className="text-xs text-gray-500">{pct}% of total ({totalStudents})</p>
@@ -256,7 +263,7 @@ export function BucketDashboard() {
               const style = BUCKET_STYLE[b];
               const targets = b === 'Easy' ? ['Medium', 'Hard'] : b === 'Medium' ? ['Easy', 'Hard'] : ['Easy', 'Medium'];
               return (
-                <div key={b} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={b} className="bg-white rounded-xl border border-gray-200/80 overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                   <div className={`px-4 py-3 border-b ${style.bg} ${style.border}`}>
                     <h4 className="font-semibold text-gray-900 text-sm">{b} Bucket</h4>
                   </div>
@@ -290,7 +297,7 @@ export function BucketDashboard() {
 
           {/* Recent Promotions */}
           {overview.recentPromotions.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-purple-600" />
                 <h3 className="font-semibold text-gray-900">Recent Promotions</h3>

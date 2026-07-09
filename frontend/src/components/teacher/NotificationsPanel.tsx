@@ -236,7 +236,7 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
 
       {/* Create Form */}
       {showForm && canCreate && (
-        <form onSubmit={handleCreate} className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4">
+        <form onSubmit={handleCreate} className="bg-white border border-gray-200/80 rounded-xl shadow-sm p-5 space-y-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="font-semibold text-gray-900 flex items-center gap-2">
             <Plus className="w-4 h-4 text-indigo-500" />
             Send {role === 'teacher' ? 'Student ' : ''}Notification
@@ -258,7 +258,7 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
                 <select
                   value={form.type}
                   onChange={e => setForm(p => ({ ...p, type: e.target.value as any }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 >
                   <option value="info">ℹ️ Info</option>
                   <option value="warning">⚠️ Warning</option>
@@ -271,7 +271,7 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
                 <select
                   value={form.targetRole}
                   onChange={e => setForm(p => ({ ...p, targetRole: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 >
                   {role === 'admin' && <option value="all">Everyone</option>}
                   <option value="student">Students</option>
@@ -318,7 +318,7 @@ export default function NotificationsPanel({ userId, role, userName, isAdmin }: 
             <Loader2 className="w-5 h-5 animate-spin" /> Loading notifications…
           </div>
         ) : notifications.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 py-14 text-center text-gray-400">
+          <div className="bg-white rounded-xl border border-gray-200/80 py-14 text-center text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <Bell className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p className="text-sm font-medium">No notifications yet</p>
             {canCreate && <p className="text-xs mt-1">Click "New Notification" to send one to your students.</p>}

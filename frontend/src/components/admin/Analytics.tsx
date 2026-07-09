@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
+import { Badge } from '../ui/badge';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -143,7 +144,7 @@ const Analytics: React.FC = () => {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center py-32 text-gray-500 dark:text-slate-400 gap-2">
+    <div className="flex items-center justify-center py-32 dynamic-text-muted gap-2">
       <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
       <span>Loading analytics console...</span>
     </div>
@@ -157,7 +158,7 @@ const Analytics: React.FC = () => {
   );
 
   const ListCard = ({ title, subtitle, rows, gradientHeader, borderStyle, icon: Icon }: { title: string; subtitle: string; rows: StudentRow[]; gradientHeader: string; borderStyle: string; icon: any }) => (
-    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs overflow-hidden flex flex-col justify-between">
+    <div className="premium-glass neon-glow rounded-[2rem] overflow-hidden flex flex-col justify-between border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
       <div className={`p-5 text-white ${gradientHeader} flex items-center justify-between`}>
         <div>
           <h3 className="text-sm font-black tracking-wide">{title}</h3>
@@ -166,22 +167,22 @@ const Analytics: React.FC = () => {
         <Icon className="w-5 h-5 text-white/90" />
       </div>
       {rows.length === 0 ? (
-        <div className="p-6 text-center text-xs text-gray-400 dark:text-slate-500">No students in this bucket.</div>
+        <div className="p-6 text-center text-xs dynamic-text-muted">No students in this bucket.</div>
       ) : (
         <div className="p-5 space-y-3">
           {rows.map((s, i) => (
             <div key={s._id} className={`flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-slate-900/30 border border-transparent ${borderStyle} transition-all`}>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                <div className="text-xs font-bold dynamic-text-white truncate">
                   {i + 1}. {s.name}
                 </div>
-                <div className="text-[10px] text-gray-400 dark:text-slate-500 font-mono mt-0.5">
+                <div className="text-[10px] dynamic-text-muted font-mono mt-0.5">
                   {s.studentId || 'N/A'}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs font-black text-gray-950 dark:text-white">{s.score}%</div>
-                <div className="text-[10px] text-gray-400 dark:text-slate-500 font-medium mt-0.5">GPA {s.gpa?.toFixed(2)}</div>
+                <div className="text-xs font-black dynamic-text-white">{s.score}%</div>
+                <div className="text-[10px] dynamic-text-muted font-medium mt-0.5">GPA {s.gpa?.toFixed(2)}</div>
               </div>
             </div>
           ))}
@@ -199,10 +200,10 @@ const Analytics: React.FC = () => {
     >
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-wide flex items-center gap-3">
+        <h1 className="text-3xl font-black dynamic-text-white tracking-wide flex items-center gap-3">
           📊 Student Performance Analytics
         </h1>
-        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1.5">
+        <p className="dynamic-text-muted text-sm mt-1.5">
           Global academic health metrics, score aggregates, and student bucket distributions.
         </p>
       </div>
@@ -218,13 +219,13 @@ const Analytics: React.FC = () => {
           { label: 'Medium Bucket Students', value: totals.medium.length, icon: TrendingUp, color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-800/20' },
           { label: 'Advanced Bucket Students', value: totals.advanced.length, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-800/20' },
         ].map((c, idx) => (
-          <div key={idx} className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-200/80 dark:border-slate-700/50 shadow-xs flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div key={idx} className="premium-glass neon-glow rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${c.color}`}>
               <c.icon className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-3xl font-black text-gray-900 dark:text-white leading-none mb-1.5">{c.value}</p>
-              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{c.label}</p>
+              <p className="text-3xl font-black dynamic-text-white leading-none mb-1.5">{c.value}</p>
+              <p className="text-[10px] font-bold dynamic-text-muted uppercase tracking-wider">{c.label}</p>
             </div>
           </div>
         ))}
@@ -233,15 +234,15 @@ const Analytics: React.FC = () => {
       {/* Score Snapshot Banner */}
       <motion.div
         variants={itemVariants}
-        className="bg-indigo-50 border border-indigo-100 dark:bg-slate-850 dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between gap-4 flex-wrap"
+        className="premium-glass neon-glow p-5 rounded-2xl flex items-center justify-between gap-4 flex-wrap hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-xl">
             ✨
           </div>
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Class Academic Snapshot</h3>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+            <h3 className="text-sm font-bold dynamic-text-white">Class Academic Snapshot</h3>
+            <p className="text-xs dynamic-text-muted mt-0.5">
               The overall average score of the approved student cohort is <strong className="text-indigo-600 dark:text-indigo-400">{totals.avgScore}%</strong>.
             </p>
           </div>
@@ -254,10 +255,10 @@ const Analytics: React.FC = () => {
         className="grid grid-cols-1 lg:grid-cols-2 gap-8"
       >
         {/* Bar Chart Bucket Count */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm space-y-4">
+        <div className="premium-glass neon-glow p-6 rounded-[2rem] space-y-4 border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div>
-            <h3 className="font-bold text-base text-gray-900 dark:text-white">Bucket Distribution</h3>
-            <p className="text-xs text-gray-400 dark:text-slate-500">Student enrollment counts per evaluation bucket</p>
+            <h3 className="font-bold text-base dynamic-text-white">Bucket Distribution</h3>
+            <p className="text-xs dynamic-text-muted">Student enrollment counts per evaluation bucket</p>
           </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -276,10 +277,10 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Donut Chart Bucket Ratio */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm space-y-4 flex flex-col justify-between">
+        <div className="premium-glass neon-glow p-6 rounded-[2rem] space-y-4 flex flex-col justify-between border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div>
-            <h3 className="font-bold text-base text-gray-900 dark:text-white">Bucket Ratios</h3>
-            <p className="text-xs text-gray-400 dark:text-slate-500">Comparative percentages of student levels</p>
+            <h3 className="font-bold text-base dynamic-text-white">Bucket Ratios</h3>
+            <p className="text-xs dynamic-text-muted">Comparative percentages of student levels</p>
           </div>
           <div className="h-44 relative flex items-center justify-center">
             {pieChartData.length === 0 ? (
@@ -310,8 +311,8 @@ const Analytics: React.FC = () => {
           <div className="grid grid-cols-3 gap-2 text-center text-xs border-t border-gray-50 dark:border-slate-700/30 pt-4">
             {pieChartData.map((item, idx) => (
               <div key={idx}>
-                <p className="font-bold text-gray-900 dark:text-white">{item.value}</p>
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate mt-0.5">{item.name}</p>
+                <p className="font-bold dynamic-text-white">{item.value}</p>
+                <p className="text-[10px] dynamic-text-muted truncate mt-0.5">{item.name}</p>
               </div>
             ))}
           </div>
@@ -352,12 +353,12 @@ const Analytics: React.FC = () => {
       {/* Top Students Overall Table */}
       <motion.div
         variants={itemVariants}
-        className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm overflow-hidden"
+        className="premium-glass rounded-[2.5rem] overflow-hidden neon-glow border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
       >
         <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-base text-gray-900 dark:text-white">🏆 Overall Leaderboard</h3>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Top 10 performing students across all courses</p>
+            <h3 className="font-bold text-base dynamic-text-white">🏆 Overall Leaderboard</h3>
+            <p className="text-xs dynamic-text-muted mt-0.5">Top 10 performing students across all courses</p>
           </div>
           <Award className="w-5 h-5 text-amber-500" />
         </div>
@@ -365,7 +366,7 @@ const Analytics: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50/50 dark:bg-slate-900/30 text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700/50 font-semibold text-xs uppercase tracking-wider text-left">
+              <tr className="bg-gray-50/50 dark:bg-slate-900/30 dynamic-text-muted border-b border-gray-100 dark:border-slate-700/50 font-semibold text-xs uppercase tracking-wider text-left">
                 <th className="px-6 py-4">Rank</th>
                 <th className="px-6 py-4">Name</th>
                 <th className="px-6 py-4">Roll No</th>
@@ -379,8 +380,8 @@ const Analytics: React.FC = () => {
               {topOverall.map((s, i) => (
                 <tr key={s._id} className="hover:bg-gray-50/40 dark:hover:bg-slate-900/10 transition-colors">
                   <td className="px-6 py-4 font-bold text-purple-600 dark:text-purple-400">#{i + 1}</td>
-                  <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{s.name}</td>
-                  <td className="px-6 py-4 font-mono text-xs text-gray-500 dark:text-slate-400">{s.studentId || 'N/A'}</td>
+                  <td className="px-6 py-4 font-bold dynamic-text-white">{s.name}</td>
+                  <td className="px-6 py-4 font-mono text-xs dynamic-text-muted">{s.studentId || 'N/A'}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-slate-400">
                     {DEPT_LABELS[s.department || ''] || s.department || 'N/A'}
                   </td>
@@ -395,7 +396,7 @@ const Analytics: React.FC = () => {
                       {s.bucket}
                     </Badge>
                   </td>
-                  <td className="px-6 py-4 font-bold text-gray-950 dark:text-white">{s.score}%</td>
+                  <td className="px-6 py-4 font-bold dynamic-text-white">{s.score}%</td>
                   <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-slate-300">
                     {s.gpa?.toFixed(2) || '—'}
                   </td>

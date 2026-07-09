@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { TeacherAuth } from './TeacherAuth';
+import { Navigate } from 'react-router-dom';
 
 interface ProtectedTeacherRouteProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ export function ProtectedTeacherRoute({ children }: ProtectedTeacherRouteProps) 
   const currentUser = user || storedUser;
 
   if (!currentUser || currentUser?.role !== 'teacher') {
-    return <TeacherAuth />;
+    return <Navigate to="/auth" state={{ role: 'teacher' }} replace />;
   }
 
   return <>{children}</>;

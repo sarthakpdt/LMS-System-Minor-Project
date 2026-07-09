@@ -85,7 +85,7 @@ export default function FacultySchedule({ fixedFacultyId }: FacultyScheduleProps
     <div className="space-y-6">
       {/* Selector card */}
       {!fixedFacultyId && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex justify-between items-center border-b pb-2.5">
             <h4 className="font-bold text-gray-800 text-xs uppercase tracking-wider">Select Faculty Member</h4>
             <span className="text-[10px] text-gray-400">View live scheduled workload metrics</span>
@@ -96,7 +96,7 @@ export default function FacultySchedule({ fixedFacultyId }: FacultyScheduleProps
             <select
               value={selectedFacultyId}
               onChange={e => setSelectedFacultyId(e.target.value)}
-              className="w-full sm:max-w-md border border-gray-200 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
+              className="w-full sm:max-w-md border border-gray-200/80 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             >
               <option value="">Choose Instructor...</option>
               {teachers.map(t => (
@@ -119,7 +119,7 @@ export default function FacultySchedule({ fixedFacultyId }: FacultyScheduleProps
           <p className="text-xs">Fetching live schedule updates...</p>
         </div>
       ) : entries.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center space-y-3">
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center space-y-3 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <User className="w-12 h-12 mx-auto text-gray-300 opacity-80" />
           <div>
             <h4 className="font-bold text-gray-800 text-sm">No Live Classes Assigned</h4>

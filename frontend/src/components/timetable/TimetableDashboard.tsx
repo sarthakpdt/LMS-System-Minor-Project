@@ -21,7 +21,7 @@ export default function TimetableDashboard() {
         </div>
 
         {/* Tab Controls */}
-        <div className="bg-white border border-gray-200 p-1 rounded-2xl flex gap-1 shadow-sm w-fit">
+        <div className="bg-white border border-gray-200/80 p-1 rounded-2xl flex gap-1 shadow-sm w-fit hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           {[
             { id: 'wizard', label: 'Setup Wizard', icon: Wand2 },
             { id: 'advanced', label: 'Advanced Config', icon: Settings },

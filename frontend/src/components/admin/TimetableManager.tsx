@@ -243,7 +243,7 @@ export default function TimetableManager() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             onSubmit={handleCreate}
-            className="bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700/50 rounded-2xl shadow-sm p-6 space-y-5"
+            className="bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700/50 rounded-2xl shadow-sm p-6 space-y-5 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             <h3 className="font-bold text-sm text-gray-900 dark:text-white">New Timetable Slot Configuration</h3>
 
@@ -336,12 +336,12 @@ export default function TimetableManager() {
       {/* Filter Options */}
       <div className="flex items-center gap-3 flex-wrap">
         <select value={filterSem} onChange={e => setFilterSem(e.target.value)}
-          className="border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-700 dark:text-slate-300 font-medium">
+          className="border border-gray-200/80 dark:border-slate-700 rounded-xl px-3 py-2 text-xs bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-700 dark:text-slate-300 font-medium hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <option value="">All Semesters</option>
           {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
         </select>
         <select value={filterDept} onChange={e => setFilterDept(e.target.value)}
-          className="border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-700 dark:text-slate-300 font-medium">
+          className="border border-gray-200/80 dark:border-slate-700 rounded-xl px-3 py-2 text-xs bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-700 dark:text-slate-300 font-medium hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <option value="">All Departments</option>
           {DEPARTMENTS.map(d => <option key={d} value={d}>{DEPT_LABELS[d] || d}</option>)}
         </select>
@@ -357,7 +357,7 @@ export default function TimetableManager() {
           <span>Loading weekly schedules...</span>
         </div>
       ) : slots.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 py-16 text-center text-gray-400 dark:text-slate-500">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 py-16 text-center text-gray-400 dark:text-slate-500 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-bold text-sm text-gray-900 dark:text-white">No schedule configurations found</p>
           <p className="text-xs mt-1 max-w-xs mx-auto">Create class slots using the action button or adjust filters above.</p>
@@ -378,7 +378,7 @@ export default function TimetableManager() {
               <motion.div
                 key={day}
                 variants={itemVariants}
-                className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs flex flex-col overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-xs flex flex-col overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               >
                 {/* Header for Day Card */}
                 <div className={`p-4 text-white bg-gradient-to-r ${colors.gradient} flex items-center justify-between`}>
@@ -386,7 +386,7 @@ export default function TimetableManager() {
                     <Calendar className="w-4 h-4 text-white/90" />
                     {day}
                   </h3>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-white/90 bg-white/20 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-white/90 bg-white/20 px-2 py-0.5 rounded-full dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                     {daySlots.length} Classes
                   </span>
                 </div>
@@ -396,7 +396,7 @@ export default function TimetableManager() {
                   {daySlots.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(slot => (
                     <div
                       key={slot._id}
-                      className="group relative flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800/60 hover:border-purple-500/20 hover:shadow-sm transition-all duration-300"
+                      className="group relative flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800/60 hover:border-purple-500/20 hover:shadow-sm transition-all duration-300 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     >
                       <div className="w-14 flex-shrink-0 text-[10px] font-bold text-purple-600 dark:text-purple-400 font-mono flex flex-col pt-0.5 leading-tight gap-0.5">
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-purple-400" />{slot.startTime}</span>

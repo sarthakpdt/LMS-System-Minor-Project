@@ -77,13 +77,18 @@ export function AdminQuizDashboard() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">
-          Quiz System Administration
-        </h2>
-        <p className="text-gray-600">
-          Overview of all quizzes across courses.
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Quiz System Administration</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+            Overview of all quizzes across courses.
+          </p>
+        </div>
       </div>
 
       {/* Stats */}
@@ -115,8 +120,8 @@ export function AdminQuizDashboard() {
           },
         ].map(({ label, value, icon: Icon, gradient }) => (
           <div key={label}
-            className={`bg-gradient-to-br ${gradient} rounded-xl p-6 text-white shadow-lg`}>
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4">
+            className={`bg-gradient-to-br ${gradient} rounded-xl p-6 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
+            <div className="w-12 h-12 bg-white/20 rounded-[1.5rem] flex items-center justify-center mb-4 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Icon className="w-6 h-6" />
             </div>
             <p className="text-sm opacity-90 mb-1">{label}</p>
@@ -127,7 +132,7 @@ export function AdminQuizDashboard() {
 
       {/* Chart */}
       {chartData.length > 0 && (
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-8">
+        <div className="bg-white rounded-xl p-6 border border-gray-200/80 shadow-sm mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Quizzes per Course
           </h3>
@@ -145,7 +150,7 @@ export function AdminQuizDashboard() {
       )}
 
       {/* All Quizzes Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h3 className="text-lg font-semibold text-gray-900">All Quizzes</h3>
         </div>

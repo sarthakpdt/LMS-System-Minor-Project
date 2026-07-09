@@ -36,11 +36,11 @@ function SubjectPickerModal({ courses, teacherName, onSelect }: {
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800"
       >
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
@@ -250,7 +250,7 @@ export function TeacherAuth() {
 
       <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-500 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
-          <motion.div className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl"
+          <motion.div className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl dark:bg-slate-800"
             animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
             style={{ top: '10%', left: '10%' }} />
@@ -260,7 +260,7 @@ export function TeacherAuth() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} className="text-white space-y-6 hidden md:block">
               <div className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <GraduationCap className="w-10 h-10" />
                 </div>
                 <div>
@@ -269,7 +269,7 @@ export function TeacherAuth() {
                 </div>
               </div>
               <div className="space-y-4 mt-12">
-                <div className="flex items-start gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+                <div className="flex items-start gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <Sparkles className="w-6 h-6 flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="font-semibold text-lg">Multi-Subject Management</h3>
@@ -279,7 +279,7 @@ export function TeacherAuth() {
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-2xl shadow-2xl overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
               <div className="p-8">
                 <div className="flex gap-2 bg-gray-100 p-1 rounded-lg mb-8">
                   <button onClick={() => { setIsLogin(true); setError(''); }} className={`flex-1 py-3 px-4 rounded-md font-semibold transition-all ${isLogin ? 'bg-white text-emerald-600 shadow-md' : 'text-gray-600'}`}>Login</button>
@@ -351,7 +351,7 @@ export function TeacherAuth() {
                         <div className="relative mt-2">
                           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
                           <select value={signupData.department} onChange={e => setSignupData({ ...signupData, department: e.target.value })}
-                            className="w-full pl-11 h-11 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none" required>
+                            className="w-full pl-11 h-11 border border-gray-300 rounded-xl bg-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" required>
                             <option value="">Select department…</option>
                             {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                           </select>

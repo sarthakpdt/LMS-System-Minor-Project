@@ -147,7 +147,7 @@ export default function OperationalSettings({ config, onChange }: Props) {
               value={config.academicYear}
               onChange={(e) => onChange({ ...config, academicYear: e.target.value })}
               placeholder="e.g. 2024-25"
-              className="w-full border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+              className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             />
           </div>
           <div>
@@ -158,7 +158,7 @@ export default function OperationalSettings({ config, onChange }: Props) {
               max={120}
               value={config.lectureDuration}
               onChange={(e) => onChange({ ...config, lectureDuration: Number(e.target.value) })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+              className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             />
           </div>
           <div>
@@ -168,14 +168,14 @@ export default function OperationalSettings({ config, onChange }: Props) {
                 type="time"
                 value={config.lunchBreak.startTime}
                 onChange={(e) => updateLunchPeriod('startTime', e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-center focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                className="w-full border border-gray-200/80 rounded-[1.5rem] px-2 py-1.5 text-center focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               />
               <span className="text-gray-400">–</span>
               <input
                 type="time"
                 value={config.lunchBreak.endTime}
                 onChange={(e) => updateLunchPeriod('endTime', e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-center focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                className="w-full border border-gray-200/80 rounded-[1.5rem] px-2 py-1.5 text-center focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               />
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function OperationalSettings({ config, onChange }: Props) {
       </div>
 
       {/* Working days */}
-      <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3">
+      <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <h5 className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
           <CalendarDays className="w-4 h-4 text-purple-600" /> Working Days
         </h5>
@@ -210,7 +210,7 @@ export default function OperationalSettings({ config, onChange }: Props) {
       </div>
 
       {/* Time slots */}
-      <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3">
+      <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <div className="flex items-center justify-between">
           <h5 className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-purple-600" /> Daily Time Slots
@@ -281,7 +281,7 @@ export default function OperationalSettings({ config, onChange }: Props) {
                             updateSlot(index, { breakType });
                           }
                         }}
-                        className="border border-gray-200 rounded px-2 py-1 text-xs bg-white"
+                        className="border border-gray-200/80 rounded px-2 py-1 text-xs bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                       >
                         <option value="short">Short Break</option>
                         <option value="lunch">Lunch</option>

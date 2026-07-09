@@ -73,7 +73,7 @@ export default function SetupWizard() {
   return (
     <div className="space-y-6">
       {/* Progress stepper */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-x-auto hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex items-center gap-1 min-w-max">
           {allSteps.map((s, idx) => {
             const Icon = s.icon;
@@ -133,7 +133,7 @@ export default function SetupWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <button
           type="button"
           onClick={goBack}

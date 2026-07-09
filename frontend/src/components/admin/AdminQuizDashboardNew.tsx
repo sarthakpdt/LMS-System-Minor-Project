@@ -120,7 +120,7 @@ export function AdminQuizDashboardNew() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg text-white">
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Shield className="w-6 h-6" />
             </div>
             <div>
@@ -382,7 +382,7 @@ export function AdminQuizDashboardNew() {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full"
+                        className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                         initial={{ width: 0 }}
                         animate={{ width: `${(published / quizzes.length) * 100}%` }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}

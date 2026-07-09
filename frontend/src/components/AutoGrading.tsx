@@ -96,70 +96,75 @@ export function AutoGrading() {
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Automated Grading System</h2>
-        <p className="text-gray-600">AI-powered automated grading to reduce teacher workload and provide instant feedback.</p>
+    <div className="p-8 space-y-8">
+      <div>
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Automated Grading System</h2>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">AI-powered automated grading to reduce teacher workload and provide instant feedback.</p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Sparkles className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">Auto</span>
+            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">Auto</span>
           </div>
           <p className="text-sm opacity-90 mb-1">Auto-Graded</p>
-          <p className="text-3xl font-bold">319</p>
-          <p className="text-xs opacity-75 mt-2">Submissions this week</p>
+          <p className="text-4xl font-bold mb-2">319</p>
+          <p className="text-xs opacity-75">Submissions this week</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Clock className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">90%</span>
+            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">90%</span>
           </div>
           <p className="text-sm opacity-90 mb-1">Time Saved</p>
-          <p className="text-3xl font-bold">42 hrs</p>
-          <p className="text-xs opacity-75 mt-2">Compared to manual grading</p>
+          <p className="text-4xl font-bold mb-2">42 hrs</p>
+          <p className="text-xs opacity-75">Compared to manual grading</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">+15%</span>
+            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">+15%</span>
           </div>
           <p className="text-sm opacity-90 mb-1">Avg Accuracy</p>
-          <p className="text-3xl font-bold">96.3%</p>
-          <p className="text-xs opacity-75 mt-2">AI grading accuracy</p>
+          <p className="text-4xl font-bold mb-2">96.3%</p>
+          <p className="text-xs opacity-75">AI grading accuracy</p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <CheckCircle className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">Live</span>
+            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">Live</span>
           </div>
           <p className="text-sm opacity-90 mb-1">Instant Feedback</p>
-          <p className="text-3xl font-bold">100%</p>
-          <p className="text-xs opacity-75 mt-2">Students receive instant results</p>
+          <p className="text-4xl font-bold mb-2">100%</p>
+          <p className="text-xs opacity-75">Students receive instant results</p>
         </div>
       </div>
 
       {/* Grading Methods */}
-      <div className="mb-8">
+      <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Automated Grading Methods</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {gradingRules.map((rule, index) => (
-            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className={`w-12 h-12 ${rule.color} rounded-lg flex items-center justify-center mb-4`}>
+            <div key={index} className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+              <div className={`w-14 h-14 ${rule.color} rounded-xl flex items-center justify-center mb-6`}>
                 <rule.icon className="w-6 h-6" />
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">{rule.type}</h4>
@@ -180,7 +185,7 @@ export function AutoGrading() {
       </div>
 
       {/* Filter */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-gray-700">Filter:</span>
           <div className="flex gap-2">
@@ -202,7 +207,7 @@ export function AutoGrading() {
       </div>
 
       {/* Grading Queue */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Grading Queue</h3>
         </div>

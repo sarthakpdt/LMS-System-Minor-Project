@@ -207,13 +207,18 @@ export function SubjectMarks() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Subject Marks</h2>
-        <p className="text-gray-600">View and analyze student performance across different subjects.</p>
+      <div className="mb-10">
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+            <BarChart2 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Subject Marks</h2>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">View and analyze student performance across different subjects.</p>
       </div>
 
       {/* View Mode Toggle */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">View Mode:</span>
@@ -260,7 +265,7 @@ export function SubjectMarks() {
       </div>
 
       {/* Subject Selection */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Subject:</label>
@@ -298,35 +303,35 @@ export function SubjectMarks() {
 
       {/* Subject Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-5 h-5" />
             <p className="text-sm opacity-90">Total Students</p>
           </div>
           <p className="text-3xl font-bold">{totalStudents}</p>
         </div>
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-2 mb-2">
             <BarChart2 className="w-5 h-5" />
             <p className="text-sm opacity-90">Average Score</p>
           </div>
           <p className="text-3xl font-bold">{avgScore.toFixed(1)}%</p>
         </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-5 h-5" />
             <p className="text-sm opacity-90">Highest Score</p>
           </div>
           <p className="text-3xl font-bold">{totalStudents > 0 ? `${highestScore}%` : 'N/A'}</p>
         </div>
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white">
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown className="w-5 h-5" />
             <p className="text-sm opacity-90">Lowest Score</p>
           </div>
           <p className="text-3xl font-bold">{totalStudents > 0 ? `${lowestScore}%` : 'N/A'}</p>
         </div>
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg p-4 text-white">
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg p-4 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-2 mb-2">
             <Award className="w-5 h-5" />
             <p className="text-sm opacity-90">Pass Rate</p>
@@ -336,7 +341,7 @@ export function SubjectMarks() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -372,7 +377,7 @@ export function SubjectMarks() {
       </div>
 
       {/* Marks Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">

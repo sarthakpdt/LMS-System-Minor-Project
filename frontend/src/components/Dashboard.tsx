@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, Variants } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Users, BookOpen, FileText, TrendingUp, Award,
@@ -113,7 +114,7 @@ function StudentAssignmentsView() {
       </div>
 
       {courseKeys.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200/80 text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No assignments published yet</p>
           <p className="text-xs mt-1">Your teachers will publish assignments here</p>
@@ -127,7 +128,7 @@ function StudentAssignmentsView() {
             const active = items.filter(a => new Date(a.dueDate) > now).length;
 
             return (
-              <div key={courseLabel} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div key={courseLabel} className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <button
                   onClick={() => setExpandedCourse(isOpen ? null : courseLabel)}
                   className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition text-left"
@@ -318,7 +319,7 @@ function StudentAttemptView({
           <div className="text-5xl font-black my-3">{result.percentage?.toFixed(1)}%</div>
           <p className="text-lg">{result.totalScore} / {result.totalMarks} · Grade: <strong>{result.grade}</strong></p>
           {result.plagiarismFlagged && (
-            <p className="mt-3 text-sm bg-white/20 rounded-lg px-3 py-2">
+            <p className="mt-3 text-sm bg-white/20 rounded-[1.5rem] px-3 py-2 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               ⚠️ Plagiarism detected ({result.plagiarismScore}%) — Teacher will review
             </p>
           )}
@@ -351,12 +352,12 @@ function StudentAttemptView({
         <div className="flex flex-col gap-3">
           <button
             onClick={() => setShowReview(true)}
-            className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-md"
+            className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-md hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             📋 Review My Answers &amp; Correct Solutions
           </button>
           <button onClick={onClose}
-            className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium w-full">
+            className="px-6 py-3 bg-white border border-gray-200/80 text-gray-700 rounded-xl hover:bg-gray-50 font-medium w-full dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             ← Back to Assignments
           </button>
         </div>
@@ -382,7 +383,7 @@ function StudentAttemptView({
           </span>
         </div>
         {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+        <div className="bg-white rounded-xl border border-gray-200/80 p-5 mb-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex justify-between mb-3 text-sm text-gray-500">
             <span>Q{currentQ + 1} of {total}</span>
           </div>
@@ -406,7 +407,7 @@ function StudentAttemptView({
         </div>
         <div className="flex justify-between">
           <button onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}
-            className="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-40">
+            className="px-5 py-2.5 bg-white border border-gray-300 rounded-[1.5rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             ← Previous
           </button>
           {currentQ === total - 1 ? (
@@ -447,7 +448,7 @@ function StudentAttemptView({
       )}
       <div className="space-y-4 mb-8">
         {questions.map((q: any, qi: number) => (
-          <div key={q._id} className="bg-white rounded-xl border border-gray-200 p-5">
+          <div key={q._id} className="bg-white rounded-xl border border-gray-200/80 p-5 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex items-center gap-3 mb-3">
               <span className="font-semibold text-gray-700">Q{qi + 1}.</span>
               <span className="text-xs text-gray-400 ml-auto">{q.marks} mark{q.marks > 1 ? 's' : ''}</span>
@@ -476,7 +477,7 @@ function StudentAttemptView({
           </div>
         ))}
       </div>
-      <div className="bg-white border-t border-gray-200 p-4 flex items-center justify-between -mx-8 px-8 sticky bottom-0">
+      <div className="bg-white border-t border-gray-200/80 p-4 flex items-center justify-between -mx-8 px-8 sticky bottom-0 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <p className="text-sm text-gray-500">
           {Object.values(answers).filter(a => a.trim()).length} / {total} answered
         </p>
@@ -567,7 +568,7 @@ function StudentDashboard() {
       {/* ── AI Performance Modal ── */}
       {showAIPanel && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
             <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-white" />
@@ -586,7 +587,7 @@ function StudentDashboard() {
       {activeTab === 'home' && (
         <>
           {/* Welcome banner */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-8 shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-1">Welcome back, {user?.name?.split(' ')[0]}!</h2>
@@ -602,31 +603,38 @@ function StudentDashboard() {
           </div>
 
           {/* Quick stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             {[
-              { label: 'Enrolled Courses', value: enrolledCourses.length, icon: BookOpen, color: 'bg-blue-500', onClick: undefined },
-              { label: 'Assignments',      value: assignments.filter(a => a.isPublished).length, icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments') },
-              { label: 'Avg. Score',       value: '—',                    icon: TrendingUp, color: 'bg-green-500', onClick: undefined },
-              { label: 'Level',            value: 'Beginner',             icon: Award,      color: 'bg-orange-500', onClick: undefined },
+              { label: 'Enrolled Courses', value: enrolledCourses.length, icon: BookOpen, color: 'bg-blue-500', onClick: undefined, sub: 'Active courses' },
+              { label: 'Assignments',      value: assignments.filter(a => a.isPublished).length, icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments'), sub: 'Pending work' },
+              { label: 'Avg. Score',       value: '—',                    icon: TrendingUp, color: 'bg-green-500', onClick: undefined, sub: 'Overall performance' },
+              { label: 'Level',            value: 'Beginner',             icon: Award,      color: 'bg-orange-500', onClick: undefined, sub: 'Current standing' },
             ].map((s, i) => (
               <div key={i} onClick={s.onClick}
-                className={`bg-white rounded-xl p-5 border border-gray-200 shadow-sm ${s.onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}>
-                <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
-                  <s.icon className="w-5 h-5 text-white" />
+                className={`bg-white dark:bg-slate-900/50 rounded-[1.5rem] p-8 border border-gray-200 dark:border-slate-800 shadow-sm ${s.onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col`}>
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`w-14 h-14 ${s.color} rounded-xl flex items-center justify-center shadow-md`}>
+                    <s.icon className="w-6 h-6 text-white" />
+                  </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-0.5">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+                <div className="flex flex-col">
+                  <h3 className="text-4xl font-black leading-none mb-2 tracking-tight dynamic-text-white">
+                    {s.value}
+                  </h3>
+                  <p className="text-sm font-bold uppercase tracking-widest dynamic-text-muted">{s.label}</p>
+                  <p className="text-xs font-medium dynamic-text-muted opacity-80 mt-1">{s.sub}</p>
+                </div>
               </div>
             ))}
           </div>
 
           {/* AI Improvement Cards */}
-          <DashboardImprovementCards userId={user?.id || ''} assignments={assignments} />
+          {/* <DashboardImprovementCards userId={user?.id || ''} assignments={assignments} /> */}
 
           {/* 2-Column: Upcoming Deadlines + Notifications */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Upcoming Deadlines */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-orange-500" /> Upcoming Deadlines
@@ -649,7 +657,7 @@ function StudentDashboard() {
             </div>
 
             {/* Notifications Panel */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <span className="text-lg">🔔</span>
                 <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
@@ -666,7 +674,7 @@ function StudentDashboard() {
           </div>
 
           {/* Enrolled courses */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+          <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="px-6 py-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-500" /> My Enrolled Courses
@@ -723,7 +731,7 @@ function StudentDashboard() {
 
       {activeTab === 'assignments'   && <StudentAssignmentsView />}
       {activeTab === 'materials'     && <StudyMaterials />}
-      {activeTab === 'attendance'    && <StudentAttendance studentId={user?.id} />}
+      {activeTab === 'attendance'    && <StudentAttendance studentId={user?.id || ''} />}
 
     </div>
   );
@@ -880,8 +888,8 @@ function TeacherDashboard() {
   ];
 
   return (
-    <div className="p-8">
-      <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
+    <div className="p-8 space-y-8">
+      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto pb-px">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
@@ -895,36 +903,92 @@ function TeacherDashboard() {
       </div>
 
       {activeTab === 'home' && (
-        <>
-          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
-            <h2 className="text-2xl font-bold mb-1">Welcome, {user?.name?.split(' ')[0]}!</h2>
-                <p className="text-indigo-100 text-sm">{user?.department} · {user?.specialization}</p>
+        <div className="space-y-12">
+          {/* Welcome & Overview */}
+          <div className="space-y-6">
+          <style>{`
+            .hero-container-bg { background-image: linear-gradient(to right, #4f46e5, #9333ea); }
+            .hero-container-bg:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+            .dark .hero-container-bg { background-image: linear-gradient(to right, #020617, #0f172a); border-color: rgba(255, 255, 255, 0.05); }
+            .dark .hero-container-bg:hover { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+            
+            .hero-mask-bg { background-image: linear-gradient(to right, #4f46e5, rgba(79, 70, 229, 0.8), transparent); }
+            .dark .hero-mask-bg { background-image: linear-gradient(to right, #020617, rgba(2, 6, 23, 0.8), transparent); }
+            
+            .hero-badge-bg { background-color: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
+            .dark .hero-badge-bg { background-color: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); }
+          `}</style>
+          
+          <div className="relative overflow-hidden hero-container-bg rounded-2xl p-8 sm:p-10 text-white shadow-lg transition-all duration-300 group border border-indigo-500/20">
+            {/* Restricted Background Illustration with Gradient Mask */}
+            <div className="absolute top-0 right-0 bottom-0 w-2/3 md:w-1/2 pointer-events-none z-0">
+              <img
+                src="/illustrations/teacher-hero.png"
+                alt="Teacher background illustration"
+                className="absolute inset-0 w-full h-full object-cover object-right-bottom mix-blend-luminosity transform group-hover:scale-105 transition-transform duration-700"
+                style={{ opacity: 0.15 }}
+                draggable={false}
+              />
+              {/* Overlay mask to fade out the illustration gracefully before it hits text */}
+              <div className="absolute inset-0 hero-mask-bg"></div>
+            </div>
+            
+            <div className="relative z-10 max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 shadow-sm hero-badge-bg" style={{ borderWidth: '1px', backdropFilter: 'blur(4px)' }}>
+                <Star className="w-4 h-4 text-white" />
+                <span className="text-xs font-semibold text-white uppercase tracking-wider">Faculty Portal</span>
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-black mb-3 tracking-tight text-white">
+                Welcome back,<br />
+                <span style={{ color: '#e0e7ff' }}>
+                  {user?.name?.split(' ')[0]}!
+                </span>
+              </h2>
+              <p className="text-lg font-medium max-w-md leading-relaxed" style={{ color: 'rgba(224, 231, 255, 0.9)' }}>
+                {user?.department} · {user?.specialization}
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { label: 'My Courses',  value: myCourses.length, icon: BookOpen,   color: 'bg-blue-500'   },
-              { label: 'Assignments', value: '📝',             icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments') },
-              { label: 'Students',    value: stats.totalStudents || '—', icon: Users, color: 'bg-green-500' },
-              { label: 'Materials',   value: '📚',             icon: Award,      color: 'bg-orange-500', onClick: () => setActiveTab('materials') },
+              { label: 'My Courses',  value: myCourses.length, icon: BookOpen,   color: 'bg-blue-500', sub: 'Assigned courses'   },
+              { label: 'Assignments', value: '📝',             icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments'), sub: 'Manage work' },
+              { label: 'Students',    value: stats.totalStudents || '—', icon: Users, color: 'bg-green-500', sub: 'Enrolled across courses' },
+              { label: 'Materials',   value: '📚',             icon: Award,      color: 'bg-orange-500', onClick: () => setActiveTab('materials'), sub: 'Resources & docs' },
             ].map((s: any, i) => (
               <div key={i} onClick={s.onClick}
-                className={`bg-white rounded-xl p-5 border border-gray-200 shadow-sm ${s.onClick ? 'cursor-pointer hover:shadow-md' : ''}`}>
-                <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
-                  <s.icon className="w-5 h-5 text-white" />
+                className={`bg-white dark:bg-slate-900/50 rounded-[1.5rem] p-8 min-h-[200px] border border-gray-200 dark:border-slate-800 shadow-sm ${s.onClick ? 'cursor-pointer hover:border-indigo-400/50 dark:hover:border-indigo-400/50' : ''} hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group flex flex-col relative overflow-hidden`}>
+                
+                {/* Subtle top gradient glow on hover */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`${s.color} rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ease-out`} style={{ width: '3.5rem', height: '3.5rem' }}>
+                    <s.icon className="w-7 h-7 text-white" />
+                  </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-0.5">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+                <div className="flex flex-col mt-auto">
+                  <h3 className="text-4xl font-black mb-2 tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    {s.value}
+                  </h3>
+                  <p className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">{s.label}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{s.sub}</p>
+                </div>
               </div>
             ))}
           </div>
+          </div>
 
+          {/* Academic Setup */}
           {myCourses.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white px-2 tracking-tight">Academic Overview</h3>
+            <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900">My Assigned Courses</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {myCourses.map((c: any) => (
                   <div key={c._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                     <p className="font-semibold text-gray-900">{c.courseName}</p>
@@ -940,9 +1004,16 @@ function TeacherDashboard() {
                 ))}
               </div>
             </div>
+            </div>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+          {/* Insights & Communication */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white px-2 tracking-tight">Insights & Communications</h3>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              
+              <div className="xl:col-span-2 flex flex-col">
+                <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50 flex-1">
             <div className="px-6 py-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Student Performance Snapshot</h3>
               <p className="text-xs text-gray-500 mt-0.5">Overall + separate quiz/assignment performers for feedback planning.</p>
@@ -950,7 +1021,7 @@ function TeacherDashboard() {
             {performersLoading ? (
               <div className="p-6 text-sm text-gray-500">Loading performance insights...</div>
             ) : (
-              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-5 child-cards-grid">
                 {[
                   { title: 'Top Students (Overall)', rows: performers.top, color: 'text-green-700 bg-green-50 border-green-200' },
                   { title: 'Average Students', rows: performers.average, color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
@@ -958,7 +1029,7 @@ function TeacherDashboard() {
                   { title: 'Top in Quizzes', rows: performers.topQuiz, color: 'text-blue-700 bg-blue-50 border-blue-200' },
                   { title: 'Top in Assignments', rows: performers.topAssignment, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
                 ].map(section => (
-                  <div key={section.title} className={`rounded-lg border p-4 ${section.color}`}>
+                  <div key={section.title} className={`rounded-lg border p-4 ${section.color} child-card`}>
                     <p className="text-sm font-semibold mb-2">{section.title}</p>
                     {section.rows.length === 0 ? (
                       <p className="text-xs opacity-80">No data yet.</p>
@@ -978,10 +1049,12 @@ function TeacherDashboard() {
                 ))}
               </div>
             )}
-          </div>
+                </div>
+              </div>
 
-          {/* Notifications on Teacher Home page */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              {/* Notifications on Teacher Home page */}
+              <div className="xl:col-span-1 flex flex-col">
+                <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50 flex-1">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
               <span className="text-lg">🔔</span>
               <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
@@ -990,8 +1063,11 @@ function TeacherDashboard() {
             <div className="p-5">
               <NotificationsPanel userId={user?.id} role="teacher" userName={user?.name} />
             </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </>
+        </div>
       )}
 
       {activeTab === 'assignments'   && <Assignments />}
@@ -1059,6 +1135,7 @@ function AdminDashboard() {
   }, [user]);
 
   const handleApprove = async (studentId: string) => {
+    if (!user) return;
     setApprovingId(studentId);
     try {
       const res = await fetch(`http://localhost:5000/api/admin/students/${studentId}/approve`, {
@@ -1087,6 +1164,7 @@ function AdminDashboard() {
   };
 
   const handleReject = async (studentId: string) => {
+    if (!user) return;
     setRejectingId(studentId);
     try {
       const res = await fetch(`http://localhost:5000/api/admin/students/${studentId}/reject`, {
@@ -1129,7 +1207,7 @@ function AdminDashboard() {
     { name: 'Rejected', value: stats.students?.rejected || 0, color: '#ef4444' },
   ].filter(item => item.value > 0);
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -1137,7 +1215,7 @@ function AdminDashboard() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } }
   };
@@ -1171,28 +1249,58 @@ function AdminDashboard() {
           {/* Welcome Banner */}
           <motion.div
             variants={itemVariants}
-            className="bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 dark:from-purple-950 dark:via-indigo-950 dark:to-indigo-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group"
+            className="hero-gradient p-8 sm:p-10 shadow-2xl relative overflow-hidden group border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+            style={{ borderRadius: '2.5rem' }}
           >
-            {/* Background elements */}
-            <div className="absolute right-0 top-0 -mt-8 -mr-8 w-48 h-48 rounded-full bg-white/5 blur-3xl group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
-            <div className="absolute left-1/2 bottom-0 w-32 h-32 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
+            {/* Watermark Illustration using CSS Class for Light/Dark Mode Support */}
+            <div 
+              className="absolute inset-0 pointer-events-none z-0 overflow-hidden hero-illustration-wrapper"
+            >
+              <img
+                src="/illustrations/admin-hero.png"
+                alt="Admin Dashboard Illustration"
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  right: '-5%',
+                  bottom: '-10%',
+                  height: '130%',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  objectPosition: 'right bottom',
+                  filter: 'grayscale(100%) drop-shadow(0 0 20px rgba(0,0,0,0.5))',
+                  userSelect: 'none'
+                }}
+              />
+            </div>
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h2 className="text-3xl font-black mb-2 tracking-wide">Hello, {user?.name?.split(' ')[0] || 'Administrator'}!</h2>
-                <p className="text-purple-100 text-sm md:text-base font-medium max-w-md">
-                  Welcome to your command center. Everything is running smoothly. Take a look at your daily overview below.
-                </p>
-              </div>
-              <div className="flex items-center gap-4 bg-white/10 dark:bg-slate-900/40 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 self-start md:self-auto shadow-inner">
-                <div className="text-center">
-                  <p className="text-3xl font-black leading-none">{stats.courses?.total || 0}</p>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-purple-200 mt-1">Active Courses</p>
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 h-full">
+              {/* Text Content */}
+              <div className="flex-1 max-w-xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md mb-6 shadow-sm dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                  <span className="w-2 h-2 rounded-full bg-green-400 icon-pulse" />
+                  <span className="text-[10px] font-bold tracking-widest text-indigo-100 uppercase">System Status: Optimal</span>
                 </div>
-                <div className="w-px h-8 bg-white/20" />
-                <div className="text-center">
-                  <p className="text-3xl font-black leading-none">{stats.students?.pending || 0}</p>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-purple-200 mt-1">Pending Approvals</p>
+                <h2 className="text-4xl sm:text-5xl font-black mb-4 tracking-tight leading-tight drop-shadow-lg dynamic-text-white">
+                  Welcome back, <br/>
+                  <span className="text-premium-gradient">
+                    {user?.name?.split(' ')[0] || 'Administrator'}
+                  </span>
+                </h2>
+                <p className="text-indigo-100/80 text-base sm:text-lg font-medium leading-relaxed mb-8 max-w-md drop-shadow-sm">
+                  Your command center is ready. Monitor global metrics, manage student approvals, and oversee course enrollments all in one place.
+                </p>
+                
+                <div className="flex items-center gap-8">
+                  <div className="flex flex-col">
+                    <span className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-md dynamic-text-white">{stats.courses?.total || 0}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-300/80 mt-1">Active Courses</span>
+                  </div>
+                  <div className="w-px h-12 bg-white/10 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" />
+                  <div className="flex flex-col">
+                    <span className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-md dynamic-text-white">{stats.students?.pending || 0}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-300/80 mt-1">Pending Approvals</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1201,7 +1309,7 @@ function AdminDashboard() {
           {/* Metric Cards Grid */}
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
           >
             {[
               {
@@ -1235,15 +1343,23 @@ function AdminDashboard() {
             ].map((s, idx) => (
               <div
                 key={idx}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-lg transition-all duration-300 flex items-center gap-5 group relative overflow-hidden"
+                className="premium-glass neon-glow p-8 relative overflow-hidden cursor-default hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                style={{ borderRadius: '1.5rem' }}
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${s.textColor}`}>
-                  <s.icon className="w-6 h-6 animate-pulse-slow" />
+                <div className="flex justify-between items-start mb-6">
+                  <div 
+                    className={`flex items-center justify-center flex-shrink-0 shadow-lg ${s.textColor}`}
+                    style={{ width: '3.5rem', height: '3.5rem', borderRadius: '1rem' }}
+                  >
+                    <s.icon className="w-6 h-6 icon-pulse" />
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-3xl font-black text-gray-900 dark:text-white leading-none mb-1.5">{loading ? '—' : s.value}</p>
-                  <p className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">{s.label}</p>
-                  <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1 truncate">{s.description}</p>
+                <div className="flex flex-col relative z-10">
+                  <h3 className="text-4xl font-black leading-none mb-2 tracking-tight dynamic-text-white">
+                    {loading ? '—' : s.value}
+                  </h3>
+                  <p className="text-sm font-bold uppercase tracking-widest dynamic-text-muted">{s.label}</p>
+                  <p className="text-xs font-medium dynamic-text-muted opacity-80 mt-1">{s.description}</p>
                 </div>
               </div>
             ))}
@@ -1256,9 +1372,9 @@ function AdminDashboard() {
               variants={itemVariants}
               className="lg:col-span-2 space-y-6"
             >
-              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm overflow-hidden flex flex-col h-full">
+              <div className="premium-glass neon-glow flex flex-col h-full hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" style={{ borderRadius: '1.5rem' }}>
                 <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <h3 className="text-lg font-bold dynamic-text-white flex items-center gap-2">
                     <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     Pending Approvals Request
                   </h3>
@@ -1295,8 +1411,8 @@ function AdminDashboard() {
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{student.name}</p>
-                              <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                              <p className="text-sm font-bold dynamic-text-white truncate">{student.name}</p>
+                              <p className="text-xs dynamic-text-muted truncate">
                                 {student.email} · {student.department} Sem {student.semester}
                               </p>
                             </div>
@@ -1330,10 +1446,10 @@ function AdminDashboard() {
               variants={itemVariants}
               className="space-y-6"
             >
-              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm p-6 flex flex-col h-full justify-between">
+              <div className="premium-glass neon-glow p-6 flex flex-col h-full justify-between hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" style={{ borderRadius: '1.5rem' }}>
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">Student Ratios</h3>
-                  <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Approval Overview</p>
+                  <h3 className="text-base font-bold dynamic-text-white mb-1">Student Ratios</h3>
+                  <p className="text-[10px] font-bold dynamic-text-muted uppercase tracking-wider">Approval Overview</p>
                 </div>
 
                 <div className="h-48 my-4 relative flex items-center justify-center">
@@ -1362,10 +1478,10 @@ function AdminDashboard() {
                   {/* Center Total Count label inside donut */}
                   {!loading && (
                     <div className="absolute text-center">
-                      <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">
+                      <p className="text-2xl font-black dynamic-text-white leading-none">
                         {stats.students?.total || 0}
                       </p>
-                      <p className="text-[9px] uppercase font-bold tracking-wider text-gray-400 mt-1">Total</p>
+                      <p className="text-[9px] uppercase font-bold tracking-wider dynamic-text-muted mt-1">Total</p>
                     </div>
                   )}
                 </div>
@@ -1380,9 +1496,9 @@ function AdminDashboard() {
                     <div key={idx} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <span className={`w-2.5 h-2.5 rounded-full ${leg.color}`} />
-                        <span className="font-semibold text-gray-600 dark:text-slate-400">{leg.label}</span>
+                        <span className="font-semibold dynamic-text-muted">{leg.label}</span>
                       </div>
-                      <span className="font-black text-gray-900 dark:text-white">{loading ? '—' : leg.value}</span>
+                      <span className="font-black dynamic-text-white">{loading ? '—' : leg.value}</span>
                     </div>
                   ))}
                 </div>
@@ -1421,16 +1537,17 @@ function AdminDashboard() {
               <div
                 key={idx}
                 onClick={act.action}
-                className={`bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-200/80 dark:border-slate-700/50 shadow-xs hover:shadow-md cursor-pointer transition-all duration-300 flex items-center gap-4 group ${act.bg}`}
+                className={`premium-glass neon-glow p-5 cursor-pointer transition-all duration-300 flex items-center gap-4 group ${act.bg}`}
+                style={{ borderRadius: '1.5rem' }}
               >
-                <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-xl bg-white/10 dark:bg-black/20 border border-white/20 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   {act.emoji}
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  <h4 className="font-bold text-sm dynamic-text-white group-hover:text-purple-600 transition-colors">
                     {act.title}
                   </h4>
-                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{act.desc}</p>
+                  <p className="text-xs dynamic-text-muted mt-1">{act.desc}</p>
                 </div>
               </div>
             ))}
@@ -1439,12 +1556,13 @@ function AdminDashboard() {
           {/* Notifications / Announcements Panel */}
           <motion.div
             variants={itemVariants}
-            className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200/80 dark:border-slate-700/50 shadow-sm"
+            className="premium-glass neon-glow hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+            style={{ borderRadius: '1.5rem' }}
           >
             <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center gap-2">
               <span className="text-lg">📢</span>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Global Announcements</h3>
-              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider ml-auto">
+              <h3 className="text-lg font-bold dynamic-text-white">Global Announcements</h3>
+              <span className="text-[10px] font-bold dynamic-text-muted uppercase tracking-wider ml-auto">
                 System Broadcast
               </span>
             </div>

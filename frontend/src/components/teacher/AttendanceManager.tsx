@@ -165,7 +165,7 @@ export default function AttendanceManager({ teacherId, teacherName }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Timetable slot picker */}
           <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-200/80 p-4 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-emerald-500" /> Select Class
               </h3>
@@ -215,18 +215,18 @@ export default function AttendanceManager({ teacherId, teacherName }: Props) {
           {/* Right: Student attendance grid */}
           <div className="lg:col-span-2">
             {!selectedSlot ? (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex items-center justify-center h-64 text-gray-400">
+              <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-center h-64 text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <div className="text-center">
                   <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Select a class from the left to mark attendance</p>
                 </div>
               </div>
             ) : loading ? (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex items-center justify-center h-64 gap-2 text-gray-400">
+              <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-center h-64 gap-2 text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <Loader2 className="w-5 h-5 animate-spin" /> Loading students...
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
                   <div>
@@ -307,7 +307,7 @@ export default function AttendanceManager({ teacherId, teacherName }: Props) {
       )}
 
       {view === 'history' && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="px-5 py-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900">Past Attendance Records</h3>
           </div>

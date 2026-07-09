@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, Download, Award, Target, TrendingUp } from 'lucide-react';
+import { Search, Download, Award, Target, TrendingUp, Users } from 'lucide-react';
 
 export function Students() {
   const { user } = useAuth();
@@ -94,58 +94,69 @@ export function Students() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">
-          {isTeacher ? 'My Students' : 'Students by Performance Level'}
-        </h2>
-        <p className="text-gray-600">
-          {isTeacher
-            ? 'Students enrolled in your courses, grouped by performance level.'
-            : 'Automatic level assignment and promotion based on consistent performance.'}
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+              {isTeacher ? 'My Students' : 'Students by Performance Level'}
+            </h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+            Track student performance, view historical data, and manage learning paths.
+          </p>
+        </div>
       </div>
 
       {/* ── Level Distribution Cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-[1.5rem] p-8 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Award className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">82–100%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">82–100%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">Advanced Level</p>
-          <p className="text-4xl font-bold">{levelCounts.Advanced}</p>
-          <p className="text-xs opacity-75 mt-2">{allStudents.length > 0 ? ((levelCounts.Advanced / allStudents.length) * 100).toFixed(0) : 0}% of total</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">{levelCounts.Advanced}</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">Advanced Level</p>
+            <p className="text-xs font-medium opacity-75 mt-1">{allStudents.length > 0 ? ((levelCounts.Advanced / allStudents.length) * 100).toFixed(0) : 0}% of total students</p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[1.5rem] p-8 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Target className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">66–81%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">66–81%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">Intermediate Level</p>
-          <p className="text-4xl font-bold">{levelCounts.Intermediate}</p>
-          <p className="text-xs opacity-75 mt-2">{allStudents.length > 0 ? ((levelCounts.Intermediate / allStudents.length) * 100).toFixed(0) : 0}% of total</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">{levelCounts.Intermediate}</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">Intermediate Level</p>
+            <p className="text-xs font-medium opacity-75 mt-1">{allStudents.length > 0 ? ((levelCounts.Intermediate / allStudents.length) * 100).toFixed(0) : 0}% of total students</p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-[1.5rem] p-8 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">0–65%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">0–65%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">Beginner Level</p>
-          <p className="text-4xl font-bold">{levelCounts.Beginner}</p>
-          <p className="text-xs opacity-75 mt-2">{allStudents.length > 0 ? ((levelCounts.Beginner / allStudents.length) * 100).toFixed(0) : 0}% of total</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">{levelCounts.Beginner}</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">Beginner Level</p>
+            <p className="text-xs font-medium opacity-75 mt-1">{allStudents.length > 0 ? ((levelCounts.Beginner / allStudents.length) * 100).toFixed(0) : 0}% of total students</p>
+          </div>
         </div>
       </div>
 
       {/* ── Promotion Rules (admin / teacher info) ── */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-[1.5rem] p-6 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <h3 className="font-semibold text-blue-900 mb-3">Automatic Promotion Rules</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
           <div className="flex items-start gap-2">
@@ -161,7 +172,7 @@ export function Students() {
       </div>
 
       {/* ── Controls ── */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -212,7 +223,7 @@ export function Students() {
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading students...</div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">

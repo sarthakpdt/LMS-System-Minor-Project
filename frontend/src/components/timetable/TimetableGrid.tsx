@@ -78,7 +78,7 @@ export default function TimetableGrid({ entries, config }: TimetableGridProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden space-y-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       <div className="flex items-center justify-between">
         <h4 className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
           <Clock className="w-4 h-4 text-purple-600" /> Weekly Schedule Matrix

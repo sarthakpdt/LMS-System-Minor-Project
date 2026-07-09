@@ -123,13 +123,18 @@ export function StudentBucketProgress() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-8">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">My Learning Progress</h2>
-        <p className="text-gray-500 text-sm mt-1">
-          Your current difficulty level and performance per subject.
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">My Learning Progress</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">Your current difficulty level and performance per subject.</p>
+        </div>
       </div>
 
       {/* Promotion banner */}
@@ -230,7 +235,7 @@ export function StudentBucketProgress() {
                       <h4 className="text-sm font-semibold text-gray-700 mb-2">Quiz Scores</h4>
                       <div className="space-y-2">
                         {p.scores.map((s, i) => (
-                          <div key={i} className="flex items-center justify-between bg-white rounded-lg px-4 py-2 border border-gray-100">
+                          <div key={i} className="flex items-center justify-between bg-white rounded-[1.5rem] px-4 py-2 border border-gray-100 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                             <div>
                               <p className="text-sm font-medium text-gray-800">{s.quizTitle || 'Quiz'}</p>
                               <p className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleDateString()}</p>

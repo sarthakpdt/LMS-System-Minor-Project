@@ -15,7 +15,7 @@ export function RoleSwitcher() {
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+    <div className="bg-white/10 backdrop-blur-sm rounded-[1.5rem] p-3 border border-white/20 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       <p className="text-xs font-medium mb-2 opacity-75">Switch View:</p>
       <div className="flex flex-col gap-1">
         <button

@@ -395,24 +395,28 @@ export function Assignments() {
 
   // ── MAIN VIEW ─────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-8 space-y-8">
 
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Assignments</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Assignments</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
             {isTeacher ? 'Create and manage assignments for your courses.' : 'View and submit your assignments.'}
           </p>
         </div>
         {isTeacher && (
           <button
             onClick={() => { setShowCreate(!showCreate); setError(''); }}
-            style={{ backgroundColor: '#4f46e5' }}
-            className="flex items-center gap-2 px-5 py-2.5 text-white rounded-lg font-semibold shadow-sm hover:opacity-90 transition text-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold shadow-sm hover:bg-indigo-700 transition-colors text-sm"
           >
             <Plus className="w-4 h-4" />
-            {showCreate ? 'Cancel' : '+ Create Assignment'}
+            {showCreate ? 'Cancel' : 'Create Assignment'}
           </button>
         )}
       </div>
@@ -430,7 +434,7 @@ export function Assignments() {
 
       {/* ── CREATE FORM ── */}
       {showCreate && isTeacher && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
             <FileText className="w-5 h-5 text-indigo-600" /> Create New Assignment
           </h3>
@@ -446,7 +450,7 @@ export function Assignments() {
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Course *</label>
               <select value={courseId} onChange={e => setCourseId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                className="w-full border border-gray-300 rounded-[1.5rem] px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                 <option value="">Select course...</option>
                 {courses.map(c => (
                   <option key={c._id} value={c._id}>{c.courseName} ({c.courseCode})</option>
@@ -559,7 +563,7 @@ export function Assignments() {
                     <p className="text-xs font-bold text-green-700 mb-2">🟢 Easy <span className="font-normal text-gray-400">(5 marks each)</span></p>
                     <div className="space-y-2">
                       {aiVariations.easy.map((q, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg hover:shadow-sm transition">
+                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-[1.5rem] hover:shadow-sm transition hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                           <div className="flex-1">
                             <p className="text-sm text-gray-800">{q.questionText}</p>
                             {q.type === 'mcq' && q.options?.length > 0 && (
@@ -587,7 +591,7 @@ export function Assignments() {
                     <p className="text-xs font-bold text-yellow-700 mb-2">🟡 Medium <span className="font-normal text-gray-400">(10 marks each)</span></p>
                     <div className="space-y-2">
                       {aiVariations.medium.map((q, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-yellow-200 rounded-lg hover:shadow-sm transition">
+                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-yellow-200 rounded-[1.5rem] hover:shadow-sm transition hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                           <div className="flex-1">
                             <p className="text-sm text-gray-800">{q.questionText}</p>
                             {q.type === 'mcq' && q.options?.length > 0 && (
@@ -615,7 +619,7 @@ export function Assignments() {
                     <p className="text-xs font-bold text-red-700 mb-2">🔴 Hard <span className="font-normal text-gray-400">(15 marks each)</span></p>
                     <div className="space-y-2">
                       {aiVariations.hard.map((q, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-red-200 rounded-lg hover:shadow-sm transition">
+                        <div key={i} className="flex items-start gap-3 p-3 bg-white border border-red-200 rounded-[1.5rem] hover:shadow-sm transition hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                           <div className="flex-1">
                             <p className="text-sm text-gray-800">{q.questionText}</p>
                             {q.type === 'mcq' && q.options?.length > 0 && (
@@ -644,7 +648,7 @@ export function Assignments() {
               <p className="text-xs font-semibold text-violet-800 mb-2">📄 Or upload a PDF — AI will extract questions from it</p>
               <div className="flex items-center gap-3">
                 <button onClick={() => pdfRef.current?.click()} disabled={pdfLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-violet-300 text-violet-700 rounded-lg text-sm font-medium hover:bg-violet-50 transition disabled:opacity-50">
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-violet-300 text-violet-700 rounded-[1.5rem] text-sm font-medium hover:bg-violet-50 transition disabled:opacity-50 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <Upload className="w-4 h-4" />
                   {pdfLoading ? 'Extracting…' : 'Upload PDF'}
                 </button>
@@ -699,13 +703,13 @@ export function Assignments() {
                     <div className="space-y-2">
                       <textarea value={q.questionText} onChange={e => updateQ(qi, 'questionText', e.target.value)}
                         rows={2} placeholder="Question text..."
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
+                        className="w-full border border-gray-300 rounded-[1.5rem] px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" />
 
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="block text-xs text-gray-600 mb-1 font-medium">Type</label>
                           <select value={q.type} onChange={e => updateQ(qi, 'type', e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none">
+                            className="w-full border border-gray-300 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                             <option value="mcq">MCQ</option>
                             <option value="short">Short Answer</option>
                             <option value="long">Long Answer</option>
@@ -714,7 +718,7 @@ export function Assignments() {
                         <div>
                           <label className="block text-xs text-gray-600 mb-1 font-medium">Difficulty</label>
                           <select value={q.difficulty} onChange={e => updateQ(qi, 'difficulty', e.target.value as any)}
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none">
+                            className="w-full border border-gray-300 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                             <option value="easy">Easy</option>
                             <option value="medium">Medium</option>
                             <option value="hard">Hard</option>
@@ -724,7 +728,7 @@ export function Assignments() {
                           <label className="block text-xs text-gray-600 mb-1 font-medium">Marks</label>
                           <input type="number" value={q.marks} min={1}
                             onChange={e => updateQ(qi, 'marks', Number(e.target.value))}
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none" />
+                            className="w-full border border-gray-300 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" />
                         </div>
                       </div>
 
@@ -737,7 +741,7 @@ export function Assignments() {
                                 opts[oi] = e.target.value;
                                 updateQ(qi, 'options', opts);
                               }}
-                              className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none" />
+                              className="border border-gray-300 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" />
                           ))}
                         </div>
                       )}
@@ -748,7 +752,7 @@ export function Assignments() {
                         </label>
                         {q.type === 'mcq' ? (
                           <select value={q.correctAnswer} onChange={e => updateQ(qi, 'correctAnswer', e.target.value)}
-                            className="w-full border border-green-400 rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none">
+                            className="w-full border border-green-400 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                             <option value="">Select correct option...</option>
                             {(q.options || []).filter(o => o.trim()).map((o, oi) => (
                               <option key={oi} value={o}>{o}</option>
@@ -757,7 +761,7 @@ export function Assignments() {
                         ) : (
                           <input value={q.correctAnswer} placeholder="Expected answer or key points..."
                             onChange={e => updateQ(qi, 'correctAnswer', e.target.value)}
-                            className="w-full border border-green-400 rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none" />
+                            className="w-full border border-green-400 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" />
                         )}
                       </div>
                     </div>
@@ -802,15 +806,15 @@ export function Assignments() {
           Loading assignments...
         </div>
       ) : assignments.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
+        <div className="text-center py-16 bg-white rounded-[1.5rem] border border-gray-200/80 text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No assignments yet.</p>
           {isTeacher && <p className="text-xs mt-1">Click "Create Assignment" to get started.</p>}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {courses.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
+          <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 shadow-sm mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <h4 className="text-sm font-semibold text-gray-900">Filter assignments by subject</h4>
@@ -837,7 +841,7 @@ export function Assignments() {
           </div>
         )}
         {filteredAssignments.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
+          <div className="text-center py-16 bg-white rounded-[1.5rem] border border-gray-200/80 text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No assignments published for this subject yet.</p>
             <p className="text-xs mt-1">Try selecting another enrolled course or clear the subject filter.</p>
@@ -846,7 +850,7 @@ export function Assignments() {
             const course = typeof a.courseId === 'object' ? a.courseId : null;
             const isExpired = new Date(a.dueDate) < new Date();
             return (
-              <div key={a._id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+              <div key={a._id} className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     {/* Title + badges */}
@@ -1096,8 +1100,8 @@ Format your response as JSON with keys: motivation, recommendations (array of st
   // Result screen
   if (result) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className={`rounded-2xl p-8 text-white text-center mb-6 shadow-lg ${
+      <div className="p-8 max-w-3xl mx-auto space-y-8">
+        <div className={`rounded-[1.5rem] p-8 text-white text-center shadow-lg ${
           result.percentage >= 80 ? 'bg-gradient-to-br from-green-500 to-green-700' :
           result.percentage >= 60 ? 'bg-gradient-to-br from-yellow-500 to-orange-500' :
                                     'bg-gradient-to-br from-red-500 to-red-700'
@@ -1109,14 +1113,14 @@ Format your response as JSON with keys: motivation, recommendations (array of st
           <div className="text-5xl font-black my-3">{result.percentage?.toFixed(1)}%</div>
           <p className="text-lg">{result.totalScore} / {result.totalMarks} marks · Grade: <strong>{result.grade}</strong></p>
           {result.plagiarismFlagged && (
-            <div className="mt-3 px-4 py-2 bg-white/20 rounded-lg text-sm">
+            <div className="mt-3 px-4 py-2 bg-white/20 rounded-[1.5rem] text-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               ⚠️ Plagiarism detected ({result.plagiarismScore}%) — Teacher will review
             </div>
           )}
         </div>
 
         {result.overallFeedback && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+          <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm">
               <Sparkles className="w-4 h-4 text-indigo-500" /> AI Feedback
             </h3>
@@ -1145,7 +1149,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
         )}
 
         {(result.teacherComment || result.teacherScore !== null) && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+          <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm">
               <CheckCircle className="w-4 h-4 text-green-500" /> Teacher Review
             </h3>
@@ -1156,7 +1160,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm">
             <Target className="w-4 h-4 text-indigo-500" /> 🤖 AI Quiz Analysis & Study Plan
           </h3>
@@ -1178,7 +1182,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
             </div>
           )}
           {aiMotivation && (
-            <div className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+            <div className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <p className="text-sm font-semibold text-indigo-800">💬 {aiMotivation}</p>
             </div>
           )}
@@ -1210,7 +1214,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
         </div>
 
         {/* ── Show Correct Answers / Solutions ── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-500" /> Correct Answers & Solutions
@@ -1232,13 +1236,13 @@ Format your response as JSON with keys: motivation, recommendations (array of st
                     <p className="text-xs font-semibold text-gray-500 mb-1">Q{qi + 1} · {q.difficulty} · {q.marks} marks</p>
                     <p className="text-sm font-medium text-gray-900 mb-2">{q.questionText}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white rounded p-2 border border-gray-200">
+                      <div className="bg-white rounded p-2 border border-gray-200/80 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                         <p className="font-semibold text-gray-500 mb-0.5">Your Answer:</p>
                         <p className={`font-medium ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
                           {ans?.studentAnswer || '(no answer)'} {isCorrect ? '✅' : '❌'}
                         </p>
                       </div>
-                      <div className="bg-white rounded p-2 border border-green-300">
+                      <div className="bg-white rounded p-2 border border-green-300 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                         <p className="font-semibold text-gray-500 mb-0.5">Correct Answer:</p>
                         <p className="font-medium text-green-800">{q.correctAnswer || '—'}</p>
                       </div>
@@ -1298,7 +1302,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
         </div>
         <div className="max-w-2xl mx-auto p-6">
           {error && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
+          <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm p-8 mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex justify-between mb-3 text-sm text-gray-500">
               <span>Q{currentQ + 1} of {total}</span>
               <span className={`px-3 py-1 rounded-full font-medium ${DIFF_COLORS[q.difficulty]}`}>{q.difficulty}</span>
@@ -1329,7 +1333,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
           </div>
           <div className="flex justify-between">
             <button onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}
-              className="px-8 py-4 bg-white border border-gray-300 rounded-lg text-gray-700 text-base hover:bg-gray-50 disabled:opacity-40 font-semibold">
+              className="px-8 py-4 bg-white border border-gray-300 rounded-[1.5rem] text-gray-700 text-base hover:bg-gray-50 disabled:opacity-40 font-semibold dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               ← Previous
             </button>
             {currentQ === total - 1 ? (
@@ -1353,8 +1357,8 @@ Format your response as JSON with keys: motivation, recommendations (array of st
 
   // Solve mode
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-3xl mx-auto space-y-8">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900">{assignment.title}</h2>
           <p className="text-sm text-gray-500">Solve Mode — answer all questions then submit</p>
@@ -1372,9 +1376,9 @@ Format your response as JSON with keys: motivation, recommendations (array of st
         </div>
       )}
 
-      <div className="space-y-4 mb-8">
+      <div className="space-y-6">
         {questions.map((q, qi) => (
-          <div key={q._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <div key={q._id} className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex items-center gap-3 mb-3">
               <span className="font-bold text-gray-800 text-sm">Q{qi + 1}.</span>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_COLORS[q.difficulty]}`}>{q.difficulty}</span>
@@ -1424,7 +1428,7 @@ Format your response as JSON with keys: motivation, recommendations (array of st
         ))}
       </div>
 
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 py-4 flex items-center justify-between">
+      <div className="sticky bottom-0 bg-white border-t border-gray-200/80 py-4 flex items-center justify-between dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <p className="text-sm text-gray-500">
           {Object.values(answers).filter(a => a.trim()).length} / {total} answered
         </p>
@@ -1565,43 +1569,43 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
     : '0';
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-8 max-w-5xl mx-auto space-y-8">
       <button onClick={onBack}
-        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-5 text-sm font-semibold">
+        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-sm font-semibold">
         ← Back to Assignments
       </button>
 
-      <div className="mb-5">
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-0.5">{assignment?.title}</h2>
         <p className="text-sm text-gray-500">{submissions.length} submission{submissions.length !== 1 ? 's' : ''} · Avg: {avgScore}%</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-3 gap-8">
         {[
           { label: 'Submissions', value: submissions.length, color: 'text-gray-900' },
           { label: 'Average Score', value: avgScore + '%', color: 'text-green-600' },
           { label: 'Plagiarism Flags', value: submissions.filter(s => s.plagiarismFlagged).length, color: 'text-red-600' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+          <div key={s.label} className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 text-center hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+            <p className={`text-4xl font-black ${s.color}`}>{s.value}</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mt-2">{s.label}</p>
           </div>
         ))}
       </div>
 
       {submissions.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200">
+        <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           No submissions yet.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-6">
           {submissions.map(sub => {
             const student = typeof sub.studentId === 'object' ? sub.studentId : null;
             const isOpen  = expanded === sub._id;
             return (
-              <div key={sub._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="p-4 flex items-center justify-between gap-3">
+              <div key={sub._id} className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+                <div className="p-8 flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h4 className="font-semibold text-gray-900 text-sm">{student?.name || sub.studentName}</h4>
@@ -1661,7 +1665,7 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
                     )}
 
                     {(sub.answers?.length ?? 0) > 0 ? (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                         <p className="text-sm font-bold text-gray-900 mb-3">Student Answers</p>
                         <div className="space-y-3">
                           {(sub.answers || []).map((ans, idx) => {
@@ -1729,7 +1733,7 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
                     )}
 
                     {/* Grading Options */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                       <p className="text-sm font-bold text-gray-900 mb-3">⚙️ Grading Options</p>
                       <p className="text-xs text-gray-500 mb-3">AI auto-grades first. You can review and modify before sending to student.</p>
                       <div className="flex gap-3 flex-wrap mb-3">
@@ -1750,7 +1754,7 @@ Provide a brief, constructive teacher feedback comment (2-3 sentences) on the st
                       )}
                     </div>
 
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                       <p className="text-sm font-bold text-gray-900 mb-3">✏️ Your Review (modify & send to student)</p>
                       {sub.teacherComment && (
                         <p className="text-xs text-gray-500 mb-3 italic bg-gray-50 p-2 rounded">

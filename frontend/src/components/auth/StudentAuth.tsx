@@ -139,7 +139,7 @@ export function StudentAuth() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl"
+          className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl dark:bg-slate-800"
           animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
           style={{ top: '10%', left: '10%' }}
@@ -151,7 +151,7 @@ export function StudentAuth() {
           {/* Left Branding */}
           <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} className="text-white space-y-6 hidden md:block">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                 <GraduationCap className="w-10 h-10" />
               </div>
               <div>
@@ -160,7 +160,7 @@ export function StudentAuth() {
               </div>
             </div>
             <div className="space-y-4 mt-12">
-              <div className="flex items-start gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+              <div className="flex items-start gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                 <Sparkles className="w-6 h-6 flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-semibold text-lg">Multi-Role Access</h3>
@@ -171,7 +171,7 @@ export function StudentAuth() {
           </motion.div>
 
           {/* Right Auth Form */}
-          <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-2xl shadow-2xl overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
             <div className="p-8">
               {/* Login / Signup Toggle */}
               <div className="flex gap-2 bg-gray-100 p-1 rounded-lg mb-8">
@@ -281,7 +281,7 @@ export function StudentAuth() {
                             <select
                               value={signupData.department}
                               onChange={(e) => setSignupData({ ...signupData, department: e.target.value })}
-                              className="w-full pl-11 h-11 border border-gray-300 rounded-md bg-white text-sm text-gray-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 appearance-none pr-4"
+                              className="w-full pl-11 h-11 border border-gray-300 rounded-xl bg-white text-sm text-gray-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 appearance-none pr-4 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                               required
                             >
                               <option value="">Select department…</option>
@@ -331,7 +331,7 @@ export function StudentAuth() {
                               id="signup-dept-teacher"
                               value={signupData.department}
                               onChange={(e) => setSignupData({ ...signupData, department: e.target.value })}
-                              className="w-full pl-11 h-11 border border-gray-300 rounded-md bg-white text-sm text-gray-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 appearance-none pr-4"
+                              className="w-full pl-11 h-11 border border-gray-300 rounded-xl bg-white text-sm text-gray-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 appearance-none pr-4 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                               required
                             >
                               <option value="">Select department…</option>

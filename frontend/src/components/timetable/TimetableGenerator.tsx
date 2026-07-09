@@ -269,7 +269,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
     <div className="space-y-6">
       {/* Wizard progress (hidden when embedded in SetupWizard) */}
       {!embedded && (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex flex-wrap items-center gap-2">
           {STEPS.map((step, idx) => (
             <React.Fragment key={step.id}>
@@ -309,7 +309,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
       )}
 
       {/* Control panel */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div>
           <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
             <Calendar className="w-5 h-5 text-purple-600" /> Timetable Generator
@@ -401,7 +401,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
 
       {/* Saved timetables */}
       {(!embedded || focusStep === 'save') && (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <h4 className="text-xs font-bold text-gray-800 flex items-center gap-2 mb-3">
           <FolderOpen className="w-4 h-4 text-purple-600" /> Saved Timetables
         </h4>
@@ -452,7 +452,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
       )}
 
       {!embedded && activeStep === 'configure' && entries.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center space-y-3 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center space-y-3 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <Calendar className="w-10 h-10 mx-auto text-gray-300" />
           <h4 className="font-bold text-gray-800 text-sm">Step 1: Configure Courses & Constraints</h4>
           <p className="text-xs text-gray-500 max-w-md mx-auto px-6">
@@ -462,7 +462,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
       )}
 
       {entries.length === 0 && (embedded ? focusStep !== 'generate' : activeStep !== 'configure') ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center space-y-4 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center space-y-4 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <Calendar className="w-12 h-12 mx-auto text-gray-300 opacity-80" />
           <h4 className="font-bold text-gray-800 text-sm">No Timetable Available</h4>
           <p className="text-xs text-gray-500 px-6 max-w-md mx-auto">
@@ -472,7 +472,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
       ) : entries.length > 0 && (!embedded || focusStep === 'preview' || focusStep === 'save') ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 space-y-6">
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="flex justify-between items-center border-b pb-2.5">
                 <h4 className="font-bold text-gray-800 text-xs uppercase tracking-wider">Preview — Class View</h4>
               </div>
@@ -482,7 +482,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
                   <select
                     value={selectedBranch}
                     onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
+                    className="w-full border border-gray-200/80 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     {config?.branches.map((b) => (
                       <option key={b.code} value={b.code}>{b.name} ({b.code})</option>
@@ -494,7 +494,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
+                    className="w-full border border-gray-200/80 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     {activeBranchObj?.years.map((y) => (
                       <option key={y.yearNumber} value={y.yearNumber}>{y.label}</option>
@@ -506,7 +506,7 @@ export default function TimetableGenerator({ focusStep, embedded }: TimetableGen
                   <select
                     value={selectedSection}
                     onChange={(e) => setSelectedSection(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
+                    className="w-full border border-gray-200/80 rounded-xl px-3.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     {activeYearObj?.sections.map((sec) => (
                       <option key={sec} value={sec}>Section {sec}</option>

@@ -25,6 +25,7 @@ import { StudentApprovals } from "./components/admin/StudentApprovals";
 import { NotFound } from "./components/NotFound";
 import { StudentAuthNew } from "./components/auth/StudentAuthNew";
 import { TeacherAuth } from "./components/auth/TeacherAuth";
+import { ComingSoonPlaceholder } from "./components/ComingSoonPlaceholder";
 // NEW imports
 import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
@@ -88,11 +89,13 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { index: true, Component: Dashboard },
           { path: "students", Component: Students },
           { path: "courses", Component: Courses },
-          { path: "marks", Component: SubjectMarks },
+          { path: "subject-marks", Component: SubjectMarks },
           { path: "materials", Component: StudyMaterials },
           { path: "assignments", Component: Assignments },
           { path: "attendance", Component: TeacherAttendancePage },
-          { path: "quizzes", Component: TeacherQuizManagement },
+          { path: "assessments", Component: Assessments },
+          { path: "quiz-management", Component: TeacherQuizManagement },
+          { path: "quiz-monitor", Component: () => <ComingSoonPlaceholder title="Quiz Monitor" /> },
           { path: "quiz-monitor/:id", Component: TeacherQuizMonitor },
           { path: "grading", Component: AutoGrading },
           { path: "performance-levels", Component: PerformanceLevels },

@@ -100,9 +100,16 @@ const skillGapAnalysis = [
 export function PerformanceLevels() {
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Performance Level Management</h2>
-        <p className="text-gray-600">Track student levels, automatic promotions, and create targeted improvement plans.</p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Performance Level Management</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">Track student levels, automatic promotions, and create targeted improvement plans.</p>
+        </div>
       </div>
 
       {/* Promotion Criteria Section */}
@@ -111,9 +118,9 @@ export function PerformanceLevels() {
       </div>
 
       {/* Level System Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         {levelCriteria.map((level, index) => (
-          <div key={index} className={`bg-white rounded-lg border-2 ${level.borderColor} overflow-hidden shadow-md`}>
+          <div key={index} className={`bg-white rounded-[1.5rem] border-2 ${level.borderColor} overflow-hidden shadow-md hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
             <div className={`bg-gradient-to-r ${level.color} p-4 text-white`}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xl font-bold">{level.level}</h3>
@@ -121,7 +128,7 @@ export function PerformanceLevels() {
               </div>
               <p className="text-sm opacity-90">{level.description}</p>
             </div>
-            <div className="p-4">
+            <div className="p-8">
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-1">Score Range</p>
                 <p className="text-2xl font-bold text-gray-900">{level.range}</p>
@@ -143,7 +150,7 @@ export function PerformanceLevels() {
       </div>
 
       {/* Improvement Trends by Level */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm mb-8">
+      <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm mb-10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends by Level</h3>
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={improvementTrends}>
@@ -160,7 +167,7 @@ export function PerformanceLevels() {
       </div>
 
       {/* Skill Gap Analysis */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm mb-8">
+      <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm mb-10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skill Gap Analysis by Level</h3>
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={skillGapAnalysis}>
@@ -184,9 +191,9 @@ export function PerformanceLevels() {
           <h3 className="text-lg font-semibold text-gray-900">Students Near Level Promotion</h3>
           <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">Automatic System</span>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {studentsNearPromotion.map((student, index) => (
-            <div key={index} className="bg-white rounded-lg border-2 border-blue-200 p-6 shadow-md">
+            <div key={index} className="bg-white rounded-[1.5rem] border-2 border-blue-200 p-8 shadow-md hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
@@ -255,7 +262,7 @@ export function PerformanceLevels() {
                 </div>
                 <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     style={{ width: `${(student.currentScore / student.targetScore) * 100}%` }}
                   />
                 </div>
@@ -311,7 +318,7 @@ export function PerformanceLevels() {
       </div>
 
       {/* Promotion History */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex items-center gap-2 mb-4">
           <ArrowUp className="w-6 h-6 text-green-600" />
           <h3 className="text-lg font-semibold text-gray-900">Recent Level Promotions</h3>

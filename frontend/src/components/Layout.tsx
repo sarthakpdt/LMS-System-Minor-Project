@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, BookOpen, FileText, TrendingUp, Award, Target, ArrowUp, AlertCircle } from 'lucide-react';
+import { Users, BookOpen, FileText, TrendingUp, Award, Target, ArrowUp, AlertCircle, LayoutDashboard } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
@@ -42,7 +42,7 @@ function StudentDashboard() {
   return (
     <div className="p-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[1.5rem] p-8 text-white mb-10 shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-1">Welcome back, {user?.name?.split(' ')[0]}! 👋</h2>
@@ -58,14 +58,14 @@ function StudentDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
         {[
           { label: 'Enrolled Courses', value: enrolledCourses.length, icon: BookOpen, color: 'bg-blue-500' },
           { label: 'Assignments Due', value: '—', icon: FileText, color: 'bg-purple-500' },
           { label: 'Avg. Score', value: '—', icon: TrendingUp, color: 'bg-green-500' },
           { label: 'Level', value: user ? 'Beginner' : '—', icon: Award, color: 'bg-orange-500' },
         ].map((s, i) => (
-          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="flex items-start justify-between mb-3">
               <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center`}>
                 <s.icon className="w-5 h-5 text-white" />
@@ -78,7 +78,7 @@ function StudentDashboard() {
       </div>
 
       {/* Enrolled Courses */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm mb-10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-500" /> My Enrolled Courses
@@ -183,9 +183,14 @@ function AdminTeacherDashboard() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Dashboard</h2>
-        <p className="text-gray-600">
+      <div className="mb-10">
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+            <LayoutDashboard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Dashboard</h2>
+        </div>
+        <p className="text-sm text-gray-600 ml-16">
           {isTeacher
             ? `Welcome back, ${user?.name}. Here's your class overview.`
             : "Welcome back! Here's an overview of your academic performance metrics."}
@@ -196,9 +201,9 @@ function AdminTeacherDashboard() {
       {loading ? (
         <div className="text-center py-8 text-gray-400">Loading stats...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           {statCards.map((s, i) => (
-            <div key={i} className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <div key={i} className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 ${s.color} rounded-lg flex items-center justify-center`}>
                   <s.icon className="w-6 h-6 text-white" />
@@ -214,14 +219,14 @@ function AdminTeacherDashboard() {
 
       {/* Performance Distribution */}
       {performanceTiers.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-6 mb-6 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[1.5rem] p-8 mb-10 text-white shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <h3 className="text-xl font-bold mb-4">Student Performance Distribution by Levels</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {performanceTiers.map((tier, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold text-sm">{tier.tier}</h4>
-                  <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">{tier.level}</span>
+                  <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">{tier.level}</span>
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
@@ -233,8 +238,8 @@ function AdminTeacherDashboard() {
                     <p className="text-xs opacity-75">of total</p>
                   </div>
                 </div>
-                <div className="w-full h-2 bg-white/20 rounded-full mt-3">
-                  <div className="h-full bg-white/60 rounded-full" style={{ width: `${tier.percentage}%` }} />
+                <div className="w-full h-2 bg-white/20 rounded-full mt-3 dark:bg-slate-800">
+                  <div className="h-full bg-white/60 rounded-full dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" style={{ width: `${tier.percentage}%` }} />
                 </div>
               </div>
             ))}
@@ -243,8 +248,8 @@ function AdminTeacherDashboard() {
       )}
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2 bg-white rounded-lg p-6 border border-gray-200">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <div className="lg:col-span-2 bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={performanceData}>
@@ -259,7 +264,7 @@ function AdminTeacherDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center gap-2 mb-4">
             <ArrowUp className="w-5 h-5 text-green-500" />
             <h3 className="text-lg font-semibold text-gray-900">Level Promotions</h3>
@@ -277,8 +282,8 @@ function AdminTeacherDashboard() {
       </div>
 
       {/* Grade Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Grade Distribution</h3>
           <ResponsiveContainer width="100%" height={230}>
             <PieChart>
@@ -293,7 +298,7 @@ function AdminTeacherDashboard() {
         </div>
 
         {/* Pending approvals callout */}
-        <div className="lg:col-span-2 bg-white rounded-lg p-6 border border-gray-200">
+        <div className="lg:col-span-2 bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Target className="w-5 h-5 text-blue-500" /> Quick Summary
           </h3>

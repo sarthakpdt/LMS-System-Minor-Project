@@ -351,7 +351,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       {!hideHeader ? (
         <div className="bg-gradient-to-r from-purple-700 to-indigo-800 p-6 text-white">
           <h3 className="text-lg font-bold flex items-center gap-2">
@@ -434,7 +434,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   <select
                     value={branchForm.yearsCount}
                     onChange={e => setBranchForm({ ...branchForm, yearsCount: Number(e.target.value) })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y !== 1 ? 's' : ''}</option>)}
                   </select>
@@ -470,7 +470,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {config.branches.map(branch => (
-                      <div key={branch.code} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm hover:shadow transition space-y-3 relative group">
+                      <div key={branch.code} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm hover:shadow transition space-y-3 relative group dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                         <button
                           onClick={() => removeBranch(branch.code)}
                           className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
@@ -568,7 +568,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   <select
                     value={roomForm.type}
                     onChange={e => setRoomForm({ ...roomForm, type: e.target.value as any })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     <option value="classroom">Classroom (Theory)</option>
                     <option value="lab">Specialized Lab</option>
@@ -702,7 +702,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                     <select
                       value={subjectForm.branch}
                       onChange={e => setSubjectForm({ ...subjectForm, branch: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                       required
                     >
                       <option value="">Select Branch...</option>
@@ -716,7 +716,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                     <select
                       value={subjectForm.year}
                       onChange={e => setSubjectForm({ ...subjectForm, year: Number(e.target.value) })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                       required
                     >
                       {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>Year {y}</option>)}
@@ -730,7 +730,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                     <select
                       value={subjectForm.type}
                       onChange={e => setSubjectForm({ ...subjectForm, type: e.target.value as any })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     >
                       <option value="theory">Theory Lecture</option>
                       <option value="lab">Consecutive Lab</option>
@@ -756,7 +756,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                         <select
                           value={subjectForm.labDuration}
                           onChange={e => setSubjectForm({ ...subjectForm, labDuration: Number(e.target.value), weeklyHours: Number(e.target.value) })}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                           required
                         >
                           <option value="2">2 Hour block</option>
@@ -773,7 +773,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   <select
                     value={subjectForm.facultyId}
                     onChange={e => setSubjectForm({ ...subjectForm, facultyId: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     <option value="">No Instructor Assigned</option>
                     {teachers.map(t => (
@@ -892,7 +892,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                         maxHoursPerWeek: match?.maxHoursPerWeek || 24
                       });
                     }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     required
                   >
                     <option value="">Select Faculty...</option>
@@ -931,7 +931,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                       <select
                         value={constraintForm.day}
                         onChange={e => setConstraintForm({ ...constraintForm, day: e.target.value })}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        className="w-full border border-gray-200/80 rounded-[1.5rem] px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                       >
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
                           <option key={d} value={d}>{d}</option>
@@ -988,7 +988,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                 ) : (
                   <div className="space-y-3">
                     {constraints.map(c => (
-                      <div key={c._id} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm space-y-2">
+                      <div key={c._id} className="border border-gray-100 rounded-xl p-4 bg-white shadow-sm space-y-2 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                         <div className="flex justify-between items-start">
                           <div>
                             <h5 className="font-bold text-gray-800 text-xs">{c.facultyName}</h5>

@@ -320,7 +320,7 @@ export default function CourseManager({ config, teachers, onSaved }: Props) {
         </div>
       )}
 
-      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
           <span className="text-xs font-bold text-gray-700">
             Courses ({courses.length})

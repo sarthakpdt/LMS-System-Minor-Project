@@ -40,61 +40,78 @@ const completionRates = [
 export function Analytics() {
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Analytics</h2>
-        <p className="text-gray-600">Comprehensive insights and data visualization for academic performance.</p>
+      <div className="mb-10">
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+            <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Analytics</h2>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">Comprehensive insights and data visualization for academic performance.</p>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Users className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">+5.2%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">+5.2%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">Total Enrollment</p>
-          <p className="text-3xl font-bold">1,234</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">1,234</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">Total Enrollment</p>
+            <p className="text-xs font-medium opacity-75 mt-1">Active students across all courses</p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">+3.1%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">+3.1%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">Avg Performance</p>
-          <p className="text-3xl font-bold">82.5%</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">82.5%</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">Avg Performance</p>
+            <p className="text-xs font-medium opacity-75 mt-1">Global average score across courses</p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Award className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">+8.4%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">+8.4%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">High Achievers</p>
-          <p className="text-3xl font-bold">287</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">287</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">High Achievers</p>
+            <p className="text-xs font-medium opacity-75 mt-1">Students in advanced bucket</p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-[1.5rem] p-8 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-inner dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <Target className="w-6 h-6" />
             </div>
-            <span className="text-sm font-medium bg-white/20 px-2 py-1 rounded">+2.7%</span>
+            <span className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-full shadow-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">+2.7%</span>
           </div>
-          <p className="text-sm opacity-90 mb-1">Completion Rate</p>
-          <p className="text-3xl font-bold">89.2%</p>
+          <div className="flex flex-col">
+            <h3 className="text-4xl font-black leading-none mb-2 tracking-tight">89.2%</h3>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-90">Completion Rate</p>
+            <p className="text-xs font-medium opacity-75 mt-1">Assignments submitted on time</p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         {/* Performance by Subject */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance by Subject</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={performanceBySubject}>
@@ -110,7 +127,7 @@ export function Analytics() {
         </div>
 
         {/* Attendance & Engagement Trend */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Attendance & Engagement Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={attendanceTrend}>
@@ -126,9 +143,9 @@ export function Analytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Skills Analysis Radar */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Analysis</h3>
           <ResponsiveContainer width="100%" height={350}>
             <RadarChart data={skillsAnalysis}>
@@ -142,7 +159,7 @@ export function Analytics() {
         </div>
 
         {/* Completion Rates */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white rounded-[1.5rem] p-8 border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment Completion Rates</h3>
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={completionRates}>

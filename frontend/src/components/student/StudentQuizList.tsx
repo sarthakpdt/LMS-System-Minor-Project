@@ -168,7 +168,7 @@ export function StudentQuizList() {
     return (
       <div className={`bg-white rounded-xl border p-5 shadow-sm hover:shadow-md transition-shadow ${
         mode === 'expired' ? 'opacity-60' : ''
-      }`}>
+      } hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -256,22 +256,32 @@ export function StudentQuizList() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">My Quizzes</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Quizzes are filtered to match your difficulty level per subject.
-        </p>
+    <div className="p-8">
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">My Quizzes</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+            Quizzes are filtered to match your difficulty level per subject.
+          </p>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Available', count: available.length, color: 'text-green-600 bg-green-50 border-green-200' },
-          { label: 'Completed', count: attempted.length, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-          { label: 'Expired',   count: expired.length,   color: 'text-gray-500 bg-gray-50 border-gray-200' },
+          { label: 'Available', count: available.length, color: 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800' },
+          { label: 'Completed', count: attempted.length, color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' },
+          { label: 'Expired',   count: expired.length,   color: 'text-gray-500 bg-gray-50 border-gray-200 dark:bg-gray-900/50 dark:border-gray-800' },
         ].map(s => (
-          <div key={s.label} className={`rounded-xl border p-4 ${s.color}`}>
+          <div 
+            key={s.label} 
+            className={`rounded-xl border p-4 ${s.color} hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}
+          >
             <p className="text-2xl font-bold">{s.count}</p>
             <p className="text-xs font-medium mt-0.5">{s.label}</p>
           </div>
@@ -315,7 +325,7 @@ export function StudentQuizList() {
       )}
 
       {quizzes.length === 0 && (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200/80 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No quizzes available for your current level yet.</p>
         </div>

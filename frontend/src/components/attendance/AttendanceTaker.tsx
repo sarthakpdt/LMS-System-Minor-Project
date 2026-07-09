@@ -715,11 +715,16 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
   const riskyCount = summaries.filter((s) => s.riskLevel !== 'safe').length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6 p-8">
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Attendance Management</h2>
-          <p className="text-sm text-slate-500">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Attendance Management</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
             Mark attendance per course, day, and time slot — switch classes anytime from the schedule
           </p>
         </div>
@@ -793,7 +798,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
                         setSelectedCourseId(e.target.value);
                         setSaved(false);
                       }}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="mt-1 w-full rounded-[1.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     >
                       {teacherCourses.map((c) => (
                         <option key={c.courseId} value={c.courseId}>
@@ -812,7 +817,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
                       setSelectedSection(e.target.value);
                       setSaved(false);
                     }}
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="mt-1 w-full rounded-[1.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
                     {sectionOptions.map((sec) => (
                       <option key={sec} value={sec}>Section {sec}</option>
@@ -884,7 +889,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
               </Card>
             ) : (
               <Card className="overflow-hidden shadow-sm">
-                <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-5 py-4">
+                <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-5 py-4 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="font-semibold text-slate-900">{selectedCourse?.courseName || selectedSlot?.subject}</h3>
@@ -931,7 +936,7 @@ export default function AttendanceTaker({ teacherId, teacherName }: Props) {
                     <button
                       type="button"
                       onClick={resetAttendance}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="rounded-[1.5rem] border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     >
                       <RotateCcw className="mr-1 inline h-3.5 w-3.5" />
                       Reset to Present

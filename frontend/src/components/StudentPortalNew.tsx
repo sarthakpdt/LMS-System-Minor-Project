@@ -1,3 +1,4 @@
+import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
@@ -55,7 +56,7 @@ function DeadlineAlarm({ assignments, onDismiss }: {
         <motion.div
           key={a._id}
           layout
-          className="flex items-start gap-3 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-300 dark:border-red-700 rounded-xl px-4 py-3 shadow-sm"
+          className="flex items-start gap-3 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-300 dark:border-red-700 rounded-xl px-4 py-3 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
         >
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
@@ -103,6 +104,7 @@ function DeadlineBadge({ dueDate }: { dueDate: string }) {
 
 export function StudentPortalNew() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [enrolled, setEnrolled] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -114,6 +116,12 @@ export function StudentPortalNew() {
   const [showAI, setShowAI] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses'>('overview');
+
+  const cardStyle = theme === 'dark' ? {
+    backgroundColor: '#1f2937',
+    borderColor: '#374151',
+    backgroundImage: 'linear-gradient(to bottom right, rgba(31,41,55,1), rgba(17,24,39,1))'
+  } : {};
 
   useEffect(() => {
     loadData();
@@ -179,7 +187,12 @@ export function StudentPortalNew() {
   const completionRate = enrolled.length > 0 ? Math.round((completed.length / allAssignments.length) * 100) : 0;
 
   return (
-    <PageTransition className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/20">
+    <PageTransition 
+      className="min-h-screen transition-colors duration-300"
+      style={{
+        background: 'transparent'
+      }}
+    >
       <div className="p-8">
         {/* Header */}
         <motion.div
@@ -188,38 +201,20 @@ export function StudentPortalNew() {
           animate="animate"
           className="mb-8"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg text-white">
-                <BookOpen className="w-6 h-6" />
+          <div className="flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl text-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                <BookOpen className="w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight drop-shadow-sm mb-1">
                   Welcome back, {user?.name || 'Student'}!
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                <p className="text-gray-700 dark:text-gray-300 text-base font-medium">
                   Track your learning progress and upcoming assignments
                 </p>
               </div>
             </div>
-            <motion.div whileHover={{ scale: 1.1 }} className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="md"
-                onClick={() => setShowNotif(!showNotif)}
-              >
-                <Bell className="w-4 h-4" />
-                Notifications
-              </Button>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => setShowAI(!showAI)}
-              >
-                <Brain className="w-4 h-4" />
-                AI Assistant
-              </Button>
-            </motion.div>
           </div>
         </motion.div>
 
@@ -281,6 +276,7 @@ export function StudentPortalNew() {
                   value={enrolled.length}
                   gradient="from-blue-500 to-cyan-600"
                   change={{ value: 2, isPositive: true }}
+                  style={cardStyle}
                 />
               </StaggerItem>
 
@@ -291,6 +287,7 @@ export function StudentPortalNew() {
                   value={completed.length}
                   gradient="from-green-500 to-emerald-600"
                   change={{ value: 3, isPositive: true }}
+                  style={cardStyle}
                 />
               </StaggerItem>
 
@@ -301,6 +298,7 @@ export function StudentPortalNew() {
                   value={pendingAssignments.length}
                   gradient="from-orange-500 to-amber-600"
                   change={{ value: 1, isPositive: false }}
+                  style={cardStyle}
                 />
               </StaggerItem>
 
@@ -311,6 +309,7 @@ export function StudentPortalNew() {
                   value={`${completionRate}%`}
                   gradient="from-purple-500 to-indigo-600"
                   change={{ value: 5, isPositive: true }}
+                  style={cardStyle}
                 />
               </StaggerItem>
             </StaggerList>
@@ -323,13 +322,13 @@ export function StudentPortalNew() {
               className="grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
               {/* Progress Ring */}
-              <Card gradient role="student" className="flex flex-col items-center justify-center py-8">
+              <Card gradient role="student" className="flex flex-col items-center justify-center py-8" style={cardStyle}>
                 <ProgressRing progress={completionRate} size="md" color="blue" />
                 <p className="mt-4 text-gray-600 dark:text-gray-400 text-sm">Overall Progress</p>
               </Card>
 
               {/* Learning Status */}
-              <Card gradient role="student">
+              <Card gradient role="student" style={cardStyle}>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Zap className="w-5 h-5 text-blue-600" />
                   Learning Status
@@ -353,7 +352,7 @@ export function StudentPortalNew() {
               </Card>
 
               {/* Achievements */}
-              <Card gradient role="student">
+              <Card gradient role="student" style={cardStyle}>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Award className="w-5 h-5 text-blue-600" />
                   Achievements
@@ -382,7 +381,7 @@ export function StudentPortalNew() {
             </motion.div>
 
             {/* Performance Trend Chart */}
-            <Card className="p-6">
+            <Card className="p-6" style={cardStyle}>
               <div className="flex items-center gap-2 mb-6">
                 <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -425,7 +424,7 @@ export function StudentPortalNew() {
             animate="animate"
           >
             {allAssignments.length === 0 ? (
-              <Card className="text-center py-12">
+              <Card className="text-center py-12" style={cardStyle}>
                 <FileText className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-600 dark:text-gray-400">No assignments available</p>
               </Card>
@@ -433,7 +432,7 @@ export function StudentPortalNew() {
               <StaggerList className="space-y-4">
                 {allAssignments.map((assignment, idx) => (
                   <StaggerItem key={assignment._id}>
-                    <Card hover className="p-6">
+                    <Card hover className="p-6" style={cardStyle}>
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -483,7 +482,7 @@ export function StudentPortalNew() {
             animate="animate"
           >
             {enrolled.length === 0 ? (
-              <Card className="text-center py-12">
+              <Card className="text-center py-12" style={cardStyle}>
                 <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-600 dark:text-gray-400 mb-4">No courses enrolled</p>
                 <Button variant="primary">Browse Courses</Button>
@@ -492,7 +491,7 @@ export function StudentPortalNew() {
               <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {enrolled.map((course, idx) => (
                   <StaggerItem key={course._id}>
-                    <Card hover className="p-6 flex flex-col h-full">
+                    <Card hover className="p-6 flex flex-col h-full" style={cardStyle}>
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -524,26 +523,6 @@ export function StudentPortalNew() {
         )}
       </div>
 
-      {/* AI Assistant Sidebar */}
-      {showAI && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          className="fixed right-0 top-0 bottom-0 w-96 bg-white dark:bg-gray-800 shadow-xl z-50 border-l border-gray-200 dark:border-gray-700"
-        >
-          <button
-            onClick={() => setShowAI(false)}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="h-full overflow-auto p-4">
-            <h2 className="text-xl font-bold mb-4 mt-4">AI Learning Assistant</h2>
-            <AILearningAssistant />
-          </div>
-        </motion.div>
-      )}
     </PageTransition>
   );
 }

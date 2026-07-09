@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Card, Alert } from '../../theme/components';
 import { animationVariants, PageTransition } from '../../theme/animations';
 
@@ -41,11 +41,11 @@ function SubjectPickerModal({ courses, teacherName, onSelect }: {
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-700"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
       >
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
@@ -85,7 +85,7 @@ function SubjectPickerModal({ courses, teacherName, onSelect }: {
                         <BookOpen className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 dark:text-white truncate">{c.courseName}</p>
+                        <p className="font-semibold text-white truncate">{c.courseName}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{c.courseCode} · Semester {c.semester}</p>
                       </div>
                       {isSelected && (
@@ -120,10 +120,14 @@ function SubjectPickerModal({ courses, teacherName, onSelect }: {
 
 export function StudentAuthNew() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'student' | 'teacher' | 'admin'>('student');
+  
+  // Use role from location state if provided (e.g. from logout redirect), default to student
+  const defaultRole = location.state?.role || 'student';
+  const [role, setRole] = useState<'student' | 'teacher' | 'admin'>(defaultRole);
   const [error, setError] = useState('');
   const { login, signup, setActiveSubject } = useAuth();
 
@@ -414,13 +418,13 @@ export function StudentAuthNew() {
         <motion.div
           animate={{ x: [0, 80, -50, 0], y: [0, -70, 80, 0], scale: [1, 1.15, 0.9, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute w-[500px] h-[500px] bg-white/10 rounded-full blur-[120px]"
+          className="absolute w-[500px] h-[500px] bg-white/10 rounded-full blur-[120px] dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           style={{ top: '-10%', left: '-5%' }}
         />
         <motion.div
           animate={{ x: [0, -80, 60, 0], y: [0, 80, -60, 0], scale: [1, 0.9, 1.1, 1] }}
           transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute w-[500px] h-[500px] bg-black/5 dark:bg-white/5 rounded-full blur-[120px]"
+          className="absolute w-[500px] h-[500px] bg-black/5 dark:bg-white/5 rounded-full blur-[120px] hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           style={{ bottom: '-15%', right: '-5%' }}
         />
       </div>
@@ -474,11 +478,11 @@ export function StudentAuthNew() {
             key={`hero-${role}`}
             src={currentTheme.heroImage}
             alt={`${role} illustration`}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 0.85, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.95, y: 0 }}
+            animate={{ opacity: 0.85, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-[700px] max-h-[85vh] w-auto h-auto object-contain select-none"
+            className="w-[1250px] max-w-[125vw] h-[85vh] object-contain object-top select-none pointer-events-none"
             style={{ filter: 'saturate(0.6) brightness(1.2)' }}
             draggable={false}
           />
@@ -507,7 +511,7 @@ export function StudentAuthNew() {
           glass
           noPadding
           hover={false}
-          className={`w-full max-w-md ${!isLogin && (role === 'student' || role === 'teacher') ? 'md:max-w-2xl' : 'md:max-w-md'} shadow-2xl p-6 md:p-8 backdrop-blur-2xl border border-white/25 dark:border-white/10 bg-white/80 dark:bg-gray-900/75 transition-all duration-300 ${currentTheme.glow}`}
+          className={`w-full max-w-md ${!isLogin && (role === 'student' || role === 'teacher') ? 'md:max-w-2xl' : 'md:max-w-md'} shadow-2xl p-6 md:p-8 backdrop-blur-3xl border border-white/10 bg-gray-900/95 transition-all duration-300 ${currentTheme.glow}`}
         >
           {/* Header Branding — now role-aware messaging */}
           <div className="flex flex-col items-center text-center mb-6">
@@ -526,16 +530,16 @@ export function StudentAuthNew() {
                 transition={{ duration: 0.25 }}
                 className="text-center"
               >
-                <h1 className="text-2xl font-black tracking-tight text-gray-950 dark:text-white flex items-center gap-1.5 justify-center">
+                <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5 justify-center">
                   <span>EduTrack LMS</span>
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full bg-gray-100/80 dark:bg-gray-800/80 font-semibold border border-gray-200/50 dark:border-gray-700/50 ${currentTheme.text}`}>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full bg-gray-800/80 font-semibold border border-gray-700/50 ${currentTheme.text}`}>
                     {currentTheme.label}
                   </span>
                 </h1>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mt-1.5">
+                <p className="text-sm font-medium text-gray-300 mt-1.5">
                   {isLogin ? currentTheme.headline : `Create a new ${role} account`}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   {isLogin ? currentTheme.subtitle : currentTheme.tagline}
                 </p>
               </motion.div>
@@ -543,7 +547,7 @@ export function StudentAuthNew() {
           </div>
 
           {/* Role Segment Selector (Floating Slider Animation) */}
-          <div className="relative flex p-1 bg-gray-100 dark:bg-gray-800/80 rounded-xl mb-6 border border-gray-200/50 dark:border-gray-700/50">
+          <div className="relative flex p-1 bg-gray-800/80 rounded-xl mb-6 border border-gray-700/50">
             {(['student', 'teacher', 'admin'] as const).map((r) => {
               const isActive = role === r;
               return (
@@ -555,13 +559,13 @@ export function StudentAuthNew() {
                     setError('');
                   }}
                   className={`relative flex-1 py-2 text-xs md:text-sm font-semibold rounded-lg z-10 transition-colors ${
-                    isActive ? 'text-gray-950 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    isActive ? 'text-white' : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="activeRoleSlider"
-                      className="absolute inset-0 bg-white dark:bg-gray-700 rounded-lg shadow-sm -z-10"
+                      className="absolute inset-0 bg-gray-700 rounded-lg shadow-sm -z-10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -572,7 +576,7 @@ export function StudentAuthNew() {
           </div>
 
           {/* Auth Mode Toggle (Login vs Register) */}
-          <div className="flex gap-2 mb-6 p-1 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200/30 dark:border-gray-700/30">
+          <div className="flex gap-2 mb-6 p-1 bg-gray-800/40 rounded-lg border border-gray-700/30">
             <button
               onClick={() => {
                 setIsLogin(true);
@@ -580,8 +584,8 @@ export function StudentAuthNew() {
               }}
               className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
                 isLogin
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? 'bg-gray-700 text-white shadow-sm'
+                  : 'text-gray-400 hover:text-gray-300'
               }`}
             >
               Sign In
@@ -593,8 +597,8 @@ export function StudentAuthNew() {
               }}
               className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
                 !isLogin
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? 'bg-gray-700 text-white shadow-sm'
+                  : 'text-gray-400 hover:text-gray-300'
               }`}
             >
               Register
@@ -619,7 +623,7 @@ export function StudentAuthNew() {
               className="space-y-4"
             >
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -629,14 +633,14 @@ export function StudentAuthNew() {
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                     placeholder="name@university.edu"
-                    className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                    className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -646,7 +650,7 @@ export function StudentAuthNew() {
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                     placeholder="••••••••"
-                    className={`w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                    className={`w-full pl-10 pr-10 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                     required
                   />
                   <button
@@ -680,7 +684,7 @@ export function StudentAuthNew() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                     Full Name *
                   </label>
                   <div className="relative">
@@ -690,7 +694,7 @@ export function StudentAuthNew() {
                       value={signupData.name}
                       onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
                       placeholder="Jane Doe"
-                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                       required
                     />
                   </div>
@@ -699,7 +703,7 @@ export function StudentAuthNew() {
                 {/* ID Fields based on role */}
                 {role === 'student' ? (
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                       Student ID *
                     </label>
                     <div className="relative">
@@ -709,14 +713,14 @@ export function StudentAuthNew() {
                         value={signupData.studentId}
                         onChange={(e) => setSignupData({ ...signupData, studentId: e.target.value })}
                         placeholder="2024CS001"
-                        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                        className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                         required
                       />
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                       Employee ID *
                     </label>
                     <div className="relative">
@@ -726,7 +730,7 @@ export function StudentAuthNew() {
                         value={signupData.employeeId}
                         onChange={(e) => setSignupData({ ...signupData, employeeId: e.target.value })}
                         placeholder="EMP2024001"
-                        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                        className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                         required
                       />
                     </div>
@@ -737,7 +741,7 @@ export function StudentAuthNew() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email Address */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                     Email Address *
                   </label>
                   <div className="relative">
@@ -747,7 +751,7 @@ export function StudentAuthNew() {
                       value={signupData.email}
                       onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
                       placeholder="email@university.edu"
-                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                       required
                     />
                   </div>
@@ -755,7 +759,7 @@ export function StudentAuthNew() {
 
                 {/* Phone Number */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                     Phone Number *
                   </label>
                   <div className="relative">
@@ -765,7 +769,7 @@ export function StudentAuthNew() {
                       value={signupData.phone}
                       onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
                       placeholder="+91 98765 43210"
-                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                       required
                     />
                   </div>
@@ -777,7 +781,7 @@ export function StudentAuthNew() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Department */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                       Department *
                     </label>
                     <div className="relative">
@@ -785,7 +789,7 @@ export function StudentAuthNew() {
                       <select
                         value={signupData.department}
                         onChange={(e) => setSignupData({ ...signupData, department: e.target.value })}
-                        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white appearance-none ${currentTheme.focusRing}`}
+                        className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all appearance-none ${currentTheme.focusRing}`}
                         required
                       >
                         <option value="">Select Department</option>
@@ -801,7 +805,7 @@ export function StudentAuthNew() {
                   {/* Student Semester */}
                   {role === 'student' && (
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                      <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                         Semester *
                       </label>
                       <div className="relative">
@@ -809,7 +813,7 @@ export function StudentAuthNew() {
                         <select
                           value={signupData.semester}
                           onChange={(e) => setSignupData({ ...signupData, semester: e.target.value })}
-                          className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white appearance-none ${currentTheme.focusRing}`}
+                          className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all appearance-none ${currentTheme.focusRing}`}
                           required
                         >
                           <option value="">Select Semester</option>
@@ -826,7 +830,7 @@ export function StudentAuthNew() {
                   {/* Teacher Specialization */}
                   {role === 'teacher' && (
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                      <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                         Specialization
                       </label>
                       <div className="relative">
@@ -836,7 +840,7 @@ export function StudentAuthNew() {
                           value={signupData.specialization}
                           onChange={(e) => setSignupData({ ...signupData, specialization: e.target.value })}
                           placeholder="e.g. Artificial Intelligence"
-                          className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                          className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                         />
                       </div>
                     </div>
@@ -847,7 +851,7 @@ export function StudentAuthNew() {
               {/* Courses list for teacher signup */}
               {role === 'teacher' && signupData.department && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                     Courses you will teach
                   </label>
                   {loadingCourses ? (
@@ -867,8 +871,8 @@ export function StudentAuthNew() {
                             key={c._id}
                             className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer border transition-colors ${
                               isSelected
-                                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-900'
+                                ? 'bg-emerald-900/40 border-emerald-500/60'
+                                : 'bg-gray-800/60 border-gray-700 hover:border-emerald-500/50'
                             }`}
                           >
                             <input
@@ -878,7 +882,7 @@ export function StudentAuthNew() {
                               className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                              <p className="text-sm font-semibold text-white truncate">
                                 {c.courseName}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -896,7 +900,7 @@ export function StudentAuthNew() {
               {/* Password Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                     Password *
                   </label>
                   <div className="relative">
@@ -906,14 +910,14 @@ export function StudentAuthNew() {
                       value={signupData.password}
                       onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
                       placeholder="••••••••"
-                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">
                     Confirm Password *
                   </label>
                   <div className="relative">
@@ -923,7 +927,7 @@ export function StudentAuthNew() {
                       value={signupData.confirmPassword}
                       onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
                       placeholder="••••••••"
-                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:border-transparent dark:bg-gray-800/80 dark:text-white transition-all bg-white ${currentTheme.focusRing}`}
+                      className={`w-full pl-10 pr-4 py-2.5 border border-gray-600 rounded-xl focus:ring-2 focus:border-transparent bg-gray-800/80 text-white placeholder-gray-300 transition-all ${currentTheme.focusRing}`}
                       required
                     />
                   </div>

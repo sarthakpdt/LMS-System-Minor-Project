@@ -202,7 +202,7 @@ export default function AILearningAssistant({ userId, userName = 'Student' }: Pr
         <div className="space-y-4">
 
           {/* Overall Status */}
-          <div className={`bg-gradient-to-r ${OVERALL_COLORS[feedback.overallStatus] || 'from-indigo-500 to-purple-600'} rounded-2xl p-4 text-white`}>
+          <div className={`bg-gradient-to-r ${OVERALL_COLORS[feedback.overallStatus] || 'from-indigo-500 to-purple-600'} rounded-2xl p-4 text-white hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs text-white/70 mb-0.5">Overall Status</p>
@@ -219,7 +219,7 @@ export default function AILearningAssistant({ userId, userName = 'Student' }: Pr
 
           {/* Performance Summary */}
           {feedback.summary && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm p-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-indigo-500" />
                 <h4 className="font-semibold text-gray-900 text-sm">Performance Summary</h4>
@@ -230,7 +230,7 @@ export default function AILearningAssistant({ userId, userName = 'Student' }: Pr
 
           {/* Strengths */}
           {feedback.strengths && feedback.strengths.length > 0 && (
-            <div className="bg-white rounded-xl border border-green-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-green-200 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-4 py-3 border-b border-green-100 flex items-center gap-2 bg-green-50">
                 <Star className="w-4 h-4 text-green-600" />
                 <h4 className="font-semibold text-green-800 text-sm">Strengths</h4>
@@ -248,7 +248,7 @@ export default function AILearningAssistant({ userId, userName = 'Student' }: Pr
 
           {/* Areas of Improvement */}
           {feedback.areasOfImprovement && feedback.areasOfImprovement.length > 0 && (
-            <div className="bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-4 py-3 border-b border-orange-100 flex items-center gap-2 bg-orange-50">
                 <TrendingUp className="w-4 h-4 text-orange-600" />
                 <h4 className="font-semibold text-orange-800 text-sm">Areas of Improvement</h4>
@@ -266,7 +266,7 @@ export default function AILearningAssistant({ userId, userName = 'Student' }: Pr
 
           {/* Subject Scores */}
           {allAreas.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-blue-500" />
                 <h4 className="font-semibold text-gray-900 text-sm">Score Breakdown</h4>
@@ -289,7 +289,7 @@ export default function AILearningAssistant({ userId, userName = 'Student' }: Pr
 
           {/* Tips */}
           {feedback.improvementTips && feedback.improvementTips.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-yellow-500" />
                 <h4 className="font-semibold text-gray-900 text-sm">Study Tips</h4>

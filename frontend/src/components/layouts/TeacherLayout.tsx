@@ -32,9 +32,9 @@ function SubjectSwitcher() {
 
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl px-3 py-2.5 transition-all"
+        className="w-full flex items-center gap-3 bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl px-3 py-2.5 transition-all dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
       >
-        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 bg-white/20 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <BookOpen className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0 text-left">
@@ -54,7 +54,7 @@ function SubjectSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-2 border-b border-gray-100">
             Switch Subject
           </p>
@@ -118,12 +118,12 @@ export function TeacherLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
       <aside className="w-64 bg-gradient-to-b from-indigo-600 to-violet-800 text-white flex flex-col">
         {/* Logo */}
         <div className="p-5 border-b border-indigo-400/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/20 rounded-[1.5rem] flex items-center justify-center dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <MessageSquare className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -167,7 +167,7 @@ export function TeacherLayout() {
         {/* User + Logout */}
         <div className="p-4 border-t border-indigo-400/40 space-y-3">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 dark:bg-slate-800">
               <span className="text-sm font-bold text-white">
                 {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TC'}
               </span>
@@ -179,7 +179,7 @@ export function TeacherLayout() {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 text-indigo-100 hover:bg-white/10 rounded-lg transition-colors text-sm"
+            className="w-full flex items-center gap-2 px-3 py-2 text-indigo-100 hover:bg-white/10 rounded-[1.5rem] transition-colors text-sm dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>

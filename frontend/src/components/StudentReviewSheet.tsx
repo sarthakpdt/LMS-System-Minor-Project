@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Download, Copy, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { Eye, Download, Copy, CheckCircle, AlertCircle, Sparkles, FileText } from 'lucide-react';
 
 const API = 'http://localhost:5000/api';
 const FILE_BASE = 'http://localhost:5000';
@@ -132,11 +132,16 @@ export function StudentReviewSheet({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div className="p-8">
+      <div className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Reviewed Answer Sheet</h2>
-          <p className="text-sm text-gray-500 mt-1">Review your submission and teacher's feedback</p>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Your Reviewed Answer Sheet</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">Review your submission and teacher's feedback</p>
         </div>
         <button onClick={onClose}
           className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">
@@ -167,7 +172,7 @@ export function StudentReviewSheet({
           <p className="text-sm text-gray-700 mb-4">{submission.overallFeedback}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {strengths.length > 0 && (
-              <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="bg-white rounded-[1.5rem] p-8 border border-green-200 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <p className="text-sm font-bold text-green-700 mb-2">✅ Your Strengths</p>
                 <ul className="space-y-1">
                   {strengths.map((s, i) => (
@@ -179,7 +184,7 @@ export function StudentReviewSheet({
               </div>
             )}
             {improvementAreas.length > 0 && (
-              <div className="bg-white rounded-lg p-4 border border-orange-200">
+              <div className="bg-white rounded-[1.5rem] p-8 border border-orange-200 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                 <p className="text-sm font-bold text-orange-700 mb-2">📈 Areas to Improve</p>
                 <ul className="space-y-1">
                   {improvementAreas.map((a, i) => (
@@ -240,7 +245,7 @@ export function StudentReviewSheet({
               const hasAIFeedback = aiFeedback[q._id];
 
               return (
-                <div key={q._id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div key={q._id} className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                   {/* ── Question Header ── */}
                   <button
                     onClick={() => setExpandedQ(isOpen ? null : q._id)}
@@ -275,7 +280,7 @@ export function StudentReviewSheet({
                       {/* ── Your Answer ── */}
                       <div>
                         <p className="text-xs font-bold text-gray-600 mb-2">Your Answer:</p>
-                        <div className="bg-white rounded-lg p-3 border border-gray-200 text-sm text-gray-700 font-mono">
+                        <div className="bg-white rounded-[1.5rem] p-4 border border-gray-200/80 text-sm text-gray-700 font-mono hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                           {ans.studentAnswer || <span className="text-gray-400 italic">No answer provided</span>}
                         </div>
                         {ans.fileUrl && (
@@ -325,7 +330,7 @@ export function StudentReviewSheet({
                           )}
                         </button>
                         {hasAIFeedback && (
-                          <div className="mt-3 bg-white rounded-lg p-3 border border-indigo-200 text-sm text-gray-700 space-y-1">
+                          <div className="mt-3 bg-white rounded-[1.5rem] p-4 border border-indigo-200 text-sm text-gray-700 space-y-1 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
                             <p className="text-xs font-bold text-indigo-700 mb-1">💡 Personalized Tips:</p>
                             {aiFeedback[q._id].split('\n').map((tip, i) => (
                               tip.trim() && (
@@ -348,7 +353,7 @@ export function StudentReviewSheet({
       </div>
 
       {/* ── Action Footer ── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div className="bg-white rounded-xl border border-gray-200/80 p-4 flex items-center justify-between gap-3 flex-wrap hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="text-sm text-gray-600">
           📊 Submitted on {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString('en-IN') : '—'}
         </div>

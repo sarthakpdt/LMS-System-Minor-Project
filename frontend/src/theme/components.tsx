@@ -123,6 +123,8 @@ interface StatCardProps {
   change?: { value: number; isPositive: boolean };
   gradient?: string;
   role?: 'admin' | 'student' | 'teacher';
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -132,6 +134,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   change,
   gradient = 'from-blue-500 to-blue-600',
   role,
+  className = '',
+  style,
 }) => {
   const roleGradients = {
     admin: 'from-purple-500 to-indigo-600',
@@ -149,14 +153,22 @@ export const StatCard: React.FC<StatCardProps> = ({
   const glowClass = role ? roleGlow[role] : 'shadow-blue-500/20';
 
   return (
-    <Card gradient hover className="relative overflow-hidden group">
+    <Card 
+      gradient 
+      hover 
+      className={`relative overflow-hidden group ${className}`} 
+      style={{ padding: '1.5rem', ...style }}
+    >
       {/* Gradient background accent */}
       <div className={`absolute -right-6 -top-6 w-28 h-28 bg-gradient-to-br ${finalGradient} opacity-[0.07] rounded-full transition-transform duration-500 group-hover:scale-125`} />
       <div className={`absolute -right-2 -bottom-2 w-16 h-16 bg-gradient-to-br ${finalGradient} opacity-[0.04] rounded-full`} />
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col h-full">
         <div className="flex items-center justify-between mb-4">
-          <div className={`p-3 bg-gradient-to-br ${finalGradient} rounded-xl text-white shadow-lg ${glowClass}`}>
+          <div 
+            className={`flex items-center justify-center bg-gradient-to-br ${finalGradient} rounded-xl text-white shadow-md ${glowClass} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ease-out`}
+            style={{ width: '3.5rem', height: '3.5rem', flexShrink: 0 }}
+          >
             {icon}
           </div>
           {change && (

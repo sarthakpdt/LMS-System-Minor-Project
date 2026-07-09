@@ -21,20 +21,47 @@ export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    { to: '/students', icon: Users, label: 'Students' },
-    { to: '/student-approvals', icon: UserCheck, label: 'Student Approvals' },
-    { to: '/courses', icon: BookOpen, label: 'Courses' },
-    { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
-    { to: '/assignments', icon: FileText, label: 'Assignments' },
-    { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
-    { to: '/quizzes', icon: Shield, label: 'Quiz System' },
-    { to: '/grading', icon: Sparkles, label: 'Auto Grading' },
-    { to: '/performance-levels', icon: BarChart3, label: 'Performance Levels' },
-    { to: '/notifications', icon: Bell, label: 'Notifications' },
-    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+  const navGroups = [
+    {
+      label: 'OVERVIEW',
+      items: [
+        { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+        { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+      ]
+    },
+    {
+      label: 'USER MANAGEMENT',
+      items: [
+        { to: '/students', icon: Users, label: 'Students' },
+        { to: '/student-approvals', icon: UserCheck, label: 'Student Approvals' },
+      ]
+    },
+    {
+      label: 'ACADEMICS',
+      items: [
+        { to: '/courses', icon: BookOpen, label: 'Courses' },
+        { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
+        { to: '/assignments', icon: FileText, label: 'Assignments' },
+        { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
+        { to: '/quizzes', icon: Shield, label: 'Quiz System' },
+      ]
+    },
+    {
+      label: 'PERFORMANCE',
+      items: [
+        { to: '/grading', icon: Sparkles, label: 'Auto Grading' },
+        { to: '/performance-levels', icon: BarChart3, label: 'Performance Levels' },
+      ]
+    },
+    {
+      label: 'SYSTEM',
+      items: [
+        { to: '/notifications', icon: Bell, label: 'Notifications' },
+      ]
+    }
   ];
+
+  const allNavItems = navGroups.flatMap(g => g.items);
 
   // Listen to scroll events to show/hide the scroll-to-top button
   useEffect(() => {
@@ -79,7 +106,7 @@ export function AdminLayout() {
     let currentPath = '';
     pathSegments.forEach((segment, idx) => {
       currentPath += `/${segment}`;
-      const matchingNav = navItems.find(item => item.to === currentPath);
+      const matchingNav = allNavItems.find(item => item.to === currentPath);
       const label = matchingNav
         ? matchingNav.label
         : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
@@ -91,21 +118,21 @@ export function AdminLayout() {
   const breadcrumbs = getBreadcrumbs();
 
   const sidebarVariants = {
-    open: { width: 256 },
+    open: { width: 280 },
     collapsed: { width: 80 }
   };
 
   const SidebarContent = ({ isMobile = false }) => (
-    <div className="flex flex-col h-full bg-gradient-to-b from-purple-700 via-purple-800 to-indigo-900 dark:from-purple-950 dark:via-purple-900 dark:to-indigo-950 text-white select-none">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-950 dynamic-text-white select-none hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
       {/* Logo Section */}
-      <div className="p-5 border-b border-white/10 flex items-center justify-between">
+      <div className="p-5 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <motion.div
-            className="w-10 h-10 bg-gradient-to-br from-white/30 to-white/10 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-inner"
+            className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Shield className="w-5 h-5 text-white" />
+            <Shield className="w-5 h-5 dynamic-text-white" />
           </motion.div>
           {(sidebarOpen || isMobile) && (
             <motion.div
@@ -113,57 +140,69 @@ export function AdminLayout() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
             >
-              <h1 className="font-bold text-white text-lg tracking-wide">EduTrack</h1>
-              <p className="text-[10px] uppercase font-bold text-purple-200 tracking-widest">Admin Panel</p>
+              <h1 className="font-bold dynamic-text-white text-lg tracking-wide">EduTrack</h1>
+              <p className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-300 tracking-widest">Admin Panel</p>
             </motion.div>
           )}
         </div>
-        {!isMobile && (
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 hover:bg-white/10 rounded-lg hidden md:block text-purple-200 hover:text-white transition-colors"
-          >
-            {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-        )}
       </div>
 
       {/* Navigation list */}
       <TooltipProvider>
-        <nav className="flex-1 p-3 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-white/10">
-          {navItems.map((item) => (
-            <Tooltip key={item.to} delayDuration={50}>
-              <TooltipTrigger asChild>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  onClick={() => isMobile && setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-                      isActive
-                        ? 'bg-white/15 text-white font-medium shadow-md border border-white/10 backdrop-blur-md'
-                        : 'text-purple-100 hover:bg-white/5 hover:text-white'
-                    }`
-                  }
-                >
-                  <item.icon className="w-5 h-5 flex-shrink-0 text-purple-200 group-hover:text-white transition-colors" />
-                  {(sidebarOpen || isMobile) && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-sm tracking-wide"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </NavLink>
-              </TooltipTrigger>
-              {(!sidebarOpen && !isMobile) && (
-                <TooltipContent side="right" className="bg-slate-900 border border-slate-800 text-white font-medium px-3 py-1.5 shadow-xl text-xs rounded-lg">
-                  {item.label}
-                </TooltipContent>
+        <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-white/10">
+          {navGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-0.5">
+              {(sidebarOpen || isMobile) && (
+                <div className="mx-2 mb-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 rounded-md border border-amber-100/50 dark:border-amber-500/20">
+                  <p className="text-[11px] font-bold text-amber-800 dark:text-amber-500 uppercase tracking-[0.1em]">
+                    {group.label}
+                  </p>
+                </div>
               )}
-            </Tooltip>
+              {group.items.map((item) => {
+                const isActive = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
+                
+                return (
+                  <Tooltip key={item.to} delayDuration={50}>
+                    <TooltipTrigger asChild>
+                      <NavLink
+                        to={item.to}
+                        end={(item as any).end}
+                        onClick={() => isMobile && setMobileOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative ${
+                          isActive
+                            ? 'bg-indigo-50/50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 font-medium'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {/* Active Indicator Accent Line */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="active-indicator"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-600 dark:bg-indigo-500 rounded-r-full"
+                          />
+                        )}
+                        
+                        <div className={`flex items-center justify-center w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'}`}>
+                          <item.icon className="w-5 h-5" />
+                        </div>
+                        
+                        {(sidebarOpen || isMobile) && (
+                          <span className="text-sm tracking-wide truncate">
+                            {item.label}
+                          </span>
+                        )}
+                      </NavLink>
+                    </TooltipTrigger>
+                    {(!sidebarOpen && !isMobile) && (
+                      <TooltipContent side="right" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200/80 dark:border-slate-700 font-medium px-3 py-1.5 shadow-lg text-xs rounded-[1.5rem] hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                        {item.label}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })}
+          </div>
           ))}
         </nav>
       </TooltipProvider>
@@ -171,7 +210,7 @@ export function AdminLayout() {
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-white/10 space-y-3">
         {/* Profile Card */}
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 backdrop-blur-sm">
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 backdrop-blur-sm dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="w-9 h-9 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
             <span className="text-sm font-semibold text-white">AD</span>
           </div>
@@ -181,8 +220,8 @@ export function AdminLayout() {
               animate={{ opacity: 1 }}
               className="min-w-0"
             >
-              <p className="text-xs font-semibold text-white truncate">{user?.name || 'Administrator'}</p>
-              <p className="text-[10px] text-purple-300 truncate">System Admin</p>
+              <p className="text-xs font-semibold dynamic-text-white truncate">{user?.name || 'Administrator'}</p>
+              <p className="text-[10px] text-gray-500 dark:text-purple-300 truncate">System Admin</p>
             </motion.div>
           )}
         </div>
@@ -209,7 +248,7 @@ export function AdminLayout() {
                   <LogOut className="w-5 h-5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-red-950 border border-red-800 text-red-100 font-semibold px-3 py-1.5 shadow-xl text-xs rounded-lg">
+              <TooltipContent side="right" className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-100 font-semibold px-3 py-1.5 shadow-lg text-xs rounded-lg">
                 Sign Out
               </TooltipContent>
             </Tooltip>
@@ -220,7 +259,7 @@ export function AdminLayout() {
   );
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 overflow-hidden">
+    <div className="flex h-screen dynamic-bg-main transition-colors duration-300 overflow-hidden">
       {/* Desktop Sidebar */}
       <motion.aside
         initial="open"
@@ -239,7 +278,7 @@ export function AdminLayout() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4 }}
-          className="sticky top-0 z-10 bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl border-b border-gray-200/80 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between shadow-xs transition-colors duration-300"
+          className="sticky top-0 z-10 premium-glass px-6 py-4 flex items-center justify-between hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
         >
           {/* Left: Hamburger + Breadcrumbs */}
           <div className="flex items-center gap-4">
@@ -320,15 +359,8 @@ export function AdminLayout() {
 
         {/* Viewport content */}
         <main id="admin-main-viewport" className="flex-1 overflow-auto relative scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-slate-800">
-          {/* Background Watermark Watermark Illustration */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden z-[0] flex items-center justify-center">
-            <img
-              src="/illustrations/admin-hero.png"
-              alt="Admin background illustration"
-              className="w-full max-w-[750px] h-auto opacity-[0.05] dark:opacity-[0.02] object-contain select-none filter saturate-[0.3]"
-              draggable={false}
-            />
-          </div>
+          {/* Animated Premium Background */}
+          <div className="absolute inset-0 pointer-events-none z-[0] hero-gradient" />
           
           {/* Actual Child Page */}
           <motion.div

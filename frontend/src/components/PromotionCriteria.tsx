@@ -63,7 +63,7 @@ const examplePromotionScenarios = [
 
 export function PromotionCriteria() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-gray-900 mb-2">Automatic Promotion System</h3>
         <p className="text-gray-600">Students are automatically promoted based on consistent performance. Manual promotion is disabled.</p>
@@ -88,15 +88,15 @@ export function PromotionCriteria() {
               </div>
               <p className="text-sm text-gray-700 mb-3">{rule.description}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                <div className="bg-white rounded-lg p-3">
+                <div className="bg-white rounded-[1.5rem] p-4 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <p className="text-gray-600 text-xs mb-1">Minimum Score</p>
                   <p className="font-bold text-gray-900">{rule.threshold}%</p>
                 </div>
-                <div className="bg-white rounded-lg p-3">
+                <div className="bg-white rounded-[1.5rem] p-4 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <p className="text-gray-600 text-xs mb-1">Consecutive Quizzes</p>
                   <p className="font-bold text-gray-900">{rule.consecutiveRequired}</p>
                 </div>
-                <div className="bg-white rounded-lg p-3">
+                <div className="bg-white rounded-[1.5rem] p-4 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                   <p className="text-gray-600 text-xs mb-1">Quiz Type</p>
                   <p className="font-bold text-gray-900">{rule.fromLevel} Level</p>
                 </div>
@@ -107,7 +107,7 @@ export function PromotionCriteria() {
       </div>
 
       {/* Important Notes */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-[1.5rem] p-6 mb-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
           <div>
@@ -158,7 +158,7 @@ export function PromotionCriteria() {
               
               <div className="space-y-2">
                 {scenario.quizzes.map((quiz, qIdx) => (
-                  <div key={qIdx} className="flex items-center justify-between bg-white rounded-lg p-3">
+                  <div key={qIdx} className="flex items-center justify-between bg-white rounded-[1.5rem] p-3 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                     <span className="text-sm font-medium text-gray-900">{quiz.quiz}</span>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-bold ${

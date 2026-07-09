@@ -30,7 +30,7 @@ export default function ConflictViewer({ conflicts }: ConflictViewerProps) {
   const warningsCount = conflicts.filter(c => c.severity === 'warning').length;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
       <div className="flex items-center justify-between border-b pb-3">
         <div>
           <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">

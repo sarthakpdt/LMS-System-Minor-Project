@@ -134,7 +134,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
           <select
             value={branch}
             onChange={(e) => setBranch(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white"
+            className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             {config.branches.map((b) => (
               <option key={b.code} value={b.code}>{b.name} ({b.code})</option>
@@ -146,7 +146,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white"
+            className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             {(selectedBranch?.years || []).map((y) => (
               <option key={y.yearNumber} value={y.yearNumber}>{y.label}</option>
@@ -186,18 +186,18 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
                 placeholder="Course name (e.g. DBMS)"
                 value={row.name}
                 onChange={(e) => updateRow(row.key, { name: e.target.value })}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white"
+                className="border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               />
               <input
                 placeholder="Code (e.g. CS301)"
                 value={row.code}
                 onChange={(e) => updateRow(row.key, { code: e.target.value.toUpperCase() })}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white uppercase"
+                className="border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white uppercase dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               />
               <select
                 value={row.type}
                 onChange={(e) => updateRow(row.key, { type: e.target.value as 'theory' | 'lab' })}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white"
+                className="border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               >
                 <option value="theory">Theory</option>
                 <option value="lab">Lab only</option>
@@ -211,7 +211,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
                   min={1}
                   value={row.weeklyHours}
                   onChange={(e) => updateRow(row.key, { weeklyHours: Number(e.target.value) })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white mt-1"
+                  className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white mt-1 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 />
               </div>
               <div>
@@ -221,7 +221,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
                   min={30}
                   value={row.lectureDuration}
                   onChange={(e) => updateRow(row.key, { lectureDuration: Number(e.target.value) })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white mt-1"
+                  className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white mt-1 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 />
               </div>
               <div>
@@ -229,7 +229,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
                 <select
                   value={row.facultyId}
                   onChange={(e) => updateRow(row.key, { facultyId: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white mt-1"
+                  className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white mt-1 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 >
                   <option value="">Select faculty</option>
                   {teachers.map((t) => (
@@ -261,7 +261,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
                     step={0.5}
                     value={row.labDuration}
                     onChange={(e) => updateRow(row.key, { labDuration: Number(e.target.value) })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white mt-1"
+                    className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white mt-1 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   />
                 </div>
                 {row.hasLab && row.type === 'theory' && (
@@ -273,7 +273,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
                       max={5}
                       value={row.labSessionsPerWeek}
                       onChange={(e) => updateRow(row.key, { labSessionsPerWeek: Number(e.target.value) })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white mt-1"
+                      className="w-full border border-gray-200/80 rounded-[1.5rem] px-3 py-2 text-xs bg-white mt-1 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                     />
                   </div>
                 )}

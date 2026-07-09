@@ -177,14 +177,19 @@ export function Courses() {
   // ── Student view ──────────────────────────────────────────────────────────
   if (isStudent) {
     return (
-      <div className="p-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-semibold text-gray-900 mb-2">My Courses</h2>
-          <p className="text-gray-600">Courses you are enrolled in this semester.</p>
+      <div className="p-8 space-y-8">
+        <div>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">My Courses</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">Courses you are enrolled in this semester.</p>
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -208,13 +213,13 @@ export function Courses() {
             <p className="text-sm mt-1">Your admin will enroll you based on your department and semester.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {filtered.map(course => (
               <div
                 key={course._id}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50"
               >
-                <div className="p-6 flex items-center justify-between gap-4">
+                <div className="p-8 flex items-center justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
                     <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
                       <BookOpen className="w-6 h-6 text-indigo-600" />
@@ -278,11 +283,18 @@ export function Courses() {
 
   // ── Admin / Teacher view (unchanged) ─────────────────────────────────────
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-8 space-y-8">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-semibold text-gray-900 mb-2">Courses</h2>
-          <p className="text-gray-600">{isAdmin ? 'Create courses, assign teachers, and enroll students by semester.' : 'Your assigned courses and enrolled students.'}</p>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-[1rem] flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Courses</h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 ml-16">
+            {isAdmin ? 'Create courses, assign teachers, and enroll students by semester.' : 'Your assigned courses and enrolled students.'}
+          </p>
         </div>
         {isAdmin && (
           <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -292,7 +304,7 @@ export function Courses() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200/80 p-8 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -318,10 +330,10 @@ export function Courses() {
       {loading ? (
         <div className="flex items-center justify-center py-20 text-gray-500"><Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading courses...</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filtered.map(course => (
-            <div key={course._id} className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              <div className="p-6">
+            <div key={course._id} className="bg-white rounded-[1.5rem] border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+              <div className="p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -393,7 +405,7 @@ export function Courses() {
                       <p className="text-xs font-semibold text-gray-500 uppercase mb-3">{courseStudents[course._id].length} Enrolled Students</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                         {courseStudents[course._id].map((s: any) => (
-                          <div key={s._id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                          <div key={s._id} className="flex items-center gap-3 bg-white border border-gray-200/80 rounded-[1.5rem] px-3 py-2 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                             <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
                               <span className="text-xs font-bold text-indigo-600">{s.name?.[0]?.toUpperCase()}</span>
                             </div>
@@ -428,7 +440,7 @@ export function Courses() {
       {/* Create Course Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-xl font-semibold text-gray-900">Create New Course</h3>
               <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
@@ -491,7 +503,7 @@ export function Courses() {
       {/* Assign Teacher Modal */}
       {assignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
             <div className="flex items-center justify-between p-6 border-b">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">Assign Teacher</h3>
@@ -540,7 +552,7 @@ export function Courses() {
       {/* Enroll Students Modal */}
       {enrollModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
             <div className="flex items-center justify-between p-6 border-b">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">Enroll Students</h3>

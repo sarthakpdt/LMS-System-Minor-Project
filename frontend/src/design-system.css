@@ -528,3 +528,28 @@
     pointer-events: auto;
   }
 }
+
+/* ================================================================
+   DYNAMIC INTERACTION AUDIT CLASSES (MANUALLY INJECTED)
+   ================================================================ */
+.hover\:-translate-y-1:hover {
+  transform: translateY(-0.25rem) !important;
+}
+
+.hover\:shadow-xl:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .dark\:hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.transition-all {
+  transition-property: all !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.duration-300 {
+  transition-duration: 300ms !important;
+}

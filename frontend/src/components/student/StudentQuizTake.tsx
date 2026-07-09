@@ -359,7 +359,7 @@ export function StudentQuizTake() {
   // ERROR
   if (error) return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="bg-white rounded-xl border border-red-200 p-8 max-w-md w-full text-center shadow-lg">
+      <div className="bg-white rounded-xl border border-red-200 p-8 max-w-md w-full text-center shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h3 className="text-xl font-bold text-gray-900 mb-2">Oops!</h3>
         <p className="text-gray-600 mb-6">{error}</p>
@@ -373,7 +373,7 @@ export function StudentQuizTake() {
   // ─────────────────────────────────────────────────────────────────────────────
   if (!quizStarted && quiz) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 max-w-md w-full">
+      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xl p-8 max-w-md w-full hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
         <div className="text-center mb-6">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Camera className="w-10 h-10 text-green-600" />
@@ -477,7 +477,7 @@ export function StudentQuizTake() {
             <p className="text-white/80 mb-6">Quiz Completed</p>
             <div className="text-7xl font-black mb-2">{result.percentage.toFixed(1)}%</div>
             <p className="text-xl font-semibold">{result.score} / {result.totalMarks} marks</p>
-            <span className="inline-block mt-3 px-4 py-1 rounded-full text-sm font-medium bg-white/20">
+            <span className="inline-block mt-3 px-4 py-1 rounded-full text-sm font-medium bg-white/20 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               {passed ? '✓ Passed' : '✗ Failed'}
             </span>
           </div>
@@ -496,7 +496,7 @@ export function StudentQuizTake() {
           )}
 
           {displayEvents.length > 0 && (
-            <div className="bg-white rounded-xl border border-orange-200 shadow-sm mb-6 overflow-hidden">
+            <div className="bg-white rounded-xl border border-orange-200 shadow-sm mb-6 overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
               <div className="px-6 py-4 bg-orange-50 border-b border-orange-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="w-5 h-5 text-orange-600" />
@@ -539,7 +539,7 @@ export function StudentQuizTake() {
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-900">Answer Review</h3>
             </div>
@@ -685,7 +685,7 @@ export function StudentQuizTake() {
         </h1>
         <div className="flex items-center gap-2">
           {plagEvents.length > 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 text-white text-xs font-bold">
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 text-white text-xs font-bold dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <ShieldAlert className="w-3.5 h-3.5" /> {plagEvents.length}
             </div>
           )}
@@ -708,7 +708,7 @@ export function StudentQuizTake() {
         </div>
 
         {/* Question Card */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
+        <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm p-5 mb-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-gray-500">Question {currentQ + 1} of {totalQ}</span>
@@ -758,7 +758,7 @@ export function StudentQuizTake() {
         </div>
 
         {/* Navigator */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-xl border border-gray-200/80 p-4 mb-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
           <p className="text-xs text-gray-500 mb-2 font-medium">Question Navigator</p>
           <div className="flex flex-wrap gap-2">
             {quiz.questions.map((q, qi) => (
@@ -782,7 +782,7 @@ export function StudentQuizTake() {
           <button
             onClick={() => setCurrentQ(q => Math.max(0, q - 1))}
             disabled={currentQ === 0}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-[1.5rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-sm dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             <ArrowLeft className="w-4 h-4" /> Previous
           </button>
@@ -814,7 +814,7 @@ export function StudentQuizTake() {
 
         {/* Live violations log */}
         {plagEvents.length > 0 && (
-          <div className="mt-4 bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden">
+          <div className="mt-4 bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
             <div className="px-4 py-3 bg-orange-50 border-b border-orange-200 flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-orange-600" />
               <span className="text-sm font-semibold text-orange-900">Live Violations ({plagEvents.length})</span>
