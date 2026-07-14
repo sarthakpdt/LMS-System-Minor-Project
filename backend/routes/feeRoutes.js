@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const FeeRecord = require('../models/FeeRecord');
 const Transaction = require('../models/Transaction');
+const NotificationService = require('../services/NotificationService');
+const NotificationLog = require('../models/NotificationLog');
 
 const calculateGpaScholarship = (gpa, academicFee) => {
   if (!gpa || gpa < 7.5) return { amount: 0, pct: 0 };
@@ -54,7 +56,9 @@ const syncFeeRecords = async () => {
           messFee: 24000,
           otherCharges: 6500,
           paidAmount: 0,
-          lastPaymentDate: '-'
+          lastPaymentDate: '-',
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          lastReminderSent: null
         });
       }
 
@@ -62,6 +66,9 @@ const syncFeeRecords = async () => {
       record.name = student.name;
       record.program = program;
       record.semester = semester;
+      if (!record.dueDate) {
+        record.dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      }
 
       // Calculate GPA-based scholarship
       const hasManualScholarship = record.scholarship && record.scholarship.id && record.scholarship.id !== 'AUTO_GPA';
@@ -168,16 +175,144 @@ router.get('/accounts/transactions', async (req, res) => {
 
 router.post('/accounts/remind', async (req, res) => {
   try {
-    const { studentId } = req.body;
+    const { studentId, force, adminId } = req.body;
     const record = await FeeRecord.findOne({ studentId });
     if (!record) {
       return res.status(404).json({ success: false, message: 'Fee record not found' });
     }
-    // Mock sending notification/reminder
-    res.json({ 
-      success: true, 
-      message: `Reminder sent successfully to ${record.name} (${record.rollNo})` 
+
+    if (record.dueAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'Student does not have any pending fees' });
+    }
+
+    // Accidental duplicate reminder safeguard (24-hour limit) - disabled for testing phase
+    if (false && record.lastReminderSent && !force) {
+      const hoursSinceLast = (new Date() - new Date(record.lastReminderSent)) / (1000 * 60 * 60);
+      if (hoursSinceLast < 24) {
+        return res.json({
+          success: false,
+          duplicate: true,
+          message: `A reminder was already sent to ${record.name} within the last 24 hours (on ${new Date(record.lastReminderSent).toLocaleString('en-IN')}). Do you want to send it again?`
+        });
+      }
+    }
+
+    const Student = require('../models/Student');
+    const student = await Student.findOne({ studentId });
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Registered student details not found' });
+    }
+
+    const result = await NotificationService.sendNotification({
+      student,
+      type: 'fee_reminder',
+      data: {
+        dueAmount: record.dueAmount,
+        dueDate: record.dueDate
+      },
+      initiatedBy: adminId || (req.user ? req.user.id : null)
     });
+
+    res.json({
+      success: true,
+      message: `Reminder processed for ${record.name}`,
+      details: result
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/accounts/remind-all', async (req, res) => {
+  try {
+    const { force, adminId } = req.body;
+    
+    // Find all students with pending fee dues
+    const records = await FeeRecord.find({ dueAmount: { $gt: 0 } });
+    if (records.length === 0) {
+      return res.status(400).json({ success: false, message: 'No student found with pending dues.' });
+    }
+
+    const Student = require('../models/Student');
+    const results = [];
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const record of records) {
+      // Safeguard check for duplicate reminder in last 24h - disabled for testing phase
+      if (false && record.lastReminderSent && !force) {
+        const hoursSinceLast = (new Date() - new Date(record.lastReminderSent)) / (1000 * 60 * 60);
+        if (hoursSinceLast < 24) {
+          results.push({
+            studentId: record.studentId,
+            name: record.name,
+            skipped: true,
+            message: 'Skipped - Reminder sent in last 24h'
+          });
+          continue;
+        }
+      }
+
+      const student = await Student.findOne({ studentId: record.studentId });
+      if (!student) {
+        results.push({
+          studentId: record.studentId,
+          name: record.name,
+          success: false,
+          error: 'Registered student details not found'
+        });
+        failedCount++;
+        continue;
+      }
+
+      try {
+        const result = await NotificationService.sendNotification({
+          student,
+          type: 'fee_reminder',
+          data: {
+            dueAmount: record.dueAmount,
+            dueDate: record.dueDate
+          },
+          initiatedBy: adminId || (req.user ? req.user.id : null)
+        });
+
+        results.push({
+          studentId: record.studentId,
+          name: record.name,
+          success: result.success,
+          email: result.email,
+          sms: result.sms
+        });
+
+        if (result.success) successCount++;
+        else failedCount++;
+      } catch (err) {
+        results.push({
+          studentId: record.studentId,
+          name: record.name,
+          success: false,
+          error: err.message
+        });
+        failedCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk reminders processed. Sent: ${successCount}, Failed: ${failedCount}, Skipped: ${records.length - successCount - failedCount}`,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/accounts/notifications/logs', async (req, res) => {
+  try {
+    const logs = await NotificationLog.find({})
+      .sort({ timestamp: -1 })
+      .populate('initiatedBy', 'name email role');
+    res.json({ success: true, logs });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -17,6 +17,8 @@ const feeRecordSchema = new mongoose.Schema({
   dueAmount: { type: Number, required: true },
   feeStatus: { type: String, enum: ['paid', 'partial', 'pending', 'overdue'], default: 'pending' },
   lastPaymentDate: { type: String, default: '-' },
+  dueDate: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+  lastReminderSent: { type: Date, default: null },
   scholarship: {
     id: { type: String, default: '' },
     name: { type: String, default: '' },

@@ -30,7 +30,12 @@ import {
   ShieldCheck,
   CreditCard,
   Landmark,
-  Smartphone
+  Smartphone,
+  Bell,
+  History,
+  Mail,
+  MessageSquare,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
@@ -49,6 +54,7 @@ import {
 } from 'recharts';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface StudentFeeRecord {
   _id: string;
@@ -67,6 +73,8 @@ interface StudentFeeRecord {
   dueAmount: number;
   feeStatus: 'paid' | 'partial' | 'pending' | 'overdue';
   lastPaymentDate: string;
+  lastReminderSent?: string;
+  dueDate?: string;
   scholarship?: {
     id: string;
     name: string;
@@ -74,6 +82,24 @@ interface StudentFeeRecord {
     type: string;
     status: string;
   };
+}
+
+interface NotificationLogRecord {
+  _id: string;
+  studentId: string;
+  studentName: string;
+  notificationType: string;
+  deliveryChannel: 'Email' | 'SMS';
+  messageContent: string;
+  deliveryStatus: 'Success' | 'Failed';
+  errorDetails?: string;
+  initiatedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+  timestamp: string;
 }
 
 interface TransactionRecord {
@@ -114,6 +140,7 @@ function formatINRShort(amount: number) {
 export function Accounts() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { user } = useAuth();
 
   const chartTheme = useMemo(() => ({
     text: isDark ? '#94a3b8' : '#64748b',
@@ -133,7 +160,7 @@ export function Accounts() {
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [activeTab, setActiveTab] = useState<'directory' | 'approvals'>('directory');
+  const [activeTab, setActiveTab] = useState<'directory' | 'approvals' | 'logs'>('directory');
 
   // Table Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,6 +168,23 @@ export function Accounts() {
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPlan, setSelectedPlan] = useState("all");
+
+  // Notification Logs state
+  const [notificationLogs, setNotificationLogs] = useState<NotificationLogRecord[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [searchLogQuery, setSearchLogQuery] = useState("");
+  const [selectedChannelFilter, setSelectedChannelFilter] = useState("all");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
+
+  // Safeguard Confirmation Modal States
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    studentId?: string;
+    studentName?: string;
+    isBulk: boolean;
+    message?: string;
+  } | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -190,21 +234,132 @@ export function Accounts() {
     fetchData();
   }, []);
 
-  const sendReminder = async (studentId: string, name: string) => {
+  const fetchNotificationLogs = async () => {
     try {
+      setLoadingLogs(true);
+      const res = await fetch('http://localhost:5000/api/accounts/notifications/logs');
+      const data = await res.json();
+      if (data.success) {
+        setNotificationLogs(data.logs);
+      } else {
+        toast.error('Failed to load notification audit logs.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error loading notification logs.');
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'logs') {
+      fetchNotificationLogs();
+    }
+  }, [activeTab]);
+
+  const sendReminder = async (studentId: string, name: string, force: boolean = false) => {
+    try {
+      setSendingReminder(true);
       const res = await fetch('http://localhost:5000/api/accounts/remind', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ studentId, force, adminId: user?.id })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`Reminder sent to ${name}!`);
+        const details = data.details || {};
+        const emailStatus = details.email?.success ? "Email Sent" : `Email Failed (${details.email?.error || 'Unknown error'})`;
+        const smsStatus = details.sms?.success ? "SMS Sent" : `SMS Failed (${details.sms?.error || 'Unknown error'})`;
+        
+        toast.success(`Reminder processed for ${name}!`, {
+          description: `Status: ${emailStatus} | ${smsStatus}`
+        });
+        
+        if (selectedStudent && selectedStudent.studentId === studentId) {
+          const updatedStudent = { 
+            ...selectedStudent, 
+            lastReminderSent: new Date().toISOString() 
+          };
+          setSelectedStudent(updatedStudent);
+        }
+        
+        fetchData();
+        setShowConfirmModal(false);
+      } else if (data.duplicate) {
+        setConfirmModalData({
+          studentId,
+          studentName: name,
+          isBulk: false,
+          message: data.message
+        });
+        setShowConfirmModal(true);
       } else {
-        toast.error('Failed to send reminder.');
+        toast.error(data.message || 'Failed to send reminder.');
       }
     } catch (error) {
+      console.error(error);
       toast.error('Error contacting server.');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const sendBulkReminders = async (force: boolean = false) => {
+    try {
+      setSendingReminder(true);
+      const res = await fetch('http://localhost:5000/api/accounts/remind-all', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ force, adminId: user?.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || 'Bulk reminders processed successfully.');
+        fetchData();
+        setShowConfirmModal(false);
+      } else {
+        toast.error(data.message || 'Failed to process bulk reminders.');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Error contacting server.');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const handleBulkReminderClick = () => {
+    const studentsWithDues = students.filter(s => s.dueAmount > 0);
+    if (studentsWithDues.length === 0) {
+      toast.info("No students have pending dues.");
+      return;
+    }
+
+    const hasRecentReminder = studentsWithDues.some(s => {
+      if (!s.lastReminderSent) return false;
+      const hoursSinceLast = (new Date().getTime() - new Date(s.lastReminderSent).getTime()) / (1000 * 60 * 60);
+      return hoursSinceLast < 24;
+    });
+
+    if (hasRecentReminder) {
+      setConfirmModalData({
+        isBulk: true,
+        message: "Some students with pending dues have already received reminders within the last 24 hours. Would you like to force resend reminders to all defaulters?"
+      });
+      setShowConfirmModal(true);
+    } else {
+      setConfirmModalData({
+        isBulk: true,
+        message: `Are you sure you want to send fee reminder notifications (Email and SMS) to all ${studentsWithDues.length} students with pending balances?`
+      });
+      setShowConfirmModal(true);
     }
   };
 
@@ -999,10 +1154,28 @@ This is a computer-generated fee ledger statement.
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`px-4 py-2 text-xs font-bold transition duration-200 rounded-lg flex items-center justify-center gap-2 ${
+                  activeTab === 'logs'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-550 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-205 hover:bg-gray-100 dark:hover:bg-slate-750'
+                }`}
+              >
+                <History className="h-3.5 w-3.5" />
+                <span>Notification Logs</span>
+              </button>
             </div>
             
             {activeTab === 'directory' && (
               <div className="flex items-center gap-2 self-end sm:self-auto">
+                <button
+                  onClick={handleBulkReminderClick}
+                  className="h-8 px-2.5 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <Bell className="h-3.5 w-3.5" />
+                  <span>Send Reminder to All Defaulters</span>
+                </button>
                 <button 
                   onClick={exportToExcel}
                   className="h-8 px-2.5 rounded border border-gray-200 dark:border-slate-700 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center gap-1.5 text-gray-700 dark:text-slate-202"
@@ -1012,222 +1185,237 @@ This is a computer-generated fee ledger statement.
                 </button>
               </div>
             )}
-          </div>
-
-          {activeTab === 'directory' ? (
+          </div>          {activeTab === 'directory' && (
             <>
               {/* Filters Bar */}
-          <div className="p-3 bg-gray-50/50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700/40 flex flex-col lg:flex-row gap-2">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search name or roll no..."
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                className="h-8 w-full rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-8 pr-3 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
-              />
-            </div>
+              <div className="p-3 bg-gray-50/50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700/40 flex flex-col lg:flex-row gap-2">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search name or roll no..."
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                    className="h-8 w-full rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-8 pr-3 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  />
+                </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5 text-gray-400" />
-              
-              {/* Program filter */}
-              <select 
-                value={selectedProgram}
-                onChange={(e) => { setSelectedProgram(e.target.value); setCurrentPage(1); }}
-                className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
-              >
-                <option value="all">All Programs</option>
-                {uniquePrograms.map(prog => (
-                  <option key={prog} value={prog}>{prog}</option>
-                ))}
-              </select>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-gray-400" />
+                  
+                  {/* Program filter */}
+                  <select 
+                    value={selectedProgram}
+                    onChange={(e) => { setSelectedProgram(e.target.value); setCurrentPage(1); }}
+                    className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  >
+                    <option value="all">All Programs</option>
+                    {uniquePrograms.map(prog => (
+                      <option key={prog} value={prog}>{prog}</option>
+                    ))}
+                  </select>
 
-              {/* Semester filter */}
-              <select 
-                value={selectedSemester}
-                onChange={(e) => { setSelectedSemester(e.target.value); setCurrentPage(1); }}
-                className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
-              >
-                <option value="all">All Semesters</option>
-                <option value="1">Sem 1</option>
-                <option value="2">Sem 2</option>
-                <option value="3">Sem 3</option>
-                <option value="4">Sem 4</option>
-                <option value="5">Sem 5</option>
-                <option value="6">Sem 6</option>
-                <option value="7">Sem 7</option>
-                <option value="8">Sem 8</option>
-              </select>
+                  {/* Semester filter */}
+                  <select 
+                    value={selectedSemester}
+                    onChange={(e) => { setSelectedSemester(e.target.value); setCurrentPage(1); }}
+                    className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  >
+                    <option value="all">All Semesters</option>
+                    <option value="1">Sem 1</option>
+                    <option value="2">Sem 2</option>
+                    <option value="3">Sem 3</option>
+                    <option value="4">Sem 4</option>
+                    <option value="5">Sem 5</option>
+                    <option value="6">Sem 6</option>
+                    <option value="7">Sem 7</option>
+                    <option value="8">Sem 8</option>
+                  </select>
 
-              {/* Plan filter */}
-              <select 
-                value={selectedPlan}
-                onChange={(e) => { setSelectedPlan(e.target.value); setCurrentPage(1); }}
-                className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
-              >
-                <option value="all">All Plans</option>
-                <option value="annual">Annual</option>
-                <option value="semester">Semester</option>
-              </select>
+                  {/* Plan filter */}
+                  <select 
+                    value={selectedPlan}
+                    onChange={(e) => { setSelectedPlan(e.target.value); setCurrentPage(1); }}
+                    className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  >
+                    <option value="all">All Plans</option>
+                    <option value="annual">Annual</option>
+                    <option value="semester">Semester</option>
+                  </select>
 
-              {/* Status filter */}
-              <select 
-                value={selectedStatus}
-                onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
-                className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
-              >
-                <option value="all">All Status</option>
-                <option value="paid">Paid</option>
-                <option value="partial">Partial</option>
-                <option value="pending">Pending</option>
-                <option value="overdue">Overdue</option>
-              </select>
+                  {/* Status filter */}
+                  <select 
+                    value={selectedStatus}
+                    onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
+                    className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="paid">Paid</option>
+                    <option value="partial">Partial</option>
+                    <option value="pending">Pending</option>
+                    <option value="overdue">Overdue</option>
+                  </select>
 
-              {hasActiveFilters && (
-                <button 
-                  onClick={clearFilters}
-                  className="h-8 px-2 rounded text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition flex items-center gap-0.5"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  <span>Clear Filters</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Table Container */}
-          <div className="overflow-x-auto flex-1">
-            {currentStudents.length === 0 ? (
-              <div className="p-8 text-center text-xs text-gray-500 dark:text-slate-400">
-                No matching student fee records found in database.
+                  {hasActiveFilters && (
+                    <button 
+                      onClick={clearFilters}
+                      className="h-8 px-2 rounded text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition flex items-center gap-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>Clear Filters</span>
+                    </button>
+                  )}
+                </div>
               </div>
-            ) : (
-              <table className="w-full min-w-[1000px]">
-                <thead>
-                  <tr className="border-b border-gray-100 dark:border-slate-700/40 bg-gray-50 dark:bg-slate-900/50 text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase text-left">
-                    <th className="px-4 py-3">Roll No.</th>
-                    <th className="px-4 py-3">Student Name</th>
-                    <th className="px-4 py-3">Program</th>
-                    <th className="px-4 py-3 text-center">Sem</th>
-                    <th className="px-4 py-3 text-center">Plan</th>
-                    <th className="px-4 py-3 text-right">Academic</th>
-                    <th className="px-4 py-3 text-right">Hostel & Mess</th>
-                    <th className="px-4 py-3 text-right">Paid</th>
-                    <th className="px-4 py-3 text-right">Due</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-700/30 text-xs text-gray-750 dark:text-slate-350">
-                  {currentStudents.map((student) => (
-                    <tr key={student._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-750/30 transition">
-                      <td className="px-4 py-3 font-mono text-gray-400 dark:text-slate-500">{student.rollNo}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
-                        <div>{student.name}</div>
-                        {student.scholarship && student.scholarship.amount > 0 && (
-                          <div className="text-[9px] text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/20 px-1.5 py-0.5 rounded mt-0.5 inline-flex items-center gap-1 border border-purple-100 dark:border-purple-900/30">
-                            <ShieldCheck className="h-3 w-3 text-purple-500" />
-                            <span>{student.scholarship.name} (-{formatINR(student.scholarship.amount)})</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
-                          {student.program}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center font-bold text-gray-700 dark:text-slate-300">{student.semester}</td>
-                      <td className="px-4 py-3 text-center capitalize text-gray-600 dark:text-slate-450">{student.paymentPlan}</td>
-                      <td className="px-4 py-3 text-right font-medium">{formatINR(student.academicFee)}</td>
-                      <td className="px-4 py-3 text-right font-medium">{formatINR(student.hostelFee + student.messFee)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatINR(student.paidAmount)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-red-650 dark:text-red-400">
-                        {student.dueAmount > 0 ? formatINR(student.dueAmount) : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                          student.feeStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-450 dark:border-green-900/30' :
-                          student.feeStatus === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-450 dark:border-blue-900/30' :
-                          student.feeStatus === 'overdue' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-450 dark:border-red-900/30' :
-                          'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
-                        }`}>
-                          {student.feeStatus}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {student.dueAmount > 0 && (
-                            <button 
-                              onClick={() => sendReminder(student.studentId, student.name)}
-                              className="p-1 rounded bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 transition" 
-                              title="Send Fee Reminder Email"
-                            >
-                              <Send className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => {
-                              setSelectedStudent(student);
-                              setShowPaymentForm(false);
-                            }}
-                            className="p-1 rounded bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 text-gray-500 dark:text-slate-350 transition" 
-                            title="View Student Details"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
 
-          {/* Table Pagination */}
-          <div className="p-4 border-t border-gray-100 dark:border-slate-700/40 flex items-center justify-between text-xs text-gray-550 dark:text-slate-400">
-            <span>
-              Showing <span className="font-semibold">{Math.min(indexOfLastItem, filteredStudents.length)}</span> of <span className="font-semibold">{filteredStudents.length}</span> students
-            </span>
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="h-7 w-7 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition text-gray-700 dark:text-slate-305"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`h-7 w-7 rounded font-bold transition ${
-                    currentPage === i + 1 
-                      ? 'bg-purple-600 text-white shadow-sm' 
-                      : 'border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="h-7 w-7 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition text-gray-700 dark:text-slate-305"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+              {/* Table Container */}
+              <div className="overflow-x-auto flex-1">
+                {currentStudents.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-gray-500 dark:text-slate-400">
+                    No matching student fee records found in database.
+                  </div>
+                ) : (
+                  <table className="w-full min-w-[1000px]">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-slate-700/40 bg-gray-50 dark:bg-slate-900/50 text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase text-left">
+                        <th className="px-4 py-3">Roll No.</th>
+                        <th className="px-4 py-3">Student Name</th>
+                        <th className="px-4 py-3">Program</th>
+                        <th className="px-4 py-3 text-center">Sem</th>
+                        <th className="px-4 py-3 text-center">Plan</th>
+                        <th className="px-4 py-3 text-right">Academic</th>
+                        <th className="px-4 py-3 text-right">Hostel & Mess</th>
+                        <th className="px-4 py-3 text-right">Paid</th>
+                        <th className="px-4 py-3 text-right">Due</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-center">Last Reminder</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700/30 text-xs text-gray-750 dark:text-slate-350">
+                      {currentStudents.map((student) => (
+                        <tr key={student._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-750/30 transition">
+                          <td className="px-4 py-3 font-mono text-gray-400 dark:text-slate-500">{student.rollNo}</td>
+                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
+                            <div>{student.name}</div>
+                            {student.scholarship && student.scholarship.amount > 0 && (
+                              <div className="text-[9px] text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/20 px-1.5 py-0.5 rounded mt-0.5 inline-flex items-center gap-1 border border-purple-100 dark:border-purple-900/30">
+                                <ShieldCheck className="h-3 w-3 text-purple-500" />
+                                <span>{student.scholarship.name} (-{formatINR(student.scholarship.amount)})</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
+                              {student.program}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center font-bold text-gray-700 dark:text-slate-300">{student.semester}</td>
+                          <td className="px-4 py-3 text-center capitalize text-gray-600 dark:text-slate-450">{student.paymentPlan}</td>
+                          <td className="px-4 py-3 text-right font-medium">{formatINR(student.academicFee)}</td>
+                          <td className="px-4 py-3 text-right font-medium">{formatINR(student.hostelFee + student.messFee)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatINR(student.paidAmount)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-red-650 dark:text-red-400">
+                            {student.dueAmount > 0 ? formatINR(student.dueAmount) : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              student.feeStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-450 dark:border-green-900/30' :
+                              student.feeStatus === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-450 dark:border-blue-900/30' :
+                              student.feeStatus === 'overdue' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-450 dark:border-red-900/30' :
+                              'bg-gray-100 text-gray-655 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
+                            }`}>
+                              {student.feeStatus}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {student.lastReminderSent ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/30 text-purple-650 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
+                                {new Date(student.lastReminderSent).toLocaleString('en-IN', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-slate-500 font-medium italic">Never</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {student.dueAmount > 0 && (
+                                <button 
+                                  onClick={() => sendReminder(student.studentId, student.name)}
+                                  className="p-1 rounded bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 transition" 
+                                  title="Send Fee Reminder Email"
+                                >
+                                  <Send className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                              <button 
+                                onClick={() => {
+                                  setSelectedStudent(student);
+                                  setShowPaymentForm(false);
+                                }}
+                                className="p-1 rounded bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 text-gray-500 dark:text-slate-350 transition" 
+                                title="View Student Details"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Table Pagination */}
+              <div className="p-4 border-t border-gray-100 dark:border-slate-700/40 flex items-center justify-between text-xs text-gray-550 dark:text-slate-400">
+                <span>
+                  Showing <span className="font-semibold">{Math.min(indexOfLastItem, filteredStudents.length)}</span> of <span className="font-semibold">{filteredStudents.length}</span> students
+                </span>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="h-7 w-7 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition text-gray-700 dark:text-slate-305"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`h-7 w-7 rounded font-bold transition ${
+                        currentPage === i + 1 
+                          ? 'bg-purple-600 text-white shadow-sm' 
+                          : 'border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-7 w-7 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition text-gray-700 dark:text-slate-305"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </>
-          ) : (
+          )}
+
+          {activeTab === 'approvals' && (
             <div className="overflow-x-auto flex-1">
               {transactions.filter(t => t.status === 'Under Verification').length === 0 ? (
                 <div className="p-12 text-center text-xs text-gray-500 dark:text-slate-400 space-y-2">
                   <div className="text-3xl">🎉</div>
-                  <p className="font-semibold text-gray-750 dark:text-slate-300">All caught up! No transactions pending verification.</p>
+                  <p className="font-semibold text-gray-750 dark:text-slate-350">All caught up! No transactions pending verification.</p>
                   <p className="text-gray-450 dark:text-slate-450">When students pay using UPI/NEFT, payments requiring approval will appear here.</p>
                 </div>
               ) : (
@@ -1251,7 +1439,7 @@ This is a computer-generated fee ledger statement.
                       .map((txn) => (
                         <tr key={txn._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-750/30 transition">
                           <td className="px-4 py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{txn.id}</td>
-                          <td className="px-4 py-3 font-mono text-gray-450 dark:text-slate-500">{txn.rollNo}</td>
+                          <td className="px-4 py-3 font-mono text-gray-455 dark:text-slate-500">{txn.rollNo}</td>
                           <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{txn.studentName}</td>
                           <td className="px-4 py-3">
                             <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
@@ -1266,7 +1454,7 @@ This is a computer-generated fee ledger statement.
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={() => handleUpdateStatus(txn.id, 'Rejected')}
-                                className="h-7 px-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs font-bold transition flex items-center justify-center gap-1"
+                                className="h-7 px-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-650 dark:text-red-400 text-xs font-bold transition flex items-center justify-center gap-1"
                               >
                                 Reject
                               </button>
@@ -1282,6 +1470,141 @@ This is a computer-generated fee ledger statement.
                       ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'logs' && (
+            <div className="overflow-x-auto flex-1 flex flex-col">
+              {/* Filters Bar */}
+              <div className="p-3 bg-gray-50/50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700/40 flex flex-col lg:flex-row gap-2">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search name or roll no..."
+                    value={searchLogQuery}
+                    onChange={(e) => setSearchLogQuery(e.target.value)}
+                    className="h-8 w-full rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-8 pr-3 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-gray-400" />
+                  
+                  {/* Channel Filter */}
+                  <select 
+                    value={selectedChannelFilter}
+                    onChange={(e) => setSelectedChannelFilter(e.target.value)}
+                    className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  >
+                    <option value="all">All Channels</option>
+                    <option value="Email">Email</option>
+                    <option value="SMS">SMS</option>
+                  </select>
+
+                  {/* Status Filter */}
+                  <select 
+                    value={selectedStatusFilter}
+                    onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                    className="h-8 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs focus:outline-none focus:border-purple-600 text-gray-800 dark:text-slate-200"
+                  >
+                    <option value="all">All Delivery Statuses</option>
+                    <option value="Success">Success</option>
+                    <option value="Failed">Failed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Logs Table */}
+              {loadingLogs ? (
+                <div className="p-8 text-center text-xs text-gray-500 dark:text-slate-400 flex flex-col items-center gap-2 justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
+                  <span>Loading audit logs...</span>
+                </div>
+              ) : (
+                (() => {
+                  const filteredLogs = notificationLogs.filter(log => {
+                    const matchesSearch = 
+                      log.studentName.toLowerCase().includes(searchLogQuery.toLowerCase()) ||
+                      log.studentId.toLowerCase().includes(searchLogQuery.toLowerCase());
+                    const matchesChannel = selectedChannelFilter === "all" || log.deliveryChannel === selectedChannelFilter;
+                    const matchesStatus = selectedStatusFilter === "all" || log.deliveryStatus === selectedStatusFilter;
+                    return matchesSearch && matchesChannel && matchesStatus;
+                  });
+
+                  if (filteredLogs.length === 0) {
+                    return (
+                      <div className="p-8 text-center text-xs text-gray-500 dark:text-slate-400">
+                        No notification logs found.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <table className="w-full min-w-[1000px]">
+                      <thead>
+                        <tr className="border-b border-gray-100 dark:border-slate-700/40 bg-gray-50 dark:bg-slate-900/50 text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase text-left">
+                          <th className="px-4 py-3">Timestamp</th>
+                          <th className="px-4 py-3">Roll No.</th>
+                          <th className="px-4 py-3">Student Name</th>
+                          <th className="px-4 py-3">Type</th>
+                          <th className="px-4 py-3 text-center">Channel</th>
+                          <th className="px-4 py-3">Message Content</th>
+                          <th className="px-4 py-3 text-center">Status</th>
+                          <th className="px-4 py-3">Initiated By</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-slate-700/30 text-xs text-gray-750 dark:text-slate-350">
+                        {filteredLogs.map((log) => (
+                          <tr key={log._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-750/30 transition">
+                            <td className="px-4 py-3 text-gray-400 dark:text-slate-500">
+                              {new Date(log.timestamp).toLocaleString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-gray-400 dark:text-slate-500">{log.studentId}</td>
+                            <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{log.studentName}</td>
+                            <td className="px-4 py-3">
+                              <span className="capitalize">{log.notificationType.replace('_', ' ')}</span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${
+                                log.deliveryChannel === 'Email' 
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30' 
+                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30'
+                              }`}>
+                                {log.deliveryChannel === 'Email' ? <Mail className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+                                <span>{log.deliveryChannel}</span>
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 max-w-[250px] truncate" title={log.messageContent}>
+                              {log.messageContent}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span 
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  log.deliveryStatus === 'Success' 
+                                    ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-450 dark:border-green-900/30' 
+                                    : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-450 dark:border-red-900/30'
+                                }`}
+                                title={log.errorDetails || undefined}
+                              >
+                                {log.deliveryStatus}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
+                              {log.initiatedBy?.name || 'System'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()
               )}
             </div>
           )}
@@ -1392,6 +1715,26 @@ This is a computer-generated fee ledger statement.
                     <p className="text-xs text-gray-550 dark:text-slate-400">ID: {selectedStudent.studentId} • Roll: {selectedStudent.rollNo}</p>
                     <p className="text-[11px] font-medium text-purple-600 dark:text-purple-400 mt-0.5">{selectedStudent.program} • Semester {selectedStudent.semester}</p>
                   </div>
+                </div>
+
+                {/* Last Reminder Info */}
+                <div className="text-xs p-3 rounded-xl border border-gray-150 dark:border-slate-700/40 bg-gray-50/50 dark:bg-slate-900/10 flex justify-between items-center">
+                  <span className="text-gray-500 dark:text-slate-400 font-semibold flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-purple-500" />
+                    <span>Last Reminder Sent</span>
+                  </span>
+                  <span className="font-bold">
+                    {selectedStudent.lastReminderSent ? (
+                      new Date(selectedStudent.lastReminderSent).toLocaleString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    ) : (
+                      <span className="text-gray-450 dark:text-slate-500 italic">Never</span>
+                    )}
+                  </span>
                 </div>
 
                 {/* Ledger Breakdown Cards */}
@@ -1743,6 +2086,73 @@ This is a computer-generated fee ledger statement.
                     )}
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Safeguard Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && confirmModalData && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConfirmModal(false)}
+              className="fixed inset-0 bg-black/60 z-50 backdrop-blur-xs"
+            />
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="fixed inset-0 m-auto h-fit w-full max-w-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/60 rounded-xl p-5 shadow-2xl z-55 overflow-hidden flex flex-col text-gray-800 dark:text-slate-100 gap-4"
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-full flex-shrink-0">
+                  <AlertCircle className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-slate-100 text-sm">
+                    {confirmModalData.isBulk ? "Send Bulk Fee Reminders" : "Duplicate Reminder Safeguard"}
+                  </h3>
+                  <p className="text-xs text-gray-550 dark:text-slate-400 mt-1 leading-relaxed">
+                    {confirmModalData.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 text-xs font-semibold mt-2">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={sendingReminder}
+                  className="h-8 px-4 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-300 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmModalData.isBulk) {
+                      sendBulkReminders(true);
+                    } else if (confirmModalData.studentId && confirmModalData.studentName) {
+                      sendReminder(confirmModalData.studentId, confirmModalData.studentName, true);
+                    }
+                  }}
+                  disabled={sendingReminder}
+                  className="h-8 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition flex items-center justify-center gap-1 shadow-sm"
+                >
+                  {sendingReminder ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></div>
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <span>Force Send / Resend</span>
+                  )}
+                </button>
               </div>
             </motion.div>
           </>
