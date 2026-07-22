@@ -106,16 +106,16 @@ const seed = async () => {
       ],
       workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
       timeSlots: [
-        { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', isBreak: false },
-        { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', isBreak: false },
-        { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', isBreak: false },
-        { label: '12:00 - 12:50', startTime: '12:00', endTime: '12:50', isBreak: false },
-        { label: '13:00 - 14:00', startTime: '13:00', endTime: '14:00', isBreak: true, breakType: 'lunch' },
-        { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', isBreak: false },
-        { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', isBreak: false }
+        { label: '09:00 - 10:00', startTime: '09:00', endTime: '10:00', isBreak: false },
+        { label: '10:00 - 11:00', startTime: '10:00', endTime: '11:00', isBreak: false },
+        { label: '11:00 - 12:00', startTime: '11:00', endTime: '12:00', isBreak: false },
+        { label: '12:00 - 14:00', startTime: '12:00', endTime: '14:00', isBreak: true, breakType: 'lunch' },
+        { label: '14:00 - 15:00', startTime: '14:00', endTime: '15:00', isBreak: false },
+        { label: '15:00 - 16:00', startTime: '15:00', endTime: '16:00', isBreak: false },
+        { label: '16:00 - 17:00', startTime: '16:00', endTime: '17:00', isBreak: false }
       ],
-      lunchBreak: { startTime: '13:00', endTime: '14:00' },
-      lectureDuration: 50,
+      lunchBreak: { startTime: '12:00', endTime: '14:00' },
+      lectureDuration: 60,
       isActive: true
     });
     console.log('✅ Seeded TtConfig.');

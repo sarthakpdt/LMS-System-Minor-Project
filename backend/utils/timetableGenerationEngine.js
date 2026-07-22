@@ -30,7 +30,7 @@ function shuffleArray(arr, seed = 0) {
 }
 
 function entrySlotKey(e) {
-  return `${e.branch}::${e.year}::${e.section}::${e.day}::${e.timeSlot?.startTime}-${e.timeSlot?.endTime}`;
+  return `${e.branch}::${e.semester}::${e.section}::${e.day}::${e.timeSlot?.startTime}-${e.timeSlot?.endTime}`;
 }
 
 function matchesScope(entry, scope) {
@@ -39,11 +39,11 @@ function matchesScope(entry, scope) {
     case 'branch':
       return entry.branch === scope.branch;
     case 'semester':
-      return entry.branch === scope.branch && Number(entry.year) === Number(scope.year);
+      return entry.branch === scope.branch && Number(entry.semester) === Number(scope.semester);
     case 'section':
       return (
         entry.branch === scope.branch &&
-        Number(entry.year) === Number(scope.year) &&
+        Number(entry.semester) === Number(scope.semester) &&
         entry.section === scope.section
       );
     case 'day':
@@ -66,15 +66,15 @@ function filterConfigForScope(config, scope) {
     if (scope.type === 'semester' || scope.type === 'section') {
       cloned.branches = cloned.branches.map((b) => ({
         ...b,
-        years: b.years.filter((y) => y.yearNumber === Number(scope.year)),
+        semesters: b.semesters.filter((s) => s.semesterNumber === Number(scope.semester)),
       }));
     }
     if (scope.type === 'section') {
       cloned.branches = cloned.branches.map((b) => ({
         ...b,
-        years: b.years.map((y) => ({
-          ...y,
-          sections: y.sections.filter((s) => s === scope.section),
+        semesters: b.semesters.map((s) => ({
+          ...s,
+          sections: s.sections.filter((sec) => sec === scope.section),
         })),
       }));
     }
@@ -88,7 +88,7 @@ function filterSubjectsForScope(subjects, scope) {
     return subjects.filter((s) => s.branch === scope.branch);
   }
   if (scope.type === 'semester' || scope.type === 'section') {
-    return subjects.filter((s) => s.branch === scope.branch && Number(s.year) === Number(scope.year));
+    return subjects.filter((s) => s.branch === scope.branch && Number(s.semester) === Number(scope.semester));
   }
   if (scope.type === 'faculty') {
     return subjects.filter((s) => s.facultyId && String(s.facultyId) === String(scope.facultyId));
@@ -101,16 +101,16 @@ async function loadStudentCounts(config) {
 
   const sections = await TtSection.find({ isActive: true })
     .populate({ path: 'branchId', select: 'code' })
-    .populate({ path: 'semesterId', select: 'year semesterNumber' })
+    .populate({ path: 'semesterId', select: 'semesterNumber' })
     .lean();
 
-  sections.forEach((sec) => {
-    const branchCode = sec.branchId?.code;
-    const year = sec.semesterId?.year;
-    if (!branchCode || !year) return;
-    const key = `${branchCode}::${year}::${sec.label}`;
-    if (sec.studentCount > 0) counts[key] = sec.studentCount;
-  });
+  for (const sec of sections) {
+    const branchCode = sec.branchId?.code?.toUpperCase();
+    const semester = sec.semesterId?.semesterNumber;
+    if (!branchCode || !semester) continue;
+    const key = `${branchCode}::${semester}::${sec.label}`;
+    counts[key] = sec.studentCount || 0;
+  }
 
   const studentsList = await Student.find(
     { approvalStatus: 'approved', isActive: { $ne: false } },
@@ -119,10 +119,9 @@ async function loadStudentCounts(config) {
 
   studentsList.forEach((s) => {
     const branch = s.timetableBranch || s.department;
-    const sem = Number(s.semester) || 1;
-    const year = Math.ceil(sem / 2);
-    const key = `${branch}::${year}::${s.section || 'A'}`;
-    counts[key] = (counts[key] || 0) + 1;
+    const sem = Number(s.semester);
+    const key = `${branch}::${sem}::${s.section || 'A'}`;
+    counts[key] = (counts[key] || 60) + 1;
   });
 
   return counts;
@@ -336,7 +335,7 @@ function buildClashSuggestions(entries, conflicts, context) {
             const sectionBusy = entries.some(
               (e) =>
                 e.branch === entry.branch &&
-                e.year === entry.year &&
+                e.semester === entry.semester &&
                 e.section === entry.section &&
                 e.day === day &&
                 e.timeSlot.startTime === slot.startTime &&
@@ -423,7 +422,7 @@ function applyMoveSuggestion(entries, payload) {
   const targetIdx = grid.findIndex(
     (e) =>
       e.branch === source.branch &&
-      e.year === source.year &&
+      e.semester === source.semester &&
       e.section === source.section &&
       e.day === targetDay &&
       e.timeSlot.startTime === targetStartTime &&

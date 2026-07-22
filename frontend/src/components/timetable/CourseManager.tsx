@@ -7,12 +7,12 @@ import {
 
 const WORKING_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const emptyCourse = (branch: string, year: number): Partial<TtSubject> => ({
+const emptyCourse = (branch: string, semester: number): Partial<TtSubject> => ({
   name: '',
   code: '',
   type: 'theory',
   branch,
-  year,
+  semester,
   weeklyHours: 3,
   labDuration: 2,
   lectureDuration: 50,
@@ -33,7 +33,7 @@ interface Props {
 
 export default function CourseManager({ config, teachers, onSaved }: Props) {
   const [branch, setBranch] = useState('');
-  const [year, setYear] = useState(1);
+  const [semester, setSemester] = useState(1);
   const [courses, setCourses] = useState<TtSubject[]>([]);
   const [editing, setEditing] = useState<Partial<TtSubject> | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,15 +45,15 @@ export default function CourseManager({ config, teachers, onSaved }: Props) {
     if (!config?.branches.length) return;
     const first = config.branches[0];
     setBranch(first.code);
-    if (first.years.length) setYear(first.years[0].yearNumber);
+    if (first.semesters?.length) setSemester(first.semesters[0].semesterNumber);
   }, [config]);
 
   const loadCourses = async () => {
-    if (!branch || !year) return;
+    if (!branch || !semester) return;
     setLoading(true);
     setError('');
     try {
-      const res = await api.getSubjects({ branch, year });
+      const res = await api.getSubjects({ branch, semester });
       setCourses(res.subjects);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load courses.');
@@ -64,12 +64,12 @@ export default function CourseManager({ config, teachers, onSaved }: Props) {
 
   useEffect(() => {
     loadCourses();
-  }, [branch, year]);
+  }, [branch, semester]);
 
   const branchObj = config?.branches.find((b) => b.code === branch);
 
   const startAdd = () => {
-    setEditing(emptyCourse(branch, year));
+    setEditing(emptyCourse(branch, semester));
     setSuccess('');
     setError('');
   };
@@ -92,7 +92,7 @@ export default function CourseManager({ config, teachers, onSaved }: Props) {
         ...editing,
         id: editing._id,
         branch,
-        year,
+        semester,
       };
       const res = await api.saveSubject(payload as TtSubject);
       setSuccess(`Saved ${res.subject.name} successfully.`);
@@ -157,14 +157,14 @@ export default function CourseManager({ config, teachers, onSaved }: Props) {
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-[10px] font-semibold text-gray-500 mb-1">YEAR</label>
+          <label className="block text-[10px] font-semibold text-gray-500 mb-1">SEMESTER</label>
           <select
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            value={semester}
+            onChange={(e) => setSemester(Number(e.target.value))}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs"
           >
-            {branchObj?.years.map((y) => (
-              <option key={y.yearNumber} value={y.yearNumber}>{y.label}</option>
+            {branchObj?.semesters?.map((s) => (
+              <option key={s.semesterNumber} value={s.semesterNumber}>{s.label}</option>
             ))}
           </select>
         </div>
@@ -328,7 +328,7 @@ export default function CourseManager({ config, teachers, onSaved }: Props) {
           {loading && <Loader2 className="w-4 h-4 animate-spin text-purple-600" />}
         </div>
         {courses.length === 0 ? (
-          <p className="text-xs text-gray-500 p-6 text-center">No courses configured for this branch/year.</p>
+          <p className="text-xs text-gray-500 p-6 text-center">No courses configured for this branch/semester.</p>
         ) : (
           <div className="divide-y">
             {courses.map((course) => (

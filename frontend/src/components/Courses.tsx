@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Search, Plus, Users, BookOpen, X, ChevronDown, ChevronUp, Loader2, UserCheck } from 'lucide-react';
+import { Search, Plus, Users, BookOpen, X, ChevronDown, ChevronUp, Loader2, UserCheck, Edit2, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -37,9 +37,11 @@ export function Courses() {
   const [courseStudents, setCourseStudents] = useState<Record<string, any[]>>({});
   const [loadingStudents, setLoadingStudents] = useState<string | null>(null);
 
-  // Create modal
+  // Create / Edit modal
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [createForm, setCreateForm] = useState({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '', credits: 4, type: 'theory' });
   const [creating, setCreating] = useState(false);
 
   // Enroll modal
@@ -112,18 +114,51 @@ export function Courses() {
     }
     setCreating(true);
     try {
-      const res = await fetch(`${BASE}/courses`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const url = isEditing ? `${BASE}/courses/${editingCourseId}` : `${BASE}/courses`;
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createForm),
       });
       const json = await res.json();
       if (!res.ok) { toast.error(json.message); return; }
-      toast.success('Course created!');
+      toast.success(isEditing ? 'Course updated!' : 'Course created!');
       setShowCreateModal(false);
-      setCreateForm({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '' });
+      setIsEditing(false);
+      setEditingCourseId(null);
+      setCreateForm({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '', credits: 4, type: 'theory' });
       fetchCourses();
     } catch { toast.error('Server error'); }
     finally { setCreating(false); }
+  };
+
+  const openEditModal = (course: any) => {
+    setIsEditing(true);
+    setEditingCourseId(course._id);
+    setCreateForm({
+      courseCode: course.courseCode || '',
+      courseName: course.courseName || '',
+      department: course.department || '',
+      semester: course.semester || '',
+      teacherId: course.teacher?._id || '',
+      description: course.description || '',
+      section: course.section || '',
+      credits: course.credits || 4,
+      type: course.type || 'theory'
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
+    try {
+      const res = await fetch(`${BASE}/courses/${courseId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.message); return; }
+      toast.success('Course deleted successfully');
+      fetchCourses();
+    } catch { toast.error('Failed to delete course'); }
   };
 
   const handleEnroll = async () => {
@@ -239,6 +274,12 @@ export function Courses() {
                             Section {course.section}
                           </span>
                         )}
+                        <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">
+                          {course.credits} Credits
+                        </span>
+                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium uppercase">
+                          {course.type}
+                        </span>
 
                         {/* ── Teacher name — the key fix ── */}
                         {course.teacher?.name ? (
@@ -290,7 +331,12 @@ export function Courses() {
           <p className="text-gray-600">{isAdmin ? 'Create courses, assign teachers, and enroll students by semester.' : 'Your assigned courses and enrolled students.'}</p>
         </div>
         {isAdmin && (
-          <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <button onClick={() => {
+            setIsEditing(false);
+            setEditingCourseId(null);
+            setCreateForm({ courseCode: '', courseName: '', department: '', semester: '', teacherId: '', description: '', section: '', credits: 4, type: 'theory' });
+            setShowCreateModal(true);
+          }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             <Plus className="w-4 h-4" /> Add Course
           </button>
         )}
@@ -345,6 +391,12 @@ export function Courses() {
                             Section {course.section}
                           </span>
                         )}
+                        <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">
+                          {course.credits} Credits
+                        </span>
+                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium uppercase">
+                          {course.type}
+                        </span>
                         {course.teacher?.name ? (
                           <span className="text-gray-600 text-sm flex items-center gap-1">
                             <UserCheck className="w-3.5 h-3.5 text-green-500" /> {course.teacher.name}
@@ -365,6 +417,20 @@ export function Courses() {
 
                     {isAdmin && (
                       <>
+                        <button
+                          onClick={() => openEditModal(course)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                          title="Edit Course"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCourse(course._id)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors"
+                          title="Delete Course"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => {
                             setAssignModal({ courseId: course._id, courseName: course.courseName, currentTeacherId: course.teacher?._id || '' });
@@ -440,7 +506,7 @@ export function Courses() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-xl font-semibold text-gray-900">Create New Course</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{isEditing ? 'Edit Course' : 'Create New Course'}</h3>
               <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
@@ -476,6 +542,21 @@ export function Courses() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Credits *</label>
+                  <input type="number" min="1" max="12" value={createForm.credits} onChange={e => setCreateForm({ ...createForm, credits: parseInt(e.target.value) || 4 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                  <select value={createForm.type} onChange={e => setCreateForm({ ...createForm, type: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="theory">Theory</option>
+                    <option value="lab">Lab</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Assign Teacher (optional)</label>
                   <select value={createForm.teacherId} onChange={e => setCreateForm({ ...createForm, teacherId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -504,7 +585,7 @@ export function Courses() {
             <div className="flex gap-3 px-6 pb-6">
               <button onClick={() => setShowCreateModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>
               <button onClick={handleCreateCourse} disabled={creating} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-60 flex items-center justify-center gap-2">
-                {creating && <Loader2 className="w-4 h-4 animate-spin" />} {creating ? 'Creating...' : 'Create Course'}
+                {creating && <Loader2 className="w-4 h-4 animate-spin" />} {creating ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Course' : 'Create Course')}
               </button>
             </div>
           </div>

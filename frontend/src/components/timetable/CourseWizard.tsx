@@ -37,7 +37,7 @@ interface Props {
 
 export default function CourseWizard({ config, teachers, onSaved }: Props) {
   const [branch, setBranch] = useState('');
-  const [year, setYear] = useState(1);
+  const [semester, setSemester] = useState(1);
   const [courseCount, setCourseCount] = useState(1);
   const [rows, setRows] = useState<CourseRow[]>([emptyRow()]);
   const [saving, setSaving] = useState(false);
@@ -48,7 +48,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
     if (!config?.branches.length) return;
     const first = config.branches[0];
     setBranch(first.code);
-    setYear(first.years[0]?.yearNumber || 1);
+    setSemester(first.semesters?.[0]?.semesterNumber || 1);
   }, [config]);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
     try {
       await api.saveSubjectsBulk({
         branch,
-        year,
+        semester,
         subjects: rows.map((r) => ({
           name: r.name.trim(),
           code: r.code.trim().toUpperCase(),
@@ -113,7 +113,7 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
           <BookOpen className="w-4 h-4" /> Course Setup Wizard
         </h4>
         <p className="text-xs text-indigo-700 mt-1">
-          Choose branch and year, set how many courses, then enter faculty, weekly hours, and lab details for each.
+          Choose branch and semester, set how many courses, then enter faculty, weekly hours, and lab details for each.
         </p>
       </div>
 
@@ -142,14 +142,14 @@ export default function CourseWizard({ config, teachers, onSaved }: Props) {
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Academic Year</label>
+          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Semester</label>
           <select
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            value={semester}
+            onChange={(e) => setSemester(Number(e.target.value))}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white"
           >
-            {(selectedBranch?.years || []).map((y) => (
-              <option key={y.yearNumber} value={y.yearNumber}>{y.label}</option>
+            {(selectedBranch?.semesters || []).map((s) => (
+              <option key={s.semesterNumber} value={s.semesterNumber}>{s.label}</option>
             ))}
           </select>
         </div>

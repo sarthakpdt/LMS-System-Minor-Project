@@ -99,12 +99,13 @@ async function seed() {
   const existingSlots = await TtLectureSlot.countDocuments({ academicYearId: ay._id, isActive: true });
   if (existingSlots === 0) {
     const slots = [
-      { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', slotNumber: 1, duration: 50, isBreak: false },
-      { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', slotNumber: 2, duration: 50, isBreak: false },
-      { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', slotNumber: 3, duration: 50, isBreak: false },
-      { label: '13:00 - 14:00', startTime: '13:00', endTime: '14:00', slotNumber: 4, duration: 60, isBreak: true, breakType: 'lunch' },
-      { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', slotNumber: 5, duration: 50, isBreak: false },
-      { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', slotNumber: 6, duration: 50, isBreak: false },
+      { label: '09:00 - 10:00', startTime: '09:00', endTime: '10:00', slotNumber: 1, duration: 60, isBreak: false },
+      { label: '10:00 - 11:00', startTime: '10:00', endTime: '11:00', slotNumber: 2, duration: 60, isBreak: false },
+      { label: '11:00 - 12:00', startTime: '11:00', endTime: '12:00', slotNumber: 3, duration: 60, isBreak: false },
+      { label: '12:00 - 14:00', startTime: '12:00', endTime: '14:00', slotNumber: 4, duration: 120, isBreak: true, breakType: 'lunch' },
+      { label: '14:00 - 15:00', startTime: '14:00', endTime: '15:00', slotNumber: 5, duration: 60, isBreak: false },
+      { label: '15:00 - 16:00', startTime: '15:00', endTime: '16:00', slotNumber: 6, duration: 60, isBreak: false },
+      { label: '16:00 - 17:00', startTime: '16:00', endTime: '17:00', slotNumber: 7, duration: 60, isBreak: false },
     ];
     for (const s of slots) {
       await TtLectureSlot.create({ ...s, academicYearId: ay._id });

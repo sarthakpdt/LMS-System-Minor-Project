@@ -1156,6 +1156,11 @@ function AdminDashboard() {
   const [loading,   setLoading]   = useState(true);
   const [activeTab, setActiveTab] = useState('home');
 
+  // Pending teachers for the approvals tab
+  const [pendingTeachers,      setPendingTeachers]      = useState<any[]>([]);
+  const [teacherLoading,       setTeacherLoading]       = useState(false);
+  const [teacherActionLoading, setTeacherActionLoading] = useState<string | null>(null);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -1169,8 +1174,70 @@ function AdminDashboard() {
     load();
   }, []);
 
+  // Load pending teachers when approvals tab is active
+  useEffect(() => {
+    if (activeTab === 'approvals') loadPendingTeachers();
+  }, [activeTab]);
+
+  const loadPendingTeachers = async () => {
+    setTeacherLoading(true);
+    try {
+      const res  = await fetch(`${BASE}/teachers/pending`, {
+        headers: { Authorization: `Bearer ${(user as any)?.token}` }
+      });
+      const data = await res.json();
+      setPendingTeachers(data.data || []);
+    } catch {}
+    finally { setTeacherLoading(false); }
+  };
+
+  const handleApproveTeacher = async (teacherId: string) => {
+    if (!user) return;
+    setTeacherActionLoading(teacherId);
+    try {
+      const res  = await fetch(`${BASE}/teachers/${teacherId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(user as any)?.token}` },
+        body: JSON.stringify({ adminId: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingTeachers(prev => prev.filter(t => t._id !== teacherId));
+        const statsRes  = await fetch(`${BASE}/dashboard-stats`);
+        const statsData = await statsRes.json();
+        setStats(statsData.data || statsData);
+      }
+    } catch {}
+    finally { setTeacherActionLoading(null); }
+  };
+
+  const handleRejectTeacher = async (teacherId: string) => {
+    if (!user) return;
+    setTeacherActionLoading(teacherId);
+    try {
+      const res  = await fetch(`${BASE}/teachers/${teacherId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(user as any)?.token}` },
+        body: JSON.stringify({ adminId: user.id, reason: 'Rejected via admin panel' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingTeachers(prev => prev.filter(t => t._id !== teacherId));
+      }
+    } catch {}
+    finally { setTeacherActionLoading(null); }
+  };
+
+  // Compute the stat values from the nested API response
+  const totalStudents  = stats?.students?.total    ?? stats?.totalStudents  ?? 0;
+  const totalTeachers  = stats?.teachers?.total    ?? stats?.totalTeachers  ?? 0;
+  const totalCourses   = stats?.courses?.total     ?? stats?.totalCourses   ?? 0;
+  const pendingStuds   = stats?.students?.pending  ?? stats?.pendingStudents ?? 0;
+  const pendingTeachN  = stats?.teachers?.pending  ?? 0;
+
   const tabs = [
     { id: 'home',        label: '🏠 Home' },
+    { id: 'approvals',   label: `👩‍🏫 Teachers${pendingTeachN > 0 ? ` (${pendingTeachN})` : ''}` },
     { id: 'analytics',   label: '📊 Analytics' },
     { id: 'timetable',   label: '📅 Timetable' },
     { id: 'materials',   label: '📚 Materials' },
@@ -1201,10 +1268,10 @@ function AdminDashboard() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
-              { label: 'Total Students', value: stats.totalStudents  || 0, icon: Users,    color: 'bg-blue-500'   },
-              { label: 'Total Teachers', value: stats.totalTeachers  || 0, icon: Award,    color: 'bg-green-500'  },
-              { label: 'Total Courses',  value: stats.totalCourses   || 0, icon: BookOpen, color: 'bg-purple-500' },
-              { label: 'Pending',        value: stats.pendingStudents || 0, icon: Clock,   color: 'bg-orange-500' },
+              { label: 'Total Students',  value: totalStudents, icon: Users,    color: 'bg-blue-500'   },
+              { label: 'Total Teachers',  value: totalTeachers, icon: Award,    color: 'bg-green-500'  },
+              { label: 'Total Courses',   value: totalCourses,  icon: BookOpen, color: 'bg-purple-500' },
+              { label: 'Pending Students',value: pendingStuds,  icon: Clock,    color: 'bg-orange-500' },
             ].map((s, i) => (
               <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
                 <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
@@ -1227,6 +1294,79 @@ function AdminDashboard() {
             </div>
           </div>
         </>
+      )}
+
+      {activeTab === 'approvals' && (
+        <div>
+          <div className="bg-gradient-to-r from-indigo-700 to-purple-700 rounded-2xl p-6 text-white mb-6 shadow-lg">
+            <h2 className="text-2xl font-bold mb-1">Teacher Approvals</h2>
+            <p className="text-indigo-200 text-sm">Review and approve teacher registration requests</p>
+          </div>
+
+          {teacherLoading ? (
+            <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" /> Loading pending teachers...
+            </div>
+          ) : pendingTeachers.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
+              <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
+              <p className="font-semibold text-gray-700">No pending teacher requests</p>
+              <p className="text-sm text-gray-400 mt-1">All teacher registrations have been processed.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pendingTeachers.map((t: any) => (
+                <div key={t._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-bold text-indigo-600">{t.name?.[0]?.toUpperCase() ?? '?'}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{t.name}</p>
+                      <p className="text-sm text-gray-500 truncate">{t.email}</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {t.department && (
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">{t.department}</span>
+                        )}
+                        {t.employeeId && (
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">ID: {t.employeeId}</span>
+                        )}
+                        {t.specialization && (
+                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">{t.specialization}</span>
+                        )}
+                        {t.phone && (
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">📞 {t.phone}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleApproveTeacher(t._id)}
+                      disabled={teacherActionLoading === t._id}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60"
+                    >
+                      {teacherActionLoading === t._id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <CheckCircle className="w-4 h-4" />}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleRejectTeacher(t._id)}
+                      disabled={teacherActionLoading === t._id}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 transition-colors disabled:opacity-60"
+                    >
+                      {teacherActionLoading === t._id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <AlertCircle className="w-4 h-4" />}
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === 'analytics'   && <AnalyticsAdmin />}

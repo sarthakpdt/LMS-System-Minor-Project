@@ -45,15 +45,15 @@ class SchedulingEngine {
     const grid = [];
 
     config.branches.forEach(branch => {
-      branch.years.forEach(year => {
-        year.sections.forEach(section => {
+      (branch.semesters || []).forEach(sem => {
+        sem.sections.forEach(section => {
           workingDays.forEach(day => {
             validTimeSlots.forEach((slot, slotIndex) => {
               const isLunch = slot.isBreak && slot.breakType === 'lunch';
               
               const entry = {
                 branch: branch.code,
-                year: year.yearNumber,
+                semester: sem.semesterNumber,
                 section: section,
                 day: day,
                 timeSlot: {
@@ -95,25 +95,21 @@ class SchedulingEngine {
     const hasConfigLunch = validTimeSlots.some(s => s.isBreak && s.breakType === 'lunch');
     if (!hasConfigLunch && lunchWindowSlots.length > 0) {
       config.branches.forEach(branch => {
-        branch.years.forEach(year => {
-          year.sections.forEach(section => {
+        (branch.semesters || []).forEach(sem => {
+          sem.sections.forEach(section => {
             workingDays.forEach(day => {
-              // Count morning lectures already planned (before 12:00)
               const morningSlotCount = validTimeSlots.filter(
                 s => s.endTime <= LUNCH_WINDOW_START && !s.isBreak
               ).length;
-
-              // AI decision: early lunch if heavy morning (>=2 morning slots), else late lunch
               const pickEarlyLunch = morningSlotCount >= 2;
               const preferredLunch = pickEarlyLunch
                 ? lunchWindowSlots.find(s => s.startTime === '12:00')
                 : lunchWindowSlots.find(s => s.startTime === '13:00');
               const chosenLunch = preferredLunch || lunchWindowSlots[0];
 
-              // Mark this slot as lunch for the section/day in grid
               const gridEntry = grid.find(e =>
                 e.branch === branch.code &&
-                e.year === year.yearNumber &&
+                e.semester === sem.semesterNumber &&
                 e.section === section &&
                 e.day === day &&
                 e.timeSlot.startTime === chosenLunch.startTime
@@ -198,9 +194,9 @@ class SchedulingEngine {
       return [classroomRooms, labRooms];
     };
 
-    const getSectionStudentCount = (branch, year, section) => {
-      const key = `${branch}::${year}::${section}`;
-      return config.studentCounts?.[key] || 15; // default fallback if empty
+    const getSectionStudentCount = (branch, semester, section) => {
+      const key = `${branch}::${semester}::${section}`;
+      return config.studentCounts?.[key] || 15;
     };
 
     const pickRoom = (subject, day, startTime, endTime, studentCount = 15) => {
@@ -247,10 +243,10 @@ class SchedulingEngine {
       const targetSections = [];
       const branchObj = config.branches.find(b => b.code === sub.branch);
       if (branchObj) {
-        const yearObj = branchObj.years.find(y => y.yearNumber === sub.year);
-        if (yearObj) {
-          yearObj.sections.forEach(sec => {
-            targetSections.push({ branch: sub.branch, year: sub.year, section: sec });
+        const semObj = (branchObj.semesters || []).find(s => s.semesterNumber === sub.semester);
+        if (semObj) {
+          semObj.sections.forEach(sec => {
+            targetSections.push({ branch: sub.branch, semester: sub.semester, section: sec });
           });
         }
       }
@@ -260,7 +256,7 @@ class SchedulingEngine {
 
       targetSections.forEach(target => {
         let sessionsScheduled = 0;
-        const studentCount = getSectionStudentCount(target.branch, target.year, target.section);
+        const studentCount = getSectionStudentCount(target.branch, target.semester, target.section);
 
         for (const day of workingDays) {
           if (sessionsScheduled >= sessionsPerWeek) break;
@@ -287,7 +283,7 @@ class SchedulingEngine {
               // Find entry in grid using startTime (since validTimeSlots rebases slotIndex)
               const gridEntry = grid.find(e => 
                 e.branch === target.branch &&
-                e.year === target.year &&
+                e.semester === target.semester &&
                 e.section === target.section &&
                 e.day === day &&
                 e.timeSlot.startTime === slot.startTime
@@ -342,10 +338,10 @@ class SchedulingEngine {
       const targetSections = [];
       const branchObj = config.branches.find(b => b.code === sub.branch);
       if (branchObj) {
-        const yearObj = branchObj.years.find(y => y.yearNumber === sub.year);
-        if (yearObj) {
-          yearObj.sections.forEach(sec => {
-            targetSections.push({ branch: sub.branch, year: sub.year, section: sec });
+        const semObj = (branchObj.semesters || []).find(s => s.semesterNumber === sub.semester);
+        if (semObj) {
+          semObj.sections.forEach(sec => {
+            targetSections.push({ branch: sub.branch, semester: sub.semester, section: sec });
           });
         }
       }
@@ -353,7 +349,7 @@ class SchedulingEngine {
       targetSections.forEach(target => {
         let lecturesRemaining = sub.weeklyHours;
 
-        const studentCount = getSectionStudentCount(target.branch, target.year, target.section);
+        const studentCount = getSectionStudentCount(target.branch, target.semester, target.section);
 
         // Try to distribute 1 lecture per day max
         const scheduledDays = new Set();
@@ -375,7 +371,7 @@ class SchedulingEngine {
 
             const gridEntry = grid.find(e => 
               e.branch === target.branch &&
-              e.year === target.year &&
+              e.semester === target.semester &&
               e.section === target.section &&
               e.day === day &&
               e.timeSlot.startTime === slot.startTime
@@ -423,7 +419,7 @@ class SchedulingEngine {
 
               const gridEntry = grid.find(e => 
                 e.branch === target.branch &&
-                e.year === target.year &&
+                e.semester === target.semester &&
                 e.section === target.section &&
                 e.day === day &&
                 e.timeSlot.startTime === slot.startTime

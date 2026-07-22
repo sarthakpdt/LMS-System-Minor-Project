@@ -46,8 +46,8 @@ const SemesterClonePanel: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/timetables');
-        if (res.success) setTimetables(res.timetables || []);
+        const res = await api.listTimetables();
+        setTimetables(res.timetables || []);
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -66,14 +66,25 @@ const SemesterClonePanel: React.FC = () => {
     setError(null);
     setResult(null);
     try {
-      const res = await api.post('/clone', {
-        sourceTimetableId: sourceId,
-        targetLabel,
-        targetYear: targetYear !== '' ? Number(targetYear) : undefined,
-        targetBranch: targetBranch || undefined,
-        targetSection: targetSection || undefined,
+      // Use direct fetch since cloneSemester expects branch/year params, not sourceTimetableId
+      const BASE = 'http://localhost:5000/api/timetable/engine';
+      const response = await fetch(`${BASE}/clone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceTimetableId: sourceId,
+          targetLabel,
+          targetYear: targetYear !== '' ? Number(targetYear) : undefined,
+          targetBranch: targetBranch || undefined,
+          targetSection: targetSection || undefined,
+        }),
       });
-      setResult(res);
+      const data = await response.json();
+      if (data.success) {
+        setResult({ success: true, message: data.message || 'Cloned successfully', timetableId: data.timetableId, modifiedCount: data.created });
+      } else {
+        setError(data.message || 'Clone failed');
+      }
     } catch (e: any) {
       setError(e.message || 'Clone failed');
     } finally {

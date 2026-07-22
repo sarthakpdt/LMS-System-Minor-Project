@@ -59,6 +59,8 @@ router.post('/', async (req, res) => {
   try {
     const course = await Course.create({
       ...req.body,
+      credits: req.body.credits || 4,
+      type: req.body.type || 'theory',
       instructor: req.body.instructorId,
       enrolledStudents: [],
     });

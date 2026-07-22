@@ -4,7 +4,6 @@ const courseSchema = new mongoose.Schema({
   courseCode: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
     uppercase: true,
   },
@@ -26,6 +25,19 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: ['1', '2', '3', '4', '5', '6', '7', '8'],
+  },
+  credits: {
+    type: Number,
+    required: true,
+    default: 4,
+    min: 1,
+    max: 12,
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['theory', 'lab'],
+    default: 'theory',
   },
   /** Optional timetable linkage */
   timetableBranch: { type: String, default: null },
@@ -52,5 +64,8 @@ const courseSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// Prevent duplicate courses: same branch + semester + subject code
+courseSchema.index({ department: 1, semester: 1, courseCode: 1 }, { unique: true });
 
 module.exports = mongoose.model('Course', courseSchema);

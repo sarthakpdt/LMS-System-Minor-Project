@@ -574,6 +574,7 @@ export default function AttendanceTaker({ teacherId, teacherName, autoSelectedSl
         courseId: isValidObjectId(selectedCourseId) ? selectedCourseId : undefined,
         teacherId,
         teacherName,
+        section: autoSelectedSlot?.section || selectedSection || undefined,
         records,
         isDraft: false,
       };

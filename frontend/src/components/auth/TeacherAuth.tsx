@@ -23,94 +23,6 @@ export const DEPARTMENTS = [
 
 const BASE = 'http://localhost:5000/api/admin';
 
-// ─── Subject Picker Modal ─────────────────────────────────────────────────────
-function SubjectPickerModal({ courses, teacherName, onSelect }: {
-  courses: any[];
-  teacherName: string;
-  onSelect: (course: any) => void;
-}) {
-  const [selected, setSelected] = useState<any>(null);
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-      >
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Welcome back, {teacherName}!</h2>
-              <p className="text-emerald-100 text-sm mt-0.5">Which subject would you like to manage today?</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {courses.length === 0 ? (
-            <div className="text-center py-6">
-              <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">No courses assigned yet</p>
-              <p className="text-sm text-gray-400 mt-1">Admin will assign courses to you soon.</p>
-              <Button onClick={() => onSelect(null)} className="mt-5 bg-emerald-600 hover:bg-emerald-700">
-                Continue to Dashboard
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1 mb-5">
-                {courses.map((c: any) => {
-                  const id = String(c.courseId || c._id);
-                  const isSelected = selected && String(selected.courseId || selected._id) === id;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => setSelected(c)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
-                        isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-emerald-500' : 'bg-emerald-100'}`}>
-                        <BookOpen className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{c.courseName}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{c.courseCode} · Semester {c.semester}</p>
-                      </div>
-                      {isSelected && (
-                        <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Check className="w-3.5 h-3.5 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <Button
-                onClick={() => selected && onSelect(selected)}
-                disabled={!selected}
-                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-2 text-base"
-              >
-                Open {selected ? `"${selected.courseName}"` : 'Subject'} Dashboard
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-
-              <p className="text-xs text-center text-gray-400 mt-3">
-                You can switch subjects anytime from the sidebar
-              </p>
-            </>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
 // ─── Main TeacherAuth ─────────────────────────────────────────────────────────
 export function TeacherAuth() {
   const navigate = useNavigate();
@@ -126,10 +38,6 @@ export function TeacherAuth() {
     employeeId: '', phone: '', department: '', specialization: '',
   });
 
-  // Subject picker after login
-  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
-  const [loginCourses, setLoginCourses] = useState<any[]>([]);
-  const [loginTeacherName, setLoginTeacherName] = useState('');
 
   // Courses for signup
   const [availableCourses, setAvailableCourses] = useState<any[]>([]);
@@ -163,44 +71,24 @@ export function TeacherAuth() {
       if (result.success) {
         toast.success('Login successful!');
         const courses: any[] = result.assignedCourses || [];
-        const name = result.userName || loginData.email.split('@')[0];
 
-        if (courses.length === 0) {
-          navigate('/');
-        } else if (courses.length === 1) {
-          // Auto-select single course
+        if (courses.length > 0) {
+          // Auto-select first course
           setActiveSubject({
             courseId: String(courses[0].courseId || courses[0]._id),
             courseCode: courses[0].courseCode,
             courseName: courses[0].courseName,
             semester: courses[0].semester,
           });
-          navigate('/');
-        } else {
-          // Show picker for multiple courses
-          setLoginCourses(courses);
-          setLoginTeacherName(name);
-          setShowSubjectPicker(true);
         }
+        // Redirect straight to dashboard replacing the auth route so back doesn't go to login
+        navigate('/', { replace: true });
       } else {
         setError(result.message || 'Invalid credentials');
         toast.error('Login failed', { description: result.message });
       }
     } catch { setError('An error occurred.'); }
     finally { setLoading(false); }
-  };
-
-  const handleSubjectSelected = (course: any) => {
-    if (course) {
-      setActiveSubject({
-        courseId: String(course.courseId || course._id),
-        courseCode: course.courseCode,
-        courseName: course.courseName,
-        semester: course.semester,
-      });
-    }
-    setShowSubjectPicker(false);
-    navigate('/');
   };
 
   // ── Signup ────────────────────────────────────────────────────────────────
@@ -238,16 +126,6 @@ export function TeacherAuth() {
 
   return (
     <>
-      <AnimatePresence>
-        {showSubjectPicker && (
-          <SubjectPickerModal
-            courses={loginCourses}
-            teacherName={loginTeacherName}
-            onSelect={handleSubjectSelected}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-500 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <motion.div className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl"

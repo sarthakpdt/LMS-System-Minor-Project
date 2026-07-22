@@ -21,6 +21,10 @@ const attendanceSchema = new mongoose.Schema({
     required: true
   },
   teacherName: String,
+  section: {
+    type: String,
+    default: null
+  },
   records: [
     {
       studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -30,6 +34,6 @@ const attendanceSchema = new mongoose.Schema({
   ]
 }, { timestamps: true });
 
-attendanceSchema.index({ date: 1, subject: 1, teacherId: 1 }, { unique: true });
+attendanceSchema.index({ date: 1, subject: 1, teacherId: 1, section: 1 }, { unique: true });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

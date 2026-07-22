@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const branchSchema = new mongoose.Schema({
   code: { type: String, required: true, uppercase: true }, // e.g. "BTECH", "BBA", "BDES"
   name: { type: String, required: true }, // e.g. "Bachelor of Technology"
-  years: [{
-    yearNumber: { type: Number, required: true }, // 1, 2, 3, 4
-    label: { type: String, required: true }, // e.g. "First Year"
+  semesters: [{
+    semesterNumber: { type: Number, required: true }, // 1 to 8
+    label: { type: String, required: true }, // e.g. "Semester 1"
     sections: [{ type: String, required: true }] // ["A", "B", "C"]
   }]
 });

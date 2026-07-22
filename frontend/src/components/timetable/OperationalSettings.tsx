@@ -99,20 +99,19 @@ export default function OperationalSettings({ config, onChange }: Props) {
   const autoGenerateSlots = () => {
     const dur = config.lectureDuration || 50;
     const slots: TimeSlot[] = [
-      { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', isBreak: false, breakType: null },
-      { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', isBreak: false, breakType: null },
-      { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', isBreak: false, breakType: null },
-      { label: '12:00 - 13:00', startTime: '12:00', endTime: '13:00', isBreak: true,  breakType: 'lunch' },
-      { label: '13:00 - 13:50', startTime: '13:00', endTime: '13:50', isBreak: false, breakType: null },
-      { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', isBreak: false, breakType: null },
-      { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', isBreak: false, breakType: null },
-      { label: '16:00 - 16:50', startTime: '16:00', endTime: '16:50', isBreak: false, breakType: null },
+      { label: '09:00 - 10:00', startTime: '09:00', endTime: '10:00', isBreak: false, breakType: null },
+      { label: '10:00 - 11:00', startTime: '10:00', endTime: '11:00', isBreak: false, breakType: null },
+      { label: '11:00 - 12:00', startTime: '11:00', endTime: '12:00', isBreak: false, breakType: null },
+      { label: '12:00 - 14:00', startTime: '12:00', endTime: '14:00', isBreak: true,  breakType: 'lunch' },
+      { label: '14:00 - 15:00', startTime: '14:00', endTime: '15:00', isBreak: false, breakType: null },
+      { label: '15:00 - 16:00', startTime: '15:00', endTime: '16:00', isBreak: false, breakType: null },
+      { label: '16:00 - 17:00', startTime: '16:00', endTime: '17:00', isBreak: false, breakType: null },
     ];
     onChange({
       ...config,
-      lectureDuration: 50,
+      lectureDuration: 60,
       timeSlots: slots,
-      lunchBreak: { startTime: '12:00', endTime: '13:00' },
+      lunchBreak: { startTime: '12:00', endTime: '14:00' },
     });
   };
 
