@@ -12,7 +12,7 @@ import { Analytics } from "./components/Analytics";
 import { StudyMaterials } from "./components/StudyMaterials";
 import { Assessments } from "./components/Assessments";
 import { AutoGrading } from "./components/AutoGrading";
-import { StudentPortalNew } from "./components/StudentPortalNew";
+import { StudentPortal } from "./components/StudentPortal";
 import { PerformanceLevels } from "./components/PerformanceLevels";
 import { TeacherQuizManagement } from "./components/teacher/TeacherQuizManagement";
 import { TeacherQuizMonitor } from "./components/teacher/TeacherQuizMonitor";
@@ -63,7 +63,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         path: "/",
         Component: ProtectedStudentLayout,
         children: [
-          { index: true, Component: StudentPortalNew },
+          { index: true, Component: StudentPortal },
           { path: "courses", Component: Courses },
         { path: "assignments", Component: Assignments },
         { path: "materials", Component: StudyMaterials },

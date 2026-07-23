@@ -333,7 +333,7 @@ import { Button, Alert } from './theme/components';
 
 - **Dashboards**: `src/components/`
   - `admin/AdminQuizDashboardNew.tsx`
-  - `StudentPortalNew.tsx`
+  - `StudentPortal.tsx`
   - `layouts/AdminLayout.tsx`
   - `layouts/TeacherLayoutNew.tsx`
   - `auth/StudentAuthNew.tsx`
