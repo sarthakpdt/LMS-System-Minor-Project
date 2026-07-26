@@ -12,12 +12,13 @@ interface Props {
   onDirty: () => void;
 }
 
-const emptySubject = (branch: string, year: number): Partial<TtSubject> => ({
+const emptySubject = (branch: string, semester: number): Partial<TtSubject> => ({
   name: '',
   code: '',
   type: 'theory',
   branch,
-  year,
+  semester,
+  year: Math.ceil(semester / 2),
   weeklyHours: 3,
   labDuration: 2,
   lectureDuration: 50,
@@ -33,7 +34,7 @@ const emptySubject = (branch: string, year: number): Partial<TtSubject> => ({
 export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: Props) {
   const branches = unified?.branches || [];
   const [branch, setBranch] = useState('');
-  const [year, setYear] = useState(1);
+  const [semester, setSemester] = useState(1);
   const [subjects, setSubjects] = useState<TtSubject[]>([]);
   const [editing, setEditing] = useState<Partial<TtSubject> | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,7 @@ export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: P
     if (!branch) return;
     setLoading(true);
     try {
-      const res = await engineApi.getSubjects({ branch, year });
+      const res = await engineApi.getSubjects({ branch, semester });
       setSubjects(res.subjects);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to load subjects.');
@@ -60,13 +61,13 @@ export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: P
 
   useEffect(() => {
     loadSubjects();
-  }, [branch, year]);
+  }, [branch, semester]);
 
   const validate = (): string | null => {
     if (!editing?.name?.trim()) return 'Subject name is required.';
     if (!editing?.code?.trim()) return 'Subject code is required.';
     if (subjects.some((s) => s.code === editing.code?.toUpperCase() && s._id !== editing._id)) {
-      return 'Subject code already exists for this branch/year.';
+      return 'Subject code already exists for this branch/semester.';
     }
     if ((editing.weeklyHours || 0) < 1) return 'Weekly classes must be at least 1.';
     if ((editing.lectureDuration || 0) < 30 || (editing.lectureDuration || 0) > 180) {
@@ -88,7 +89,7 @@ export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: P
         ...editing,
         id: editing?._id,
         branch,
-        year,
+        semester,
         code: editing!.code!.toUpperCase(),
         facultyName: faculty?.name || '',
       });
@@ -127,9 +128,9 @@ export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: P
     }
   };
 
-  const branchYears = (b: TtBranch) => {
+  const branchSemesters = (b: TtBranch) => {
     const sems = (unified?.semesters || []).filter((s) => idOf(s.branchId) === b._id);
-    return [...new Set(sems.map((s) => s.year))].sort();
+    return [...new Set(sems.map((s) => s.semesterNumber))].sort();
   };
 
   return (
@@ -149,14 +150,14 @@ export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: P
           </select>
         </div>
         <div>
-          <FieldLabel>Year</FieldLabel>
-          <select className={inputClass('min-w-[100px]')} value={year} onChange={(e) => setYear(Number(e.target.value))}>
-            {(branches.find((b) => b.code === branch) ? branchYears(branches.find((b) => b.code === branch)!) : [1]).map((y) => (
-              <option key={y} value={y}>Year {y}</option>
+          <FieldLabel>Semester</FieldLabel>
+          <select className={inputClass('min-w-[100px]')} value={semester} onChange={(e) => setSemester(Number(e.target.value))}>
+            {(branches.find((b) => b.code === branch) ? branchSemesters(branches.find((b) => b.code === branch)!) : [1]).map((s) => (
+              <option key={s} value={s}>Semester {s}</option>
             ))}
           </select>
         </div>
-        <button type="button" className={btnPrimary()} onClick={() => setEditing(emptySubject(branch, year))}>
+        <button type="button" className={btnPrimary()} onClick={() => setEditing(emptySubject(branch, semester))}>
           <Plus className="w-4 h-4" /> Add Subject
         </button>
       </div>
@@ -224,7 +225,7 @@ export default function SubjectStep({ unified, teachers, onRefresh, onDirty }: P
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-purple-600" /></div>
       ) : subjects.length === 0 ? (
-        <p className="text-xs text-gray-400 text-center py-10 border border-dashed rounded-xl">No subjects for {branch} Year {year}. Add one above.</p>
+        <p className="text-xs text-gray-400 text-center py-10 border border-dashed rounded-xl">No subjects for {branch} Semester {semester}. Add one above.</p>
       ) : (
         <div className="overflow-x-auto border border-gray-100 rounded-xl">
           <table className="w-full text-xs">

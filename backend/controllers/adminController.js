@@ -121,10 +121,11 @@ exports.approveTeacher = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Teacher ID and Admin ID are required' });
     }
 
+    // Only update approval fields — never touch email/password/role
     const teacher = await Teacher.findByIdAndUpdate(
       teacherId,
-      { approvalStatus: 'approved', approvedBy: adminId, approvalDate: new Date() },
-      { new: true }
+      { $set: { approvalStatus: 'approved', approvedBy: adminId, approvalDate: new Date() } },
+      { new: true, runValidators: false }
     );
 
     if (!teacher) {
@@ -134,6 +135,33 @@ exports.approveTeacher = async (req, res) => {
     await Admin.findByIdAndUpdate(adminId, { $push: { approvedTeachers: teacherId } });
 
     res.status(200).json({ success: true, message: `Teacher ${teacher.name} has been approved!`, data: teacher });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reject a teacher
+exports.rejectTeacher = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    const { adminId, reason } = req.body;
+
+    if (!teacherId || !adminId) {
+      return res.status(400).json({ success: false, message: 'Teacher ID and Admin ID are required' });
+    }
+
+    // Only update approval fields — never touch email/password/role
+    const teacher = await Teacher.findByIdAndUpdate(
+      teacherId,
+      { $set: { approvalStatus: 'rejected', approvedBy: adminId, rejectionReason: reason || 'No reason provided', approvalDate: new Date() } },
+      { new: true, runValidators: false }
+    );
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+
+    res.status(200).json({ success: true, message: `Teacher ${teacher.name} has been rejected.`, data: teacher });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -168,15 +196,28 @@ exports.getAllCourses = async (req, res) => {
 // @desc    Create a new course
 exports.createCourse = async (req, res) => {
   try {
-    const { courseCode, courseName, department, semester, teacherId, description, section } = req.body;
+    const { courseCode, courseName, department, semester, teacherId, description, section, credits, type } = req.body;
 
     if (!courseCode || !courseName || !department || !semester) {
       return res.status(400).json({ success: false, message: 'courseCode, courseName, department, semester are required' });
     }
 
-    const existing = await Course.findOne({ courseCode });
+    // Duplicate check: same branch + semester + subject code
+    const existing = await Course.findOne({
+      courseCode: courseCode.toUpperCase(),
+      department,
+      semester: String(semester),
+    });
     if (existing) {
-      return res.status(400).json({ success: false, message: 'Course with this code already exists' });
+      return res.status(400).json({ success: false, message: `A course with code "${courseCode}" already exists in ${department} Semester ${semester}` });
+    }
+
+    // Validate teacher exists before assigning
+    if (teacherId) {
+      const teacherExists = await Teacher.findById(teacherId).select('_id').lean();
+      if (!teacherExists) {
+        return res.status(400).json({ success: false, message: 'Teacher not found. Cannot assign to course.' });
+      }
     }
 
     const course = await Course.create({
@@ -184,26 +225,139 @@ exports.createCourse = async (req, res) => {
       courseName,
       department,
       semester: String(semester),
+      credits: Number(credits) || 4,
+      type: type || 'theory',
       teacher: teacherId || null,
       description: description || '',
       section: section || null,
     });
 
     if (teacherId) {
-      await Teacher.findByIdAndUpdate(teacherId, {
-        $push: {
-          assignedCourses: {
-            courseId: course._id,
-            courseCode: course.courseCode,
-            courseName: course.courseName,
-            semester: course.semester,
+      // Only update assignedCourses — NEVER touch email/password/role
+      await Teacher.findByIdAndUpdate(
+        teacherId,
+        {
+          $push: {
+            assignedCourses: {
+              courseId: course._id,
+              courseCode: course.courseCode,
+              courseName: course.courseName,
+              semester: course.semester,
+            }
           }
-        }
-      });
+        },
+        { runValidators: false }
+      );
     }
 
-    res.status(201).json({ success: true, message: 'Course created!', data: course });
+    res.status(201).json({ success: true, message: 'Course created successfully!', data: course });
   } catch (error) {
+    console.error('createCourse error:', error);
+    // Friendlier message for MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'A course with this code already exists in this branch and semester' });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update an existing course
+exports.updateCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { courseCode, courseName, department, semester, teacherId, description, section, credits, type } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    // Check for duplicates if code/dept/semester changed
+    const newCode = courseCode ? courseCode.toUpperCase() : course.courseCode;
+    const newDept = department || course.department;
+    const newSem = semester ? String(semester) : course.semester;
+    if (newCode !== course.courseCode || newDept !== course.department || newSem !== course.semester) {
+      const dup = await Course.findOne({ courseCode: newCode, department: newDept, semester: newSem, _id: { $ne: courseId } });
+      if (dup) {
+        return res.status(400).json({ success: false, message: `A course with code "${newCode}" already exists in ${newDept} Semester ${newSem}` });
+      }
+    }
+
+    // Handle teacher change
+    const oldTeacherId = course.teacher ? String(course.teacher) : null;
+    const newTeacherId = teacherId !== undefined ? (teacherId || null) : course.teacher;
+
+    // Update course fields
+    if (courseCode) course.courseCode = courseCode;
+    if (courseName) course.courseName = courseName;
+    if (department) course.department = department;
+    if (semester) course.semester = String(semester);
+    if (credits !== undefined) course.credits = Number(credits);
+    if (type) course.type = type;
+    if (description !== undefined) course.description = description;
+    if (section !== undefined) course.section = section || null;
+    if (teacherId !== undefined) course.teacher = teacherId || null;
+
+    await course.save();
+
+    // Sync teacher assignedCourses if teacher changed
+    if (teacherId !== undefined && String(newTeacherId) !== oldTeacherId) {
+      // Remove from old teacher
+      if (oldTeacherId) {
+        await Teacher.findByIdAndUpdate(oldTeacherId, {
+          $pull: { assignedCourses: { courseId: course._id } }
+        }, { runValidators: false });
+      }
+      // Add to new teacher
+      if (newTeacherId) {
+        const alreadyAssigned = await Teacher.findOne({ _id: newTeacherId, 'assignedCourses.courseId': course._id });
+        if (!alreadyAssigned) {
+          await Teacher.findByIdAndUpdate(newTeacherId, {
+            $push: { assignedCourses: { courseId: course._id, courseCode: course.courseCode, courseName: course.courseName, semester: course.semester } }
+          }, { runValidators: false });
+        }
+      }
+    }
+
+    const updated = await Course.findById(courseId).populate('teacher', 'name email').lean();
+    res.status(200).json({ success: true, message: 'Course updated successfully!', data: updated });
+  } catch (error) {
+    console.error('updateCourse error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'A course with this code already exists in this branch and semester' });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a course
+exports.deleteCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    // Remove course from teacher's assignedCourses
+    if (course.teacher) {
+      await Teacher.findByIdAndUpdate(course.teacher, {
+        $pull: { assignedCourses: { courseId: course._id } }
+      }, { runValidators: false });
+    }
+
+    // Remove course from students' enrolledCourses
+    const Student = require('../models/Student');
+    await Student.updateMany(
+      { 'enrolledCourses.courseId': course._id },
+      { $pull: { enrolledCourses: { courseId: course._id } } }
+    );
+
+    await Course.findByIdAndDelete(courseId);
+
+    res.status(200).json({ success: true, message: `Course "${course.courseName}" deleted successfully` });
+  } catch (error) {
+    console.error('deleteCourse error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -333,42 +487,55 @@ exports.assignTeacherToCourse = async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
 
-    const teacher = await Teacher.findById(teacherId);
+    // Fetch teacher — only select safe, non-auth fields for logic; login fields stay untouched
+    const teacher = await Teacher.findById(teacherId).select('_id name email department assignedCourses').lean();
     if (!teacher) return res.status(404).json({ success: false, message: 'Teacher not found' });
 
     // Remove course from old teacher's assignedCourses if teacher is changing
     if (course.teacher && String(course.teacher) !== String(teacherId)) {
-      await Teacher.findByIdAndUpdate(course.teacher, {
-        $pull: { assignedCourses: { courseId: course._id } }
-      });
+      await Teacher.findByIdAndUpdate(
+        course.teacher,
+        { $pull: { assignedCourses: { courseId: course._id } } },
+        { runValidators: false }
+      );
     }
 
-    // Update course with new teacher
-    course.teacher = teacherId;
-    await course.save();
+    // Update ONLY the course.teacher field — nothing else on the course
+    await Course.findByIdAndUpdate(
+      courseId,
+      { $set: { teacher: teacherId } },
+      { runValidators: false }
+    );
 
     // Add course to teacher's assignedCourses if not already there
-    const alreadyAssigned = teacher.assignedCourses.some(
+    const alreadyAssigned = (teacher.assignedCourses || []).some(
       c => String(c.courseId) === String(courseId)
     );
     if (!alreadyAssigned) {
-      await Teacher.findByIdAndUpdate(teacherId, {
-        $push: {
-          assignedCourses: {
-            courseId: course._id,
-            courseCode: course.courseCode,
-            courseName: course.courseName,
-            semester: course.semester,
+      // Only update assignedCourses array — NEVER touch email/password/role
+      await Teacher.findByIdAndUpdate(
+        teacherId,
+        {
+          $push: {
+            assignedCourses: {
+              courseId: course._id,
+              courseCode: course.courseCode,
+              courseName: course.courseName,
+              semester: course.semester,
+            }
           }
-        }
-      });
+        },
+        { runValidators: false }
+      );
     }
 
-    // Add enrolled students to teacher's assignedStudents
+    // Add enrolled students to teacher's assignedStudents (safe addToSet only)
     if (course.enrolledStudents?.length) {
-      await Teacher.findByIdAndUpdate(teacherId, {
-        $addToSet: { assignedStudents: { $each: course.enrolledStudents } }
-      });
+      await Teacher.findByIdAndUpdate(
+        teacherId,
+        { $addToSet: { assignedStudents: { $each: course.enrolledStudents } } },
+        { runValidators: false }
+      );
     }
 
     const updated = await Course.findById(courseId)

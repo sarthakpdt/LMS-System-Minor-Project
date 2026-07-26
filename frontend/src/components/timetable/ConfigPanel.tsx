@@ -38,9 +38,9 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   const [success, setSuccess] = useState('');
 
   // Form states
-  const [branchForm, setBranchForm] = useState({ code: '', name: '', yearsCount: 4, defaultSectionCount: 2 });
+  const [branchForm, setBranchForm] = useState({ code: '', name: '', semestersCount: 8, defaultSectionCount: 2 });
   const [roomForm, setRoomForm] = useState({ id: '', name: '', type: 'classroom' as 'classroom' | 'lab', capacity: 60, labType: '' });
-  const [subjectForm, setSubjectForm] = useState({ id: '', name: '', code: '', type: 'theory' as 'theory' | 'lab', branch: '', year: 1, semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' });
+  const [subjectForm, setSubjectForm] = useState({ id: '', name: '', code: '', type: 'theory' as 'theory' | 'lab', branch: '', semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' });
   const [constraintForm, setConstraintForm] = useState({ facultyId: '', maxHoursPerDay: 6, maxHoursPerWeek: 24, day: 'Monday', startTime: '09:00', endTime: '11:00', reason: 'Other engagement' });
 
   // Fetch all setup data
@@ -116,49 +116,46 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   const addBranch = () => {
     if (!config || !branchForm.code.trim() || !branchForm.name.trim()) return;
 
-    // Prepare years structure
-    const years = [];
-    for (let i = 1; i <= branchForm.yearsCount; i++) {
-      let label = 'First Year';
-      if (i === 2) label = 'Second Year';
-      if (i === 3) label = 'Third Year';
-      if (i === 4) label = 'Fourth Year';
-      if (i > 4) label = `Year ${i}`;
-      years.push({
-        yearNumber: i,
+    // Prepare semesters structure
+    const semesters = [];
+    for (let i = 1; i <= branchForm.semestersCount; i++) {
+      let label = `Semester ${i}`;
+      semesters.push({
+        semesterNumber: i,
         label,
-        sections: buildSectionLabels(branchForm.defaultSectionCount || 2),
+        sections: Array.from({ length: branchForm.defaultSectionCount }, (_, idx) => String.fromCharCode(65 + idx))
       });
     }
 
     const newBranch: BranchConfig = {
       code: branchForm.code.toUpperCase(),
       name: branchForm.name,
-      years
+      semesters
     };
 
     setConfig({
       ...config,
       branches: [...config.branches, newBranch]
     });
-    setBranchForm({ code: '', name: '', yearsCount: 4, defaultSectionCount: 2 });
+    setBranchForm({ code: '', name: '', semestersCount: 8, defaultSectionCount: 2 });
   };
 
-  const updateYearSectionCount = (branchCode: string, yearNumber: number, count: number) => {
-    if (!config) return;
-    const sections = buildSectionLabels(count);
-    setConfig({
-      ...config,
-      branches: config.branches.map((b) =>
-        b.code !== branchCode
-          ? b
-          : {
+  const updateSemesterSectionCount = (branchCode: string, semesterNumber: number, count: number) => {
+    const sections = Array.from({ length: Math.max(1, count) }, (_, i) => String.fromCharCode(65 + i));
+    setConfig(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        branches: prev.branches.map(b => b.code === branchCode
+          ? {
             ...b,
-            years: b.years.map((y) =>
-              y.yearNumber === yearNumber ? { ...y, sections } : y,
-            ),
-          },
-      ),
+            semesters: b.semesters.map((s) =>
+              s.semesterNumber === semesterNumber ? { ...s, sections } : s
+            )
+          }
+          : b
+        )
+      };
     });
   };
 
@@ -234,7 +231,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
         facultyId: subjectForm.facultyId || null,
         facultyName: ''
       });
-      setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', year: 1, semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' });
+      setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' });
       loadData();
       showSuccessMessage('Subject details saved successfully!');
     } catch (err: any) {
@@ -251,7 +248,6 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
       code: sub.code,
       type: sub.type,
       branch: sub.branch,
-      year: sub.year || Math.ceil((sub.semester || 1) / 2),
       semester: sub.semester || 1,
       credits: sub.credits || 4,
       weeklyHours: sub.weeklyHours,
@@ -347,8 +343,8 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
   }
 
   const stepTitles: Record<ConfigWizardStep, { title: string; desc: string }> = {
-    structure: { title: 'Academic Structure', desc: 'Define branches, years, sections, working days, and bell schedule.' },
-    courses: { title: 'Course Configuration', desc: 'Add unlimited subjects per branch and year with faculty and room preferences.' },
+    structure: { title: 'Academic Structure', desc: 'Define branches, semesters, sections, working days, and bell schedule.' },
+    courses: { title: 'Course Configuration', desc: 'Add unlimited subjects per branch and semester with faculty and room preferences.' },
     faculty: { title: 'Faculty Constraints', desc: 'Set workload limits and blocked availability slots.' },
     rooms: { title: 'Room Registry', desc: 'Register classrooms and labs available for scheduling.' },
     students: { title: 'Enrollment Constraints', desc: 'Assign students to sections and course enrollments.' },
@@ -433,17 +429,17 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-500 mb-1">Duration (Years)</label>
+                  <label className="block text-[11px] font-semibold text-gray-500 mb-1">Duration (Semesters)</label>
                   <select
-                    value={branchForm.yearsCount}
-                    onChange={e => setBranchForm({ ...branchForm, yearsCount: Number(e.target.value) })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    value={branchForm.semestersCount}
+                    onChange={e => setBranchForm({ ...branchForm, semestersCount: Number(e.target.value) })}
+                    className="w-full border border-gray-200 rounded-md p-1.5 text-xs text-gray-700 bg-gray-50"
                   >
-                    {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y !== 1 ? 's' : ''}</option>)}
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => <option key={s} value={s}>{s} Semester{s !== 1 ? 's' : ''}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-500 mb-1">Sections per year (default)</label>
+                  <label className="block text-[11px] font-semibold text-gray-500 mb-1">Sections per semester (default)</label>
                   <input
                     type="number"
                     min={1}
@@ -465,7 +461,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
               <div className="md:col-span-2 space-y-4">
                 <div className="flex items-center justify-between border-b pb-2">
                   <h4 className="font-bold text-gray-800 text-sm">Active Academic Layers</h4>
-                  <span className="text-[10px] text-gray-400">Specify branches and dynamic year ranges</span>
+                  <span className="text-[10px] text-gray-400">Specify branches and dynamic semester ranges</span>
                 </div>
 
                 {config.branches.length === 0 ? (
@@ -485,22 +481,23 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                           <h5 className="font-bold text-gray-800 text-xs mt-1">{branch.name}</h5>
                         </div>
                         <div className="space-y-2">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Year Classes & Sections</p>
-                          {branch.years.map(y => (
-                            <div key={y.yearNumber} className="flex flex-wrap items-center gap-2 text-xs py-1 border-b border-gray-50 last:border-0">
-                              <span className="text-gray-600 min-w-[90px]">{y.label}</span>
-                              <input
-                                type="number"
-                                min={1}
-                                max={26}
-                                value={y.sections.length}
-                                onChange={(e) => updateYearSectionCount(branch.code, y.yearNumber, Number(e.target.value))}
-                                className="w-14 border border-gray-200 rounded px-2 py-1 text-center text-xs"
-                                title="Number of sections"
-                              />
-                              <span className="font-semibold text-purple-600 text-[10px]">
-                                {y.sections.join(', ')}
-                              </span>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">Semester Classes & Sections</p>
+                          {branch.semesters?.map(s => (
+                            <div key={s.semesterNumber} className="flex flex-wrap items-center gap-2 text-xs py-1 border-b border-gray-50 last:border-0">
+                              <span className="w-24 font-medium text-gray-600 truncate">{s.label}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">Sections:</span>
+                                <input
+                                  type="number" min={1} max={10}
+                                  value={s.sections.length}
+                                  onChange={(e) => updateSemesterSectionCount(branch.code, s.semesterNumber, Number(e.target.value))}
+                                  className="w-14 border border-gray-200 rounded px-2 py-1 text-center text-xs"
+                                  title="Number of sections"
+                                />
+                                <span className="font-semibold text-purple-600 text-[10px]">
+                                  {s.sections.join(', ')}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -808,7 +805,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                   {subjectForm.id && (
                     <button
                       type="button"
-                    onClick={() => setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', year: 1, semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' })}
+                    onClick={() => setSubjectForm({ id: '', name: '', code: '', type: 'theory', branch: '', semester: 1, credits: 4, weeklyHours: 3, labDuration: 2, facultyId: '' })}
                       className="border border-gray-200 hover:bg-gray-100 rounded-lg px-3 py-2 text-xs text-gray-500"
                     >
                       Clear
@@ -844,7 +841,7 @@ export default function ConfigPanel({ embeddedStep, hideHeader, onStructureSaved
                               <span className="block text-gray-500 text-[10px]">{sub.name}</span>
                             </td>
                             <td className="py-2.5 px-3 text-gray-600">
-                              {sub.branch} (Sem {sub.semester || Math.ceil((sub.year || 1) * 2 - 1)}, {sub.credits || 4} credits)
+                              {sub.branch} (Sem {sub.semester || 1}, {sub.credits || 4} credits)
                             </td>
                             <td className="py-2.5 px-3 text-center">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sub.type === 'lab' ? 'bg-amber-50 text-amber-700' : 'bg-purple-50 text-purple-700'

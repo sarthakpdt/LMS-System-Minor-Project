@@ -80,8 +80,9 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
   if (role === 'teacher') {
     return createBrowserRouter([
       {
+        // Teacher login page — uses the dedicated TeacherAuth component
         path: "/auth",
-        Component: StudentAuthNew,
+        Component: TeacherAuth,
       },
       {
         path: "/",

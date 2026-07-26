@@ -61,10 +61,9 @@ const validateBeforeGenerate = (config, subjects, rooms) => {
       issues.push({ type: 'mapping', message: `Subject ${s.name} (${s.code}) maps to branch "${s.branch}", which is not present in configuration.`, severity: 'error' });
       return;
     }
-    const derivedYear = Math.ceil(s.semester / 2);
-    const yearInConfig = branchInConfig.years.find(y => y.yearNumber === derivedYear);
-    if (!yearInConfig) {
-      issues.push({ type: 'mapping', message: `Subject ${s.name} (${s.code}) maps to Semester ${s.semester} (Year ${derivedYear}), which is not configured for branch ${s.branch}.`, severity: 'error' });
+    const semesterInConfig = branchInConfig.semesters.find(sem => sem.semesterNumber === s.semester);
+    if (!semesterInConfig) {
+      issues.push({ type: 'mapping', message: `Subject ${s.name} (${s.code}) maps to Semester ${s.semester}, which is not configured for branch ${s.branch}.`, severity: 'error' });
     }
   });
 

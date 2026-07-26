@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const ttEntrySchema = new mongoose.Schema({
   branch: { type: String, required: true },
-  year: { type: Number, required: true },
+  semester: { type: Number, required: true },
   section: { type: String, required: true },
   day: { type: String, required: true },
   timeSlot: {

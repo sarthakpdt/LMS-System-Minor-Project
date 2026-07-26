@@ -126,10 +126,6 @@ export function TeacherAuth() {
     employeeId: '', phone: '', department: '', specialization: '',
   });
 
-  // Subject picker after login
-  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
-  const [loginCourses, setLoginCourses] = useState<any[]>([]);
-  const [loginTeacherName, setLoginTeacherName] = useState('');
 
   // Courses for signup
   const [availableCourses, setAvailableCourses] = useState<any[]>([]);
@@ -163,44 +159,24 @@ export function TeacherAuth() {
       if (result.success) {
         toast.success('Login successful!');
         const courses: any[] = result.assignedCourses || [];
-        const name = result.userName || loginData.email.split('@')[0];
 
-        if (courses.length === 0) {
-          navigate('/');
-        } else if (courses.length === 1) {
-          // Auto-select single course
+        if (courses.length > 0) {
+          // Auto-select first course
           setActiveSubject({
             courseId: String(courses[0].courseId || courses[0]._id),
             courseCode: courses[0].courseCode,
             courseName: courses[0].courseName,
             semester: courses[0].semester,
           });
-          navigate('/');
-        } else {
-          // Show picker for multiple courses
-          setLoginCourses(courses);
-          setLoginTeacherName(name);
-          setShowSubjectPicker(true);
         }
+        // Redirect straight to dashboard replacing the auth route so back doesn't go to login
+        navigate('/', { replace: true });
       } else {
         setError(result.message || 'Invalid credentials');
         toast.error('Login failed', { description: result.message });
       }
     } catch { setError('An error occurred.'); }
     finally { setLoading(false); }
-  };
-
-  const handleSubjectSelected = (course: any) => {
-    if (course) {
-      setActiveSubject({
-        courseId: String(course.courseId || course._id),
-        courseCode: course.courseCode,
-        courseName: course.courseName,
-        semester: course.semester,
-      });
-    }
-    setShowSubjectPicker(false);
-    navigate('/');
   };
 
   // ── Signup ────────────────────────────────────────────────────────────────
@@ -238,16 +214,6 @@ export function TeacherAuth() {
 
   return (
     <>
-      <AnimatePresence>
-        {showSubjectPicker && (
-          <SubjectPickerModal
-            courses={loginCourses}
-            teacherName={loginTeacherName}
-            onSelect={handleSubjectSelected}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-500 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <motion.div className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl dark:bg-slate-800"

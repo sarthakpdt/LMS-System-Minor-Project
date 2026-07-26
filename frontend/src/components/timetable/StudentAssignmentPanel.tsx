@@ -21,7 +21,7 @@ interface Props {
 
 export default function StudentAssignmentPanel({ config, subjects }: Props) {
   const [branch, setBranch] = useState('');
-  const [year, setYear] = useState(1);
+  const [semester, setSemester] = useState(1);
   const [section, setSection] = useState('A');
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
@@ -31,19 +31,19 @@ export default function StudentAssignmentPanel({ config, subjects }: Props) {
   const [success, setSuccess] = useState('');
 
   const branchSubjects = subjects.filter(
-    (s) => s.branch === branch && s.year === year,
+    (s) => s.branch === branch && s.semester === semester,
   );
 
-  const sectionsForYear = config?.branches
+  const sectionsForSemester = config?.branches
     .find((b) => b.code === branch)
-    ?.years.find((y) => y.yearNumber === year)?.sections || ['A'];
+    ?.semesters?.find((s) => s.semesterNumber === semester)?.sections || ['A'];
 
   const loadStudents = useCallback(async () => {
     if (!branch) return;
     setLoading(true);
     setError('');
     try {
-      const res = await api.getStudentsForAssignment({ branch, year });
+      const res = await api.getStudentsForAssignment({ branch, semester });
       setStudents(res.students);
       const init: Record<string, string[]> = {};
       res.students.forEach((s: StudentRow) => {
@@ -55,12 +55,12 @@ export default function StudentAssignmentPanel({ config, subjects }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [branch, year]);
+  }, [branch, semester]);
 
   useEffect(() => {
     if (!config?.branches.length) return;
     setBranch(config.branches[0].code);
-    setYear(config.branches[0].years[0]?.yearNumber || 1);
+    setSemester(config.branches[0].semesters?.[0]?.semesterNumber || 1);
   }, [config]);
 
   useEffect(() => {
@@ -68,10 +68,10 @@ export default function StudentAssignmentPanel({ config, subjects }: Props) {
   }, [loadStudents]);
 
   useEffect(() => {
-    if (sectionsForYear.length && !sectionsForYear.includes(section)) {
-      setSection(sectionsForYear[0]);
+    if (sectionsForSemester.length && !sectionsForSemester.includes(section)) {
+      setSection(sectionsForSemester[0]);
     }
-  }, [sectionsForYear, section]);
+  }, [sectionsForSemester, section]);
 
   const toggleSubject = (studentId: string, subjectId: string) => {
     setSelected((prev) => {
@@ -137,13 +137,13 @@ export default function StudentAssignmentPanel({ config, subjects }: Props) {
             <option key={b.code} value={b.code}>{b.name}</option>
           ))}
         </select>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="border rounded-lg px-3 py-2 text-xs">
-          {config.branches.find((b) => b.code === branch)?.years.map((y) => (
-            <option key={y.yearNumber} value={y.yearNumber}>{y.label}</option>
+        <select value={semester} onChange={(e) => setSemester(Number(e.target.value))} className="border rounded-lg px-3 py-2 text-xs">
+          {config.branches.find((b) => b.code === branch)?.semesters?.map((s) => (
+            <option key={s.semesterNumber} value={s.semesterNumber}>{s.label}</option>
           ))}
         </select>
         <select value={section} onChange={(e) => setSection(e.target.value)} className="border rounded-lg px-3 py-2 text-xs">
-          {sectionsForYear.map((s) => (
+          {sectionsForSemester.map((s) => (
             <option key={s} value={s}>Section {s}</option>
           ))}
         </select>
@@ -160,7 +160,7 @@ export default function StudentAssignmentPanel({ config, subjects }: Props) {
       {loading ? (
         <p className="text-xs text-gray-500 text-center py-8">Loading students...</p>
       ) : students.length === 0 ? (
-        <p className="text-xs text-gray-500 text-center py-8">No approved students found for this branch/year.</p>
+        <p className="text-xs text-gray-500 text-center py-8">No approved students found for this branch/semester.</p>
       ) : (
         <div className="overflow-x-auto border border-gray-100 rounded-xl">
           <table className="w-full text-xs">

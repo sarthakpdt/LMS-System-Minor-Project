@@ -172,7 +172,7 @@ const resolveFacultyName = async (facultyId) => {
 };
 
 const ensureCourseForSubject = async (subject) => {
-  const semester = semesterForYear(subject.year);
+  const semester = subject.semester ? String(subject.semester) : semesterForYear(subject.year);
   const department = toDepartment(subject.branch);
 
   let course = null;
@@ -197,17 +197,26 @@ const ensureCourseForSubject = async (subject) => {
     courseCode: subject.code,
     courseName: subject.name,
     department,
-    semester,
+    semester: String(subject.semester),
+    credits: subject.credits || 4,
+    type: subject.type || 'theory',
     timetableBranch: subject.branch,
-    academicYear: subject.year,
+    academicYear: null,
     teacher: subject.facultyId || null,
     ttSubjectId: subject._id,
     isActive: true,
   };
 
   if (!course) {
-    course = await Course.create(payload);
-    await TtSubject.findByIdAndUpdate(subject._id, { linkedCourseId: course._id });
+    try {
+      course = await Course.create(payload);
+      await TtSubject.findByIdAndUpdate(subject._id, { linkedCourseId: course._id });
+    } catch (err) {
+      if (err.code === 11000) {
+        throw new Error(`A course with code "${subject.code}" already exists in ${department} Semester ${subject.semester}`);
+      }
+      throw err;
+    }
   } else {
     course = await Course.findByIdAndUpdate(course._id, payload, { new: true });
     if (!subject.linkedCourseId) {
@@ -279,7 +288,7 @@ const validateBeforeGenerate = (config, subjects, rooms) => {
 
 const upsertSubjectRecord = async (payload) => {
   const {
-    id, _id, name, code, type, branch, year, semester, credits, weeklyHours, labDuration,
+    id, _id, name, code, type, branch, semester, credits, weeklyHours, labDuration,
     lectureDuration, facultyId, hasLab, labSessionsPerWeek,
     preferredDays, preferredSlots, roomType,
   } = payload;
@@ -291,7 +300,6 @@ const upsertSubjectRecord = async (payload) => {
     code: String(code).toUpperCase(),
     type,
     branch: String(branch).toUpperCase(),
-    year: year ? Number(year) : Math.ceil(Number(semester) / 2),
     semester: Number(semester),
     credits: Number(credits) || 4,
     weeklyHours: Number(weeklyHours),
@@ -323,7 +331,7 @@ const upsertSubjectRecord = async (payload) => {
     let labSubject = await TtSubject.findOne({
       code: labCode,
       branch: subject.branch,
-      year: subject.year,
+      semester: subject.semester,
       isActive: true,
     });
     const labBase = {
@@ -331,7 +339,8 @@ const upsertSubjectRecord = async (payload) => {
       code: labCode,
       type: 'lab',
       branch: subject.branch,
-      year: subject.year,
+      semester: subject.semester,
+      credits: subject.credits || 2,
       weeklyHours: Number(labSessionsPerWeek) || 1,
       labDuration: Number(labDuration) || 2,
       facultyId: facultyId || null,
@@ -373,17 +382,16 @@ exports.getActiveConfig = async (req, res) => {
         ],
         workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         timeSlots: [
-          { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', isBreak: false },
-          { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', isBreak: false },
-          { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', isBreak: false },
-          { label: '12:00 - 13:00', startTime: '12:00', endTime: '13:00', isBreak: true, breakType: 'lunch' },
-          { label: '13:00 - 13:50', startTime: '13:00', endTime: '13:50', isBreak: false },
-          { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', isBreak: false },
-          { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', isBreak: false },
-          { label: '16:00 - 16:50', startTime: '16:00', endTime: '16:50', isBreak: false }
+          { label: '09:00 - 10:00', startTime: '09:00', endTime: '10:00', isBreak: false },
+          { label: '10:00 - 11:00', startTime: '10:00', endTime: '11:00', isBreak: false },
+          { label: '11:00 - 12:00', startTime: '11:00', endTime: '12:00', isBreak: false },
+          { label: '12:00 - 14:00', startTime: '12:00', endTime: '14:00', isBreak: true, breakType: 'lunch' },
+          { label: '14:00 - 15:00', startTime: '14:00', endTime: '15:00', isBreak: false },
+          { label: '15:00 - 16:00', startTime: '15:00', endTime: '16:00', isBreak: false },
+          { label: '16:00 - 17:00', startTime: '16:00', endTime: '17:00', isBreak: false }
         ],
-        lunchBreak: { startTime: '12:00', endTime: '13:00' },
-        lectureDuration: 50,
+        lunchBreak: { startTime: '12:00', endTime: '14:00' },
+        lectureDuration: 60,
         isActive: true
       });
     }
@@ -420,9 +428,69 @@ exports.updateConfig = async (req, res) => {
 // ── GET /api/timetable/engine/subjects ──
 exports.getSubjects = async (req, res) => {
   try {
+    const branch = req.query.branch ? String(req.query.branch).toUpperCase() : null;
+    // Support both semester and year query params during transition
+    const semester = req.query.semester ? Number(req.query.semester) : (req.query.year ? Number(req.query.year) : null);
+
+    if (branch && semester) {
+      // 1. Fetch active Admin courses matching the branch and semester
+      const adminCourses = await Course.find({
+        isActive: true,
+        $or: [{ timetableBranch: branch }, { department: branch }],
+        semester: String(semester)
+      }).populate('teacher', 'name').lean();
+
+      // 2. Sync to TtSubject
+      for (const course of adminCourses) {
+        let existing = await TtSubject.findOne({ linkedCourseId: course._id });
+        
+        if (!existing) {
+          existing = await TtSubject.findOne({ 
+            code: course.courseCode, 
+            branch: branch, 
+            semester: semester 
+          });
+          
+          if (existing) {
+            existing.linkedCourseId = course._id;
+            if (course.teacher && !existing.facultyId) {
+              existing.facultyId = course.teacher._id;
+              existing.facultyName = course.teacher.name;
+            }
+            await existing.save();
+          } else {
+            // Create new TtSubject from Admin Course
+            await TtSubject.create({
+              linkedCourseId: course._id,
+              name: course.courseName,
+              code: course.courseCode,
+              type: course.type || 'theory',
+              branch: branch,
+              semester: semester,
+              credits: course.credits || 4,
+              weeklyHours: 3,
+              labDuration: 2,
+              facultyId: course.teacher ? course.teacher._id : null,
+              facultyName: course.teacher ? course.teacher.name : '',
+              hasLab: false,
+              labSessionsPerWeek: 1,
+              isActive: true
+            });
+          }
+        } else {
+           // Optionally update faculty if changed
+           if (course.teacher && String(existing.facultyId) !== String(course.teacher._id)) {
+              existing.facultyId = course.teacher._id;
+              existing.facultyName = course.teacher.name;
+              await existing.save();
+           }
+        }
+      }
+    }
+
     const filter = { isActive: true };
-    if (req.query.branch) filter.branch = String(req.query.branch).toUpperCase();
-    if (req.query.year) filter.year = Number(req.query.year);
+    if (branch) filter.branch = branch;
+    if (semester) filter.semester = semester;
     const subjects = await TtSubject.find(filter).sort({ name: 1 });
     res.json({ success: true, subjects });
   } catch (err) {
@@ -442,11 +510,11 @@ exports.saveSubject = async (req, res) => {
 
 exports.saveSubjectsBulk = async (req, res) => {
   try {
-    const { branch, year, subjects } = req.body;
-    if (!branch || !year || !Array.isArray(subjects) || subjects.length === 0) {
+    const { branch, semester, subjects } = req.body;
+    if (!branch || !semester || !Array.isArray(subjects) || subjects.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'branch, year, and subjects array are required.',
+        message: 'branch, semester, and subjects array are required.',
       });
     }
 
@@ -455,7 +523,7 @@ exports.saveSubjectsBulk = async (req, res) => {
       const subject = await upsertSubjectRecord({
         ...row,
         branch: row.branch || branch,
-        year: row.year || year,
+        semester: row.semester || semester,
       });
       saved.push(subject);
     }
@@ -919,7 +987,7 @@ exports.getLatestDraft = async (req, res) => {
 // ── GET /api/timetable/engine/published ──
 exports.getPublished = async (req, res) => {
   try {
-    const { branch, year, section, facultyId, roomId } = req.query;
+    const { branch, semester, section, facultyId, roomId } = req.query;
     const published = await TtPublished.findOne().sort({ createdAt: -1 });
     if (!published) {
       return res.json({ success: true, entries: [] });
@@ -928,7 +996,7 @@ exports.getPublished = async (req, res) => {
     let filteredEntries = published.entries;
 
     if (branch) filteredEntries = filteredEntries.filter(e => e.branch === branch);
-    if (year) filteredEntries = filteredEntries.filter(e => e.year === Number(year));
+    if (semester) filteredEntries = filteredEntries.filter(e => e.semester === Number(semester));
     if (section) filteredEntries = filteredEntries.filter(e => e.section === section);
     if (facultyId) filteredEntries = filteredEntries.filter(e => e.facultyId && e.facultyId.toString() === facultyId);
     if (roomId) filteredEntries = filteredEntries.filter(e => e.roomId && e.roomId.toString() === roomId);
@@ -948,7 +1016,7 @@ exports.getPublishedForStudent = async (req, res) => {
       return res.json({ 
         success: true, 
         entries: [], 
-        studentMeta: { department: 'Preview', timetableBranch: 'Preview', section: 'A', year: 1, semester: 1 } 
+        studentMeta: { department: 'Preview', timetableBranch: 'Preview', section: 'A', semester: 1 } 
       });
     }
 
@@ -957,17 +1025,11 @@ exports.getPublishedForStudent = async (req, res) => {
       return res.json({ success: true, entries: [] });
     }
 
-    // Match department to branch (e.g. CS -> CS, or IT -> IT) and semester to year.
-    // 1st year = Sem 1 & 2, 2nd year = Sem 3 & 4, 3rd year = Sem 5 & 6, 4th year = Sem 7 & 8
+    // Match department to branch (e.g. CS -> CS) and filter by semester directly.
     const semesterNum = Number(student.semester);
-    const yearNum = Math.ceil(semesterNum / 2);
-
-    // Filter by branch and year. Note: section mapping could be added if section exists.
-    // Since student doesn't have a section field in schema, we will default to section "A" or show all sections
-    // let's show section "A" or all sections matching branch + year.
     const branch = student.timetableBranch || student.department;
     let filteredEntries = published.entries.filter(
-      (e) => e.branch === branch && e.year === yearNum,
+      (e) => e.branch === branch && e.semester === semesterNum,
     );
     if (student.section) {
       filteredEntries = filteredEntries.filter((e) => e.section === student.section);
@@ -980,7 +1042,6 @@ exports.getPublishedForStudent = async (req, res) => {
         department: student.department,
         timetableBranch: branch,
         section: student.section,
-        year: yearNum,
         semester: student.semester,
       },
     });
@@ -991,21 +1052,15 @@ exports.getPublishedForStudent = async (req, res) => {
 
 exports.getStudentsForAssignment = async (req, res) => {
   try {
-    const { branch, year, section, department } = req.query;
+    const { branch, semester, section, department } = req.query;
     const filter = { approvalStatus: 'approved', isActive: { $ne: false } };
 
     if (department) filter.department = department;
     if (branch) filter.timetableBranch = branch;
     if (section) filter.section = section;
 
-    if (year) {
-      const yearNum = Number(year);
-      const sems = [];
-      if (yearNum === 1) sems.push('1', '2');
-      if (yearNum === 2) sems.push('3', '4');
-      if (yearNum === 3) sems.push('5', '6');
-      if (yearNum === 4) sems.push('7', '8');
-      if (sems.length) filter.semester = { $in: sems };
+    if (semester) {
+      filter.semester = String(semester);
     }
 
     const students = await Student.find(filter)

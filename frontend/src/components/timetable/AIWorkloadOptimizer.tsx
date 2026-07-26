@@ -88,14 +88,14 @@ const AIWorkloadOptimizer: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [wRes, sRes, rRes] = await Promise.all([
-        api.get('/analytics/faculty-workload'),
-        api.get('/recommend-slots'),
-        api.get('/analytics/rooms'),
+      const [wRes, rRes] = await Promise.all([
+        api.getFacultyWorkload(),
+        api.getRoomUtilization(),
       ]);
-      if (wRes.success) setFaculty(wRes.faculty || []);
-      if (sRes.success) setRecommendations(sRes.recommendations || []);
-      if (rRes.success) setRooms(rRes.rooms || []);
+      setFaculty(wRes.faculty || []);
+      setRooms(rRes.rooms || []);
+      // Recommendations require a specific subjectId, so show empty by default
+      setRecommendations([]);
     } catch (e: any) {
       setError(e.message || 'Failed to load optimizer data');
     } finally {

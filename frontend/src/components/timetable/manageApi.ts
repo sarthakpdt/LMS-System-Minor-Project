@@ -226,9 +226,10 @@ export const engineApi = {
       method: 'POST',
       body: JSON.stringify(config),
     }),
-  getSubjects: (filters?: { branch?: string; year?: number }) => {
+  getSubjects: (filters?: { branch?: string; semester?: number; year?: number }) => {
     const params = new URLSearchParams();
     if (filters?.branch) params.append('branch', filters.branch);
+    if (filters?.semester) params.append('semester', String(filters.semester));
     if (filters?.year) params.append('year', String(filters.year));
     const qs = params.toString();
     return engineRequest<{ subjects: TtSubject[] }>(`/subjects${qs ? `?${qs}` : ''}`);

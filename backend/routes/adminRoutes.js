@@ -8,10 +8,13 @@ const {
   rejectStudent,
   getPendingTeachers,
   approveTeacher,
+  rejectTeacher,
   getTeacherById,
   getStudentById,
   getAllCourses,
   createCourse,
+  updateCourse,
+  deleteCourse,
   enrollStudentsByCriteria,
   getCourseStudents,
   getApprovedTeachers,
@@ -34,12 +37,15 @@ router.post('/students/:studentId/reject', rejectStudent);
 // ── Teacher routes ─────────────────────────────────────────────────────────────
 router.get('/teachers/pending', getPendingTeachers);
 router.get('/teachers/approved', getApprovedTeachers);
-router.get('/teachers/:teacherId', getTeacherById);          // fixes 404
+router.get('/teachers/:teacherId', getTeacherById);
 router.post('/teachers/:teacherId/approve', approveTeacher);
+router.post('/teachers/:teacherId/reject', rejectTeacher);
 
 // ── Course routes ──────────────────────────────────────────────────────────────
 router.get('/courses', getAllCourses);
 router.post('/courses', createCourse);
+router.put('/courses/:courseId', updateCourse);
+router.delete('/courses/:courseId', deleteCourse);
 router.get('/courses/:courseId/students', getCourseStudents);
 router.post('/courses/:courseId/enroll', enrollStudentsByCriteria);
 router.patch('/courses/:courseId/assign-teacher', assignTeacherToCourse);

@@ -7,8 +7,8 @@ export interface TimeSlot {
   breakType: 'lunch' | 'short' | null;
 }
 
-export interface YearConfig {
-  yearNumber: number;
+export interface SemesterConfig {
+  semesterNumber: number;
   label: string;
   sections: string[];
 }
@@ -16,7 +16,7 @@ export interface YearConfig {
 export interface BranchConfig {
   code: string;
   name: string;
-  years: YearConfig[];
+  semesters: SemesterConfig[];
 }
 
 export interface SchedulingRules {
@@ -60,7 +60,8 @@ export interface TtSubject {
   code: string;
   type: 'theory' | 'lab';
   branch: string;
-  year: number;
+  semester: number;
+  credits: number;
   weeklyHours: number;
   labDuration: number;
   lectureDuration?: number | null;
@@ -101,7 +102,7 @@ export interface TtFacultyConstraint {
 export interface TtEntry {
   _id?: string;
   branch: string;
-  year: number;
+  semester: number;
   section: string;
   day: string;
   timeSlot: {
@@ -159,7 +160,7 @@ export interface TtGenerated {
 export interface GenerationScope {
   type: 'full' | 'branch' | 'semester' | 'section' | 'day' | 'faculty';
   branch?: string;
-  year?: number;
+  semester?: number;
   section?: string;
   day?: string;
   facultyId?: string;

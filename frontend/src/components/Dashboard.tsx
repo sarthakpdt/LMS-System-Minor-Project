@@ -605,713 +605,6 @@ function StudentDashboard() {
           {/* Quick stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             {[
-              { label: 'Enrolled Courses', value: enrolledCourses.length, icon: BookOpen, color: 'bg-blue-500', onClick: undefined, sub: 'Active courses' },
-              { label: 'Assignments',      value: assignments.filter(a => a.isPublished).length, icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments'), sub: 'Pending work' },
-              { label: 'Avg. Score',       value: '—',                    icon: TrendingUp, color: 'bg-green-500', onClick: undefined, sub: 'Overall performance' },
-              { label: 'Level',            value: 'Beginner',             icon: Award,      color: 'bg-orange-500', onClick: undefined, sub: 'Current standing' },
-            ].map((s, i) => (
-              <div key={i} onClick={s.onClick}
-                className={`bg-white dark:bg-slate-900/50 rounded-[1.5rem] p-8 border border-gray-200 dark:border-slate-800 shadow-sm ${s.onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col`}>
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`w-14 h-14 ${s.color} rounded-xl flex items-center justify-center shadow-md`}>
-                    <s.icon className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <h3 className="text-4xl font-black leading-none mb-2 tracking-tight dynamic-text-white">
-                    {s.value}
-                  </h3>
-                  <p className="text-sm font-bold uppercase tracking-widest dynamic-text-muted">{s.label}</p>
-                  <p className="text-xs font-medium dynamic-text-muted opacity-80 mt-1">{s.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* AI Improvement Cards */}
-          {/* <DashboardImprovementCards userId={user?.id || ''} assignments={assignments} /> */}
-
-          {/* 2-Column: Upcoming Deadlines + Notifications */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Upcoming Deadlines */}
-            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-orange-500" /> Upcoming Deadlines
-                </h3>
-              </div>
-              <div className="p-6 space-y-4">
-                {[
-                  { course: 'DSA', title: 'Data Structures (CS201)', date: '24 Apr 2026', status: 'Due Soon!' },
-                  { course: 'COA', title: 'COA (CS301)', date: '25 Apr 2026', status: 'Due Soon' },
-                ].map((item, i) => (
-                  <div key={i} className={`p-4 rounded-lg border-l-4 ${i === 0 ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'}`}>
-                    <p className="font-semibold text-sm text-gray-900">{item.title}</p>
-                    <p className="text-xs text-gray-600 mt-1">📅 {item.date}</p>
-                    <span className={`inline-block text-xs font-bold mt-2 px-2 py-0.5 rounded ${i === 0 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      🔴 {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Notifications Panel */}
-            <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="text-lg">🔔</span>
-                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-              </div>
-              <div className="p-5 max-h-[400px] overflow-y-auto">
-                <NotificationsPanel 
-                  userId={user?.id} 
-                  role="student" 
-                  userName={user?.name}
-                  isAdmin={false}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Enrolled courses */}
-          <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm mb-6 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-500" /> My Enrolled Courses
-              </h3>
-            </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-gray-400 gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" /> Loading...
-              </div>
-            ) : enrolledCourses.length === 0 ? (
-              <div className="px-6 py-10 text-center">
-                <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">No courses enrolled yet</p>
-                <p className="text-sm text-gray-400 mt-1">Admin will enroll you based on department and semester.</p>
-              </div>
-            ) : (
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {enrolledCourses.map((c: any) => (
-                  <div key={String(c.courseId)} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{c.courseName}</p>
-                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{c.courseCode}</p>
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                            {DEPT_LABELS[c.department] || c.department}
-                          </span>
-                          <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
-                            Sem {c.semester}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Shortcut to assignments */}
-          <div onClick={() => setActiveTab('assignments')}
-            className="cursor-pointer bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-800 flex items-center gap-3 hover:bg-indigo-100 transition">
-            <FileText className="w-5 h-5 text-indigo-600 flex-shrink-0" />
-            <div>
-              <strong>View your Assignments</strong>
-              <p className="text-xs text-indigo-600 mt-0.5">All published assignments grouped by subject</p>
-            </div>
-          </div>
-        </>
-      )}
-
-      {activeTab === 'assignments'   && <StudentAssignmentsView />}
-      {activeTab === 'materials'     && <StudyMaterials />}
-      {activeTab === 'attendance'    && <StudentAttendance studentId={user?.id || ''} />}
-
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// TEACHER DASHBOARD
-// ─────────────────────────────────────────────────────────────
-function TeacherDashboard() {
-  const { user } = useAuth();
-  const [stats,      setStats]      = useState<any>({});
-  const [loading,    setLoading]    = useState(true);
-  const [activeTab,  setActiveTab]  = useState('home');
-  const [myCourses,  setMyCourses]  = useState<any[]>([]);
-  const [performersLoading, setPerformersLoading] = useState(true);
-  const [performers, setPerformers] = useState<{
-    top: any[];
-    average: any[];
-    weak: any[];
-    topQuiz: any[];
-    topAssignment: any[];
-  }>({ top: [], average: [], weak: [], topQuiz: [], topAssignment: [] });
-
-  const buildPerformerInsights = async (courses: any[]) => {
-    const studentMap = new Map<string, any>();
-
-    const ensureStudent = (id: string, name = 'Student') => {
-      if (!studentMap.has(id)) {
-        studentMap.set(id, {
-          id,
-          name,
-          quizScores: [] as number[],
-          assignmentScores: [] as number[],
-        });
-      }
-      return studentMap.get(id);
-    };
-
-    for (const course of courses) {
-      // Assignment performance
-      try {
-        const aRes = await fetch(`${API}/assignments/course/${course._id}`);
-        if (aRes.ok) {
-          const aData = await aRes.json();
-          const assignments = aData?.assignments || [];
-          for (const assignment of assignments) {
-            const sRes = await fetch(`${API}/assignments/${assignment._id}/submissions`);
-            if (!sRes.ok) continue;
-            const sData = await sRes.json();
-            const submissions = sData?.submissions || [];
-            for (const sub of submissions) {
-              const sid = String(sub.studentId?._id || sub.studentId || '');
-              if (!sid) continue;
-              const holder = ensureStudent(sid, sub.studentId?.name || sub.studentName || 'Student');
-              holder.assignmentScores.push(Number(sub.percentage || 0));
-            }
-          }
-        }
-      } catch { /* ignore one course failure */ }
-
-      // Quiz performance
-      try {
-        const qRes = await fetch(`${API}/quizzes/course/${course._id}`);
-        if (qRes.ok) {
-          const quizzes = await qRes.json();
-          for (const quiz of quizzes || []) {
-            const attemptsRes = await fetch(`${API}/quizzes/${quiz._id}/attempts`);
-            if (!attemptsRes.ok) continue;
-            const attempts = await attemptsRes.json();
-            for (const attempt of attempts || []) {
-              const sid = String(attempt.studentId?._id || attempt.studentId || '');
-              if (!sid) continue;
-              const holder = ensureStudent(sid, attempt.studentId?.name || 'Student');
-              const pct = typeof attempt.effectivePercentage === 'number'
-                ? attempt.effectivePercentage
-                : Number(attempt.percentage || 0);
-              holder.quizScores.push(pct);
-            }
-          }
-        }
-      } catch { /* ignore one course failure */ }
-    }
-
-    const withAverages = [...studentMap.values()].map(s => {
-      const quizAvg = s.quizScores.length
-        ? s.quizScores.reduce((sum: number, v: number) => sum + v, 0) / s.quizScores.length
-        : 0;
-      const assignmentAvg = s.assignmentScores.length
-        ? s.assignmentScores.reduce((sum: number, v: number) => sum + v, 0) / s.assignmentScores.length
-        : 0;
-      const overallBase = [...s.quizScores, ...s.assignmentScores];
-      const overallAvg = overallBase.length
-        ? overallBase.reduce((sum: number, v: number) => sum + v, 0) / overallBase.length
-        : 0;
-      return {
-        ...s,
-        quizAvg: Number(quizAvg.toFixed(1)),
-        assignmentAvg: Number(assignmentAvg.toFixed(1)),
-        overallAvg: Number(overallAvg.toFixed(1)),
-      };
-    }).filter(s => s.quizScores.length > 0 || s.assignmentScores.length > 0);
-
-    const top = withAverages
-      .filter(s => s.overallAvg >= 75)
-      .sort((a, b) => b.overallAvg - a.overallAvg)
-      .slice(0, 5);
-    const average = withAverages
-      .filter(s => s.overallAvg >= 50 && s.overallAvg < 75)
-      .sort((a, b) => b.overallAvg - a.overallAvg)
-      .slice(0, 5);
-    const weak = withAverages
-      .filter(s => s.overallAvg < 50)
-      .sort((a, b) => a.overallAvg - b.overallAvg)
-      .slice(0, 5);
-    const topQuiz = withAverages
-      .filter(s => s.quizScores.length > 0)
-      .sort((a, b) => b.quizAvg - a.quizAvg)
-      .slice(0, 5);
-    const topAssignment = withAverages
-      .filter(s => s.assignmentScores.length > 0)
-      .sort((a, b) => b.assignmentAvg - a.assignmentAvg)
-      .slice(0, 5);
-
-    setPerformers({ top, average, weak, topQuiz, topAssignment });
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setPerformersLoading(true);
-      try {
-        const res  = await fetch(`${BASE}/dashboard-stats`);
-        const data = await res.json();
-        setStats(data.data || data);
-
-        const cRes  = await fetch(`${API}/courses`);
-        const cData = await cRes.json();
-        const all: any[] = Array.isArray(cData) ? cData : [];
-        const myIds = new Set((user?.assignedCourses || []).map((c: any) => String(c.courseId)));
-        const assignedCourses = all.filter(c => myIds.has(String(c._id)));
-        setMyCourses(assignedCourses);
-        await buildPerformerInsights(assignedCourses);
-      } catch {}
-      finally { setLoading(false); setPerformersLoading(false); }
-    };
-    load();
-  }, [user]);
-
-  const tabs = [
-    { id: 'home',        label: '🏠 Home' },
-    { id: 'assignments', label: '📝 Assignments' },
-    { id: 'materials',   label: '📚 Materials' },
-    { id: 'attendance',  label: '📋 Attendance' },
-  ];
-
-  return (
-    <div className="p-8 space-y-8">
-      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto pb-px">
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-white border border-b-white border-gray-200 text-indigo-600 -mb-px'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'home' && (
-        <div className="space-y-12">
-          {/* Welcome & Overview */}
-          <div className="space-y-6">
-          <style>{`
-            .hero-container-bg { background-image: linear-gradient(to right, #4f46e5, #9333ea); }
-            .hero-container-bg:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-            .dark .hero-container-bg { background-image: linear-gradient(to right, #020617, #0f172a); border-color: rgba(255, 255, 255, 0.05); }
-            .dark .hero-container-bg:hover { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-            
-            .hero-mask-bg { background-image: linear-gradient(to right, #4f46e5, rgba(79, 70, 229, 0.8), transparent); }
-            .dark .hero-mask-bg { background-image: linear-gradient(to right, #020617, rgba(2, 6, 23, 0.8), transparent); }
-            
-            .hero-badge-bg { background-color: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
-            .dark .hero-badge-bg { background-color: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); }
-          `}</style>
-          
-          <div className="relative overflow-hidden hero-container-bg rounded-2xl p-8 sm:p-10 text-white shadow-lg transition-all duration-300 group border border-indigo-500/20">
-            {/* Restricted Background Illustration with Gradient Mask */}
-            <div className="absolute top-0 right-0 bottom-0 w-2/3 md:w-1/2 pointer-events-none z-0">
-              <img
-                src="/illustrations/teacher-hero.png"
-                alt="Teacher background illustration"
-                className="absolute inset-0 w-full h-full object-cover object-right-bottom mix-blend-luminosity transform group-hover:scale-105 transition-transform duration-700"
-                style={{ opacity: 0.15 }}
-                draggable={false}
-              />
-              {/* Overlay mask to fade out the illustration gracefully before it hits text */}
-              <div className="absolute inset-0 hero-mask-bg"></div>
-            </div>
-            
-            <div className="relative z-10 max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 shadow-sm hero-badge-bg" style={{ borderWidth: '1px', backdropFilter: 'blur(4px)' }}>
-                <Star className="w-4 h-4 text-white" />
-                <span className="text-xs font-semibold text-white uppercase tracking-wider">Faculty Portal</span>
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-black mb-3 tracking-tight text-white">
-                Welcome back,<br />
-                <span style={{ color: '#e0e7ff' }}>
-                  {user?.name?.split(' ')[0]}!
-                </span>
-              </h2>
-              <p className="text-lg font-medium max-w-md leading-relaxed" style={{ color: 'rgba(224, 231, 255, 0.9)' }}>
-                {user?.department} · {user?.specialization}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { label: 'My Courses',  value: myCourses.length, icon: BookOpen,   color: 'bg-blue-500', sub: 'Assigned courses'   },
-              { label: 'Assignments', value: '📝',             icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments'), sub: 'Manage work' },
-              { label: 'Students',    value: stats.totalStudents || '—', icon: Users, color: 'bg-green-500', sub: 'Enrolled across courses' },
-              { label: 'Materials',   value: '📚',             icon: Award,      color: 'bg-orange-500', onClick: () => setActiveTab('materials'), sub: 'Resources & docs' },
-            ].map((s: any, i) => (
-              <div key={i} onClick={s.onClick}
-                className={`bg-white dark:bg-slate-900/50 rounded-[1.5rem] p-8 min-h-[200px] border border-gray-200 dark:border-slate-800 shadow-sm ${s.onClick ? 'cursor-pointer hover:border-indigo-400/50 dark:hover:border-indigo-400/50' : ''} hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group flex flex-col relative overflow-hidden`}>
-                
-                {/* Subtle top gradient glow on hover */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`${s.color} rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ease-out`} style={{ width: '3.5rem', height: '3.5rem' }}>
-                    <s.icon className="w-7 h-7 text-white" />
-                  </div>
-                </div>
-                <div className="flex flex-col mt-auto">
-                  <h3 className="text-4xl font-black mb-2 tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    {s.value}
-                  </h3>
-                  <p className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">{s.label}</p>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{s.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          </div>
-
-          {/* Academic Setup */}
-          {myCourses.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white px-2 tracking-tight">Academic Overview</h3>
-            <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900">My Assigned Courses</h3>
-              </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {myCourses.map((c: any) => (
-                  <div key={c._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                    <p className="font-semibold text-gray-900">{c.courseName}</p>
-                    <p className="text-xs text-gray-500 font-mono mt-0.5">{c.courseCode}</p>
-                    <div className="flex gap-2 mt-2">
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{c.department}</span>
-                      <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">Sem {c.semester}</span>
-                      <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
-                        {c.enrolledStudents?.length || 0} students
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            </div>
-          )}
-
-          {/* Insights & Communication */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white px-2 tracking-tight">Insights & Communications</h3>
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              
-              <div className="xl:col-span-2 flex flex-col">
-                <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50 flex-1">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Student Performance Snapshot</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Overall + separate quiz/assignment performers for feedback planning.</p>
-            </div>
-            {performersLoading ? (
-              <div className="p-6 text-sm text-gray-500">Loading performance insights...</div>
-            ) : (
-              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-5 child-cards-grid">
-                {[
-                  { title: 'Top Students (Overall)', rows: performers.top, color: 'text-green-700 bg-green-50 border-green-200' },
-                  { title: 'Average Students', rows: performers.average, color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
-                  { title: 'Weak Students', rows: performers.weak, color: 'text-red-700 bg-red-50 border-red-200' },
-                  { title: 'Top in Quizzes', rows: performers.topQuiz, color: 'text-blue-700 bg-blue-50 border-blue-200' },
-                  { title: 'Top in Assignments', rows: performers.topAssignment, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
-                ].map(section => (
-                  <div key={section.title} className={`rounded-lg border p-4 ${section.color} child-card`}>
-                    <p className="text-sm font-semibold mb-2">{section.title}</p>
-                    {section.rows.length === 0 ? (
-                      <p className="text-xs opacity-80">No data yet.</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {section.rows.slice(0, 3).map((s: any) => (
-                          <div key={s.id} className="text-xs flex items-center justify-between">
-                            <span className="font-medium truncate pr-2">{s.name}</span>
-                            <span>
-                              Overall {s.overallAvg}% | Quiz {s.quizAvg}% | Assign {s.assignmentAvg}%
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-                </div>
-              </div>
-
-              {/* Notifications on Teacher Home page */}
-              <div className="xl:col-span-1 flex flex-col">
-                <div className="bg-white rounded-[1.5rem] border border-gray-200/80 shadow-sm hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50 flex-1">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-              <span className="text-lg">🔔</span>
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-              <span className="text-xs text-gray-400 ml-auto">Send announcements to your students</span>
-            </div>
-            <div className="p-5">
-              <NotificationsPanel userId={user?.id} role="teacher" userName={user?.name} />
-            </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'assignments'   && <Assignments />}
-      {activeTab === 'materials'     && <StudyMaterials />}
-      {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} />}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// ADMIN DASHBOARD
-// ─────────────────────────────────────────────────────────────
-function AdminDashboard() {
-  const { user } = useAuth();
-  const [stats, setStats] = useState<any>({});
-  const [pendingStudents, setPendingStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('home');
-
-  const loadStats = async () => {
-    try {
-      const res = await fetch(`${BASE}/dashboard-stats`, {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStats(data.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const loadPending = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/admin/students/pending', {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setPendingStudents((data.data || []).slice(0, 3).map((s: any) => ({ ...s, id: s._id })));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    const loadAll = async () => {
-      setLoading(true);
-      await Promise.all([loadStats(), loadPending()]);
-      setLoading(false);
-    };
-    if (user?.token) {
-      loadAll();
-    }
-  }, [user]);
-
-  const handleApprove = async (studentId: string) => {
-    if (!user) return;
-    setApprovingId(studentId);
-    try {
-      const res = await fetch(`http://localhost:5000/api/admin/students/${studentId}/approve`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ adminId: user.id }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success('Student approved!', {
-          description: 'The student can now login and access the platform.',
-        });
-        await Promise.all([loadStats(), loadPending()]);
-      } else {
-        toast.error('Approval failed', { description: data.message });
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Network error during approval');
-    } finally {
-      setApprovingId(null);
-    }
-  };
-
-  const handleReject = async (studentId: string) => {
-    if (!user) return;
-    setRejectingId(studentId);
-    try {
-      const res = await fetch(`http://localhost:5000/api/admin/students/${studentId}/reject`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ adminId: user.id, reason: 'Rejected via dashboard quick action' }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success('Student rejected', {
-          description: 'The student registration has been rejected.',
-        });
-        await Promise.all([loadStats(), loadPending()]);
-      } else {
-        toast.error('Rejection failed', { description: data.message });
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Network error during rejection');
-    } finally {
-      setRejectingId(null);
-    }
-  };
-
-  const tabs = [
-    { id: 'home', label: '🏠 Home' },
-    { id: 'analytics', label: '📊 Analytics' },
-    { id: 'timetable', label: '📅 Timetable' },
-    { id: 'materials', label: '📚 Materials' },
-    { id: 'assignments', label: '📝 Assignments' },
-  ];
-
-  // Donut chart data
-  const chartData = [
-    { name: 'Approved', value: stats.students?.approved || 0, color: '#8b5cf6' },
-    { name: 'Pending', value: stats.students?.pending || 0, color: '#f59e0b' },
-    { name: 'Rejected', value: stats.students?.rejected || 0, color: '#ef4444' },
-  ].filter(item => item.value > 0);
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08 }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } }
-  };
-
-  return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      {/* Tabs Menu */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-slate-800 overflow-x-auto pb-px">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-3 text-sm font-semibold rounded-t-xl transition-all duration-200 whitespace-nowrap -mb-px border-b-2 ${
-              activeTab === tab.id
-                ? 'border-purple-600 text-purple-600 dark:text-purple-400 font-bold bg-purple-500/5 dark:bg-purple-400/5'
-                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'home' && (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="space-y-8"
-        >
-          {/* Welcome Banner */}
-          <motion.div
-            variants={itemVariants}
-            className="hero-gradient p-8 sm:p-10 shadow-2xl relative overflow-hidden group border border-white/10 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
-            style={{ borderRadius: '2.5rem' }}
-          >
-            {/* Watermark Illustration using CSS Class for Light/Dark Mode Support */}
-            <div 
-              className="absolute inset-0 pointer-events-none z-0 overflow-hidden hero-illustration-wrapper"
-            >
-              <img
-                src="/illustrations/admin-hero.png"
-                alt="Admin Dashboard Illustration"
-                draggable={false}
-                style={{
-                  position: 'absolute',
-                  right: '-5%',
-                  bottom: '-10%',
-                  height: '130%',
-                  width: 'auto',
-                  objectFit: 'contain',
-                  objectPosition: 'right bottom',
-                  filter: 'grayscale(100%) drop-shadow(0 0 20px rgba(0,0,0,0.5))',
-                  userSelect: 'none'
-                }}
-              />
-            </div>
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 h-full">
-              {/* Text Content */}
-              <div className="flex-1 max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md mb-6 shadow-sm dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                  <span className="w-2 h-2 rounded-full bg-green-400 icon-pulse" />
-                  <span className="text-[10px] font-bold tracking-widest text-indigo-100 uppercase">System Status: Optimal</span>
-                </div>
-                <h2 className="text-4xl sm:text-5xl font-black mb-4 tracking-tight leading-tight drop-shadow-lg dynamic-text-white">
-                  Welcome back, <br/>
-                  <span className="text-premium-gradient">
-                    {user?.name?.split(' ')[0] || 'Administrator'}
-                  </span>
-                </h2>
-                <p className="text-indigo-100/80 text-base sm:text-lg font-medium leading-relaxed mb-8 max-w-md drop-shadow-sm">
-                  Your command center is ready. Monitor global metrics, manage student approvals, and oversee course enrollments all in one place.
-                </p>
-                
-                <div className="flex items-center gap-8">
-                  <div className="flex flex-col">
-                    <span className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-md dynamic-text-white">{stats.courses?.total || 0}</span>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-300/80 mt-1">Active Courses</span>
-                  </div>
-                  <div className="w-px h-12 bg-white/10 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" />
-                  <div className="flex flex-col">
-                    <span className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-md dynamic-text-white">{stats.students?.pending || 0}</span>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-300/80 mt-1">Pending Approvals</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Metric Cards Grid */}
-          <motion.div
-            variants={itemVariants}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
-          >
-            {[
               {
                 label: 'Total Students',
                 value: stats.students?.total || 0,
@@ -1573,9 +866,82 @@ function AdminDashboard() {
         </motion.div>
       )}
 
-      {activeTab === 'analytics' && <AnalyticsAdmin />}
-      {activeTab === 'timetable' && <TimetableManager />}
-      {activeTab === 'materials' && <StudyMaterials />}
+      {activeTab === 'approvals' && (
+        <div>
+          <div className="bg-gradient-to-r from-indigo-700 to-purple-700 rounded-2xl p-6 text-white mb-6 shadow-lg">
+            <h2 className="text-2xl font-bold mb-1">Teacher Approvals</h2>
+            <p className="text-indigo-200 text-sm">Review and approve teacher registration requests</p>
+          </div>
+
+          {teacherLoading ? (
+            <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" /> Loading pending teachers...
+            </div>
+          ) : pendingTeachers.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
+              <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
+              <p className="font-semibold text-gray-700">No pending teacher requests</p>
+              <p className="text-sm text-gray-400 mt-1">All teacher registrations have been processed.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pendingTeachers.map((t: any) => (
+                <div key={t._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-bold text-indigo-600">{t.name?.[0]?.toUpperCase() ?? '?'}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{t.name}</p>
+                      <p className="text-sm text-gray-500 truncate">{t.email}</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {t.department && (
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">{t.department}</span>
+                        )}
+                        {t.employeeId && (
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">ID: {t.employeeId}</span>
+                        )}
+                        {t.specialization && (
+                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">{t.specialization}</span>
+                        )}
+                        {t.phone && (
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">📞 {t.phone}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleApproveTeacher(t._id)}
+                      disabled={teacherActionLoading === t._id}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60"
+                    >
+                      {teacherActionLoading === t._id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <CheckCircle className="w-4 h-4" />}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleRejectTeacher(t._id)}
+                      disabled={teacherActionLoading === t._id}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 transition-colors disabled:opacity-60"
+                    >
+                      {teacherActionLoading === t._id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <AlertCircle className="w-4 h-4" />}
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'analytics'   && <AnalyticsAdmin />}
+      {activeTab === 'timetable'   && <TimetableManager />}
+      {activeTab === 'materials'   && <StudyMaterials />}
       {activeTab === 'assignments' && <Assignments />}
     </div>
   );

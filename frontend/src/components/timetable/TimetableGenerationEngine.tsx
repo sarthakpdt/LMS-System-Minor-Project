@@ -33,13 +33,13 @@ export default function TimetableGenerationEngine() {
 
   const [scopeType, setScopeType] = useState<GenerationScope['type']>('full');
   const [scopeBranch, setScopeBranch] = useState('');
-  const [scopeYear, setScopeYear] = useState(1);
+  const [scopeSemester, setScopeSemester] = useState(1);
   const [scopeSection, setScopeSection] = useState('A');
   const [scopeDay, setScopeDay] = useState('Monday');
   const [scopeFacultyId, setScopeFacultyId] = useState('');
 
   const [previewBranch, setPreviewBranch] = useState('');
-  const [previewYear, setPreviewYear] = useState(1);
+  const [previewSemester, setPreviewSemester] = useState(1);
   const [previewSection, setPreviewSection] = useState('');
 
   const buildScope = (): GenerationScope => {
@@ -47,7 +47,7 @@ export default function TimetableGenerationEngine() {
     if (scopeType === 'branch' || scopeType === 'semester' || scopeType === 'section') {
       base.branch = scopeBranch;
     }
-    if (scopeType === 'semester' || scopeType === 'section') base.year = scopeYear;
+    if (scopeType === 'semester' || scopeType === 'section') base.semester = scopeSemester;
     if (scopeType === 'section') base.section = scopeSection;
     if (scopeType === 'day') base.day = scopeDay;
     if (scopeType === 'faculty') base.facultyId = scopeFacultyId;
@@ -68,11 +68,11 @@ export default function TimetableGenerationEngine() {
         const b = configRes.config.branches[0];
         setScopeBranch(b.code);
         setPreviewBranch(b.code);
-        if (b.years?.length) {
-          setScopeYear(b.years[0].yearNumber);
-          setPreviewYear(b.years[0].yearNumber);
-          setPreviewSection(b.years[0].sections[0] || 'A');
-          setScopeSection(b.years[0].sections[0] || 'A');
+        if (b.semesters?.length) {
+          setScopeSemester(b.semesters[0].semesterNumber);
+          setPreviewSemester(b.semesters[0].semesterNumber);
+          setPreviewSection(b.semesters[0].sections[0] || 'A');
+          setScopeSection(b.semesters[0].sections[0] || 'A');
         }
       }
       if (draftRes.draft) {
@@ -183,7 +183,7 @@ export default function TimetableGenerationEngine() {
   }
 
   const branchObj = config?.branches.find((b) => b.code === scopeBranch);
-  const yearObj = branchObj?.years.find((y) => y.yearNumber === scopeYear);
+  const semesterObj = branchObj?.semesters?.find((s) => s.semesterNumber === scopeSemester);
 
   return (
     <div className="space-y-6">
@@ -224,9 +224,11 @@ export default function TimetableGenerationEngine() {
 
           {(scopeType === 'semester' || scopeType === 'section') && (
             <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase">Year / Semester</label>
-              <select className="w-full mt-1 border rounded-lg px-3 py-2 text-xs" value={scopeYear} onChange={(e) => setScopeYear(Number(e.target.value))}>
-                {branchObj?.years.map((y) => <option key={y.yearNumber} value={y.yearNumber}>Year {y.yearNumber}</option>)}
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Semester</label>
+              <select className="w-full mt-1 border rounded-lg px-3 py-2 text-xs" value={scopeSemester} onChange={(e) => setScopeSemester(Number(e.target.value))}>
+                {branchObj?.semesters?.map((s) => (
+                  <option key={s.semesterNumber} value={s.semesterNumber}>Semester {s.semesterNumber}</option>
+                ))}
               </select>
             </div>
           )}
@@ -235,7 +237,7 @@ export default function TimetableGenerationEngine() {
             <div>
               <label className="text-[10px] font-bold text-gray-400 uppercase">Section</label>
               <select className="w-full mt-1 border rounded-lg px-3 py-2 text-xs" value={scopeSection} onChange={(e) => setScopeSection(e.target.value)}>
-                {yearObj?.sections.map((s) => <option key={s} value={s}>{s}</option>)}
+                {semesterObj?.sections.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           )}
@@ -348,13 +350,13 @@ export default function TimetableGenerationEngine() {
                 <select className="border rounded-lg px-2 py-1 text-xs" value={previewBranch} onChange={(e) => setPreviewBranch(e.target.value)}>
                   {config.branches.map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
                 </select>
-                <select className="border rounded-lg px-2 py-1 text-xs" value={previewYear} onChange={(e) => setPreviewYear(Number(e.target.value))}>
-                  {config.branches.find((b) => b.code === previewBranch)?.years.map((y) => (
-                    <option key={y.yearNumber} value={y.yearNumber}>Y{y.yearNumber}</option>
+                <select className="border rounded-lg px-2 py-1 text-xs" value={previewSemester} onChange={(e) => setPreviewSemester(Number(e.target.value))}>
+                  {config.branches.find((b) => b.code === previewBranch)?.semesters?.map((s) => (
+                    <option key={s.semesterNumber} value={s.semesterNumber}>Sem {s.semesterNumber}</option>
                   ))}
                 </select>
                 <select className="border rounded-lg px-2 py-1 text-xs" value={previewSection} onChange={(e) => setPreviewSection(e.target.value)}>
-                  {config.branches.find((b) => b.code === previewBranch)?.years.find((y) => y.yearNumber === previewYear)?.sections.map((s) => (
+                  {config.branches.find((b) => b.code === previewBranch)?.semesters?.find((s) => s.semesterNumber === previewSemester)?.sections.map((s) => (
                     <option key={s} value={s}>Sec {s}</option>
                   ))}
                 </select>
@@ -363,7 +365,7 @@ export default function TimetableGenerationEngine() {
                 entries={entries}
                 config={config}
                 branch={previewBranch}
-                year={previewYear}
+                year={previewSemester}
                 section={previewSection}
                 isEditable={false}
               />

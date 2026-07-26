@@ -46,12 +46,13 @@ export default function ConstraintsStep({
       setSlots(unified.timeSlots.map((s) => ({ ...s })));
     } else {
       setSlots([
-        { label: '09:00 - 09:50', startTime: '09:00', endTime: '09:50', slotNumber: 1, duration: 50, isBreak: false, breakType: null },
-        { label: '10:00 - 10:50', startTime: '10:00', endTime: '10:50', slotNumber: 2, duration: 50, isBreak: false, breakType: null },
-        { label: '11:00 - 11:50', startTime: '11:00', endTime: '11:50', slotNumber: 3, duration: 50, isBreak: false, breakType: null },
-        { label: '13:00 - 14:00', startTime: '13:00', endTime: '14:00', slotNumber: 4, duration: 60, isBreak: true, breakType: 'lunch' },
-        { label: '14:00 - 14:50', startTime: '14:00', endTime: '14:50', slotNumber: 5, duration: 50, isBreak: false, breakType: null },
-        { label: '15:00 - 15:50', startTime: '15:00', endTime: '15:50', slotNumber: 6, duration: 50, isBreak: false, breakType: null },
+        { label: '09:00 - 10:00', startTime: '09:00', endTime: '10:00', slotNumber: 1, duration: 60, isBreak: false, breakType: null },
+        { label: '10:00 - 11:00', startTime: '10:00', endTime: '11:00', slotNumber: 2, duration: 60, isBreak: false, breakType: null },
+        { label: '11:00 - 12:00', startTime: '11:00', endTime: '12:00', slotNumber: 3, duration: 60, isBreak: false, breakType: null },
+        { label: '12:00 - 14:00', startTime: '12:00', endTime: '14:00', slotNumber: 4, duration: 120, isBreak: true, breakType: 'lunch' },
+        { label: '14:00 - 15:00', startTime: '14:00', endTime: '15:00', slotNumber: 5, duration: 60, isBreak: false, breakType: null },
+        { label: '15:00 - 16:00', startTime: '15:00', endTime: '16:00', slotNumber: 6, duration: 60, isBreak: false, breakType: null },
+        { label: '16:00 - 17:00', startTime: '16:00', endTime: '17:00', slotNumber: 7, duration: 60, isBreak: false, breakType: null },
       ]);
     }
     if (unified.lunchBreak) {
