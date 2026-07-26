@@ -4,7 +4,7 @@ const dotenv   = require('dotenv');
 const mongoose = require('mongoose');
 const path     = require('path');
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const app = express();
 

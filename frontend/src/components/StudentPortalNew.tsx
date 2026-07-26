@@ -291,8 +291,6 @@ export function StudentPortalNew() {
                 </p>
               </div>
             </div>
-            </div>
-          </div>
           </div>
         </motion.div>
 
