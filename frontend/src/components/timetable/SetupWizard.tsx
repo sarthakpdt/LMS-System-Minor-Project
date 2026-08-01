@@ -84,13 +84,12 @@ export default function SetupWizard() {
                 <button
                   type="button"
                   onClick={() => goToStep(idx)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-semibold transition whitespace-nowrap ${
-                    isActive
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-semibold transition whitespace-nowrap ${isActive
                       ? 'bg-purple-600 text-white shadow-md'
                       : isDone
                         ? 'bg-purple-50 text-purple-700 border border-purple-100'
                         : 'bg-gray-50 text-gray-500 border border-gray-100 hover:border-purple-200'
-                  }`}
+                    }`}
                 >
                   {isDone && !isActive ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />

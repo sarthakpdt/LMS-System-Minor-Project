@@ -255,4 +255,9 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// Phase 5 integration: Teacher Schedule Sub-router
+const teacherScheduleRoutes = require('./teacherScheduleRoutes');
+router.use('/schedule', teacherScheduleRoutes);
+
 module.exports = router;
+

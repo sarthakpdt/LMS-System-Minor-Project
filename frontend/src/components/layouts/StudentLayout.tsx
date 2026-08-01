@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, FileText, Wallet } from 'lucide-react';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Calendar, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,6 +10,7 @@ export function StudentLayout() {
   const navItems = [
     { to: '/', icon: Home, label: 'My Dashboard', end: true },
     { to: '/courses', icon: BookOpen, label: 'My Courses' },
+    { to: '/attendance', icon: Calendar, label: 'My Attendance' },
     { to: '/assignments', icon: FileText, label: 'Assignments' },
     { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quizzes & Tests' },

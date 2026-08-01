@@ -106,7 +106,7 @@ class ConflictDetector {
         const hasOverlap = (startTime < lunchEnd && endTime > lunchStart);
         if (hasOverlap) {
           conflicts.push({
-            type: 'lab', // Or general conflict type
+            type: 'lunch',
             description: `Lunch conflict: ${entry.branch} Year ${entry.year} Section ${entry.section} has class "${entry.subjectName}" scheduled during lunch break (${lunchStart} - ${lunchEnd})`,
             severity: 'error'
           });
@@ -138,26 +138,119 @@ class ConflictDetector {
       });
     });
 
-    // --- 4. WEEKLY HOURS & UNASSIGNED SUBJECTS CHECKS ---
-    // Count placed hours for each subject per section
-    // key: subjectId + "::" + branch + "::" + year + "::" + section
+    // --- 4. ROOM CAPACITY CHECKS ---
+    // Compare student strength in section to room capacity
+    const studentCounts = config.studentCounts || {};
+    activeEntries.forEach(entry => {
+      if (entry.roomId && entry.roomName) {
+        const key = `${entry.branch}::${entry.year}::${entry.section}`;
+        const strength = studentCounts[key] || 15; // default fallback count if no students enrolled yet
+        const capacity = entry.roomCapacity;
+        if (capacity && strength > capacity) {
+          conflicts.push({
+            type: 'room_capacity',
+            description: `Room capacity violation: Room "${entry.roomName}" (Capacity: ${capacity}) is too small for section ${entry.branch} Year ${entry.year} Section ${entry.section} (Student count: ${strength}) on ${entry.day} ${entry.timeSlot.label}.`,
+            severity: 'warning'
+          });
+        }
+      }
+    });
+
+    // --- 5. CONSECUTIVE HEAVY SUBJECTS CHECK ---
+    // Heavy subjects definition: DSA, DBMS, OS, COA, Mathematics/Maths
+    const HEAVY_KEYWORDS = ['dsa', 'dbms', 'os', 'coa', 'math', 'discrete', 'algo'];
+    const isHeavySubject = (name) => {
+      if (!name) return false;
+      const lower = name.toLowerCase();
+      return HEAVY_KEYWORDS.some(k => lower.includes(k));
+    };
+
+    // Group entries by Section (branch + year + section) and Day to check consecutive slots
+    const sectionDailySlots = {};
+    activeEntries.forEach(entry => {
+      const secKey = `${entry.branch}::${entry.year}::${entry.section}::${entry.day}`;
+      if (!sectionDailySlots[secKey]) sectionDailySlots[secKey] = [];
+      sectionDailySlots[secKey].push(entry);
+    });
+
+    Object.entries(sectionDailySlots).forEach(([key, list]) => {
+      // Sort entries by slotIndex
+      list.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
+      
+      let consecutiveHeavy = 0;
+      let consecutiveHeavyNames = [];
+      
+      for (let i = 0; i < list.length; i++) {
+        const current = list[i];
+        const next = list[i + 1];
+        const isCurrentHeavy = isHeavySubject(current.subjectName);
+        
+        if (isCurrentHeavy) {
+          consecutiveHeavy++;
+          consecutiveHeavyNames.push(current.subjectName);
+          
+          if (consecutiveHeavy > 3) {
+            conflicts.push({
+              type: 'section',
+              description: `Student Friendly timetable violation: more than 3 difficult subjects scheduled consecutively for ${current.branch} Yr ${current.year} Sec ${current.section} on ${current.day} (${consecutiveHeavyNames.join(' -> ')}).`,
+              severity: 'warning'
+            });
+          }
+        }
+        
+        // Check if next is consecutive (next slotIndex = current slotIndex + 1)
+        if (next && (next.slotIndex !== current.slotIndex + 1)) {
+          // Gap occurred, reset count
+          consecutiveHeavy = 0;
+          consecutiveHeavyNames = [];
+        } else if (!isCurrentHeavy) {
+          consecutiveHeavy = 0;
+          consecutiveHeavyNames = [];
+        }
+      }
+    });
+
+    // --- 6. TEACHER GAPS MINIMIZATION ---
+    // Group active slots per teacher per day to find holes in their schedule
+    const teacherDailySlots = {};
+    activeEntries.forEach(entry => {
+      if (!entry.facultyId) return;
+      const tKey = `${entry.facultyId.toString()}::${entry.day}`;
+      if (!teacherDailySlots[tKey]) teacherDailySlots[tKey] = [];
+      teacherDailySlots[tKey].push(entry);
+    });
+
+    Object.entries(teacherDailySlots).forEach(([key, list]) => {
+      if (list.length <= 1) return;
+      list.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
+      
+      const teacherName = list[0].facultyName;
+      const day = list[0].day;
+      
+      for (let i = 0; i < list.length - 1; i++) {
+        const current = list[i];
+        const next = list[i + 1];
+        const gap = next.slotIndex - current.slotIndex - 1;
+        
+        if (gap >= 2) {
+          conflicts.push({
+            type: 'teacher',
+            description: `Teacher schedule gap: Dr/Prof ${teacherName} has a large gap of ${gap} free hours on ${day} between ${current.timeSlot.endTime} and ${next.timeSlot.startTime}.`,
+            severity: 'warning'
+          });
+        }
+      }
+    });
+
+    // --- 7. WEEKLY HOURS & UNASSIGNED SUBJECTS CHECKS ---
     const hoursCount = {};
     activeEntries.forEach(entry => {
       if (!entry.subjectId) return;
       const key = `${entry.subjectId.toString()}::${entry.branch}::${entry.year}::${entry.section}`;
-      // Each lecture slot represents 1 instance. If it's a lab, we calculate duration or just increment based on slots.
-      // Usually, in a timetable, each slot is a single time slot item.
-      // Let's increment by 1 slot. We'll match it to target weeklyHours slots or hours.
-      // Wait, is weeklyHours in terms of slots or literal hours?
-      // "DBMS -> 4 lectures/week", "OS -> 3 lectures/week", "DSA -> 5 lectures/week"
-      // So weeklyHours is target lectures (i.e. slots) per week!
       hoursCount[key] = (hoursCount[key] || 0) + 1;
     });
 
     subjects.forEach(sub => {
-      // Find all sections that should attend this subject.
-      // In a real college, a subject belongs to a branch + year. All sections of this branch/year attend it.
-      // Let's find sections from config
       const branchObj = config.branches.find(b => b.code === sub.branch);
       if (!branchObj) return;
 
@@ -191,8 +284,49 @@ class ConflictDetector {
       });
     });
 
+    // --- 8. LAB SCHEDULING VALIDATION ---
+    // Rule: Every lab subject must have exactly one continuous session per week per section (never split into multiple days/sessions)
+    const sectionLabSessions = {};
+    activeEntries.forEach(entry => {
+      if (entry.subjectType === 'lab' && entry.subjectId) {
+        const key = `${entry.branch}::${entry.year}::${entry.section}::${entry.subjectId.toString()}`;
+        if (!sectionLabSessions[key]) sectionLabSessions[key] = [];
+        sectionLabSessions[key].push(entry);
+      }
+    });
+
+    Object.entries(sectionLabSessions).forEach(([key, list]) => {
+      const daysUsed = new Set(list.map(e => e.day));
+      const subjectName = list[0].subjectName;
+      const [branch, year, section] = key.split('::');
+
+      if (daysUsed.size > 1) {
+        conflicts.push({
+          type: 'lab',
+          description: `Lab scheduling violation: Lab "${subjectName}" for ${branch} Year ${year} Section ${section} is split across multiple days (${Array.from(daysUsed).join(', ')}). A lab must be a single session on one day.`,
+          severity: 'error'
+        });
+      } else {
+        list.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
+        let isContinuous = true;
+        for (let i = 0; i < list.length - 1; i++) {
+          if (list[i + 1].slotIndex !== list[i].slotIndex + 1) {
+            isContinuous = false;
+          }
+        }
+        if (!isContinuous) {
+          conflicts.push({
+            type: 'lab',
+            description: `Lab scheduling violation: Lab "${subjectName}" for ${branch} Year ${year} Section ${section} on ${list[0].day} is not continuous.`,
+            severity: 'error'
+          });
+        }
+      }
+    });
+
     return conflicts;
   }
 }
 
 module.exports = ConflictDetector;
+

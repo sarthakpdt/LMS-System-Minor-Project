@@ -35,6 +35,7 @@ import { StudentFeePayment } from "./components/student/StudentFeePayment";
 import { StudentAcademicHealth } from "./components/student/StudentAcademicHealth";
 import { FacultyInsights } from "./components/teacher/FacultyInsights";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
+import TimetableDashboard from './components/timetable/TimetableDashboard';
 
 function ProtectedStudentLayout() {
   return (
@@ -136,6 +137,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { path: "performance-levels", Component: PerformanceLevels },
         { path: "notifications", Component: TeacherNotifications },
         { path: "analytics", Component: Analytics },
+        { path: "timetable", Component: TimetableDashboard },
         { path: "*", Component: NotFound },
       ],
     },

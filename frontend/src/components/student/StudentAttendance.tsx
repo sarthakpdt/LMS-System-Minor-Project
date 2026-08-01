@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import AttendanceRing from './AttendanceRing';
 
-const API_BASE = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const StudentAttendance: React.FC<{ studentId: string }> = ({ studentId }) => {
   const [records, setRecords] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/attendance/student/${studentId}`)
-      .then(r => r.json())
-      .then(data => { if (data.success) setRecords(data.records); })
-      .finally(() => setLoading(false));
+    const fetchAttendance = () => {
+      fetch(`${API}/attendance/student/${studentId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            setRecords(data.records || []);
+            setSubjects(data.subjects || []);
+            setAnalytics(data.analytics || null);
+          }
+        })
+        .finally(() => setLoading(false));
+    };
+
+    fetchAttendance();
+    const interval = setInterval(fetchAttendance, 20000);
+    return () => clearInterval(interval);
   }, [studentId]);
 
   const total = records.length;
@@ -43,6 +58,18 @@ const StudentAttendance: React.FC<{ studentId: string }> = ({ studentId }) => {
           {pct < 75 && (
             <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '10px', padding: '14px 20px', marginBottom: '20px', color: '#991b1b', fontWeight: 500 }}>
               ⚠️ Your attendance is below 75%. Please attend more classes to avoid academic penalties.
+            </div>
+          )}
+
+          {/* Subject‑wise attendance rings */}
+          {subjects.length > 0 && (
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Subject Attendance &amp; Future Predictions</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                {subjects.map((sub, idx) => (
+                  <AttendanceCard key={idx} subject={sub} />
+                ))}
+              </div>
             </div>
           )}
 

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Users, BookOpen, FileText, TrendingUp, Award,
   ArrowUp, AlertCircle, ChevronDown, ChevronUp, Loader2,
-  Clock, Star, Send, CheckCircle, Brain,
+  Clock, Star, Send, CheckCircle, Brain, Calendar, Zap,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { StudyMaterials }            from './StudyMaterials';
+import TimetableGrid                 from './timetable/TimetableGrid';
 import NotificationsPanel            from './teacher/NotificationsPanel';
 import { StudentReviewSheet }        from './StudentReviewSheet';
 import AILearningAssistant           from './student/AILearningAssistant';
@@ -17,7 +19,7 @@ import { Assignments }               from './Assignments';
 import AttendanceManager             from './teacher/AttendanceManager';
 import StudentAttendance             from './student/StudentAttendance';
 import AnalyticsAdmin                from './admin/Analytics';
-import TimetableManager              from './admin/TimetableManager';
+import TimetableDashboard            from './timetable/TimetableDashboard';
 
 const BASE = 'http://localhost:5000/api/admin';
 const API  = 'http://localhost:5000/api';
@@ -746,6 +748,33 @@ function TeacherDashboard() {
     topAssignment: any[];
   }>({ top: [], average: [], weak: [], topQuiz: [], topAssignment: [] });
 
+  const [timetableEntries, setTimetableEntries] = useState<any[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState<any>(null);
+
+  const getTodaySchedule = () => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = days[new Date().getDay()];
+    return timetableEntries
+      .filter((e: any) => e.day === todayName && !e.isFree && !e.isLunch)
+      .sort((a: any, b: any) => (a.slotIndex || 0) - (b.slotIndex || 0));
+  };
+
+  const getCurrentClass = () => {
+    const todaySchedule = getTodaySchedule();
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return todaySchedule.find((e: any) => {
+      if (!e.timeSlot?.startTime || !e.timeSlot?.endTime) return false;
+      const [startH, startM] = e.timeSlot.startTime.split(':').map(Number);
+      const [endH, endM] = e.timeSlot.endTime.split(':').map(Number);
+      const startMin = startH * 60 + startM;
+      const endMin = endH * 60 + endM;
+      return currentMinutes >= startMin && currentMinutes <= endMin;
+    });
+  };
+
   const buildPerformerInsights = async (courses: any[]) => {
     const studentMap = new Map<string, any>();
 
@@ -762,7 +791,6 @@ function TeacherDashboard() {
     };
 
     for (const course of courses) {
-      // Assignment performance
       try {
         const aRes = await fetch(`${API}/assignments/course/${course._id}`);
         if (aRes.ok) {
@@ -781,9 +809,8 @@ function TeacherDashboard() {
             }
           }
         }
-      } catch { /* ignore one course failure */ }
+      } catch { }
 
-      // Quiz performance
       try {
         const qRes = await fetch(`${API}/quizzes/course/${course._id}`);
         if (qRes.ok) {
@@ -803,7 +830,7 @@ function TeacherDashboard() {
             }
           }
         }
-      } catch { /* ignore one course failure */ }
+      } catch { }
     }
 
     const withAverages = [...studentMap.values()].map(s => {
@@ -825,26 +852,11 @@ function TeacherDashboard() {
       };
     }).filter(s => s.quizScores.length > 0 || s.assignmentScores.length > 0);
 
-    const top = withAverages
-      .filter(s => s.overallAvg >= 75)
-      .sort((a, b) => b.overallAvg - a.overallAvg)
-      .slice(0, 5);
-    const average = withAverages
-      .filter(s => s.overallAvg >= 50 && s.overallAvg < 75)
-      .sort((a, b) => b.overallAvg - a.overallAvg)
-      .slice(0, 5);
-    const weak = withAverages
-      .filter(s => s.overallAvg < 50)
-      .sort((a, b) => a.overallAvg - b.overallAvg)
-      .slice(0, 5);
-    const topQuiz = withAverages
-      .filter(s => s.quizScores.length > 0)
-      .sort((a, b) => b.quizAvg - a.quizAvg)
-      .slice(0, 5);
-    const topAssignment = withAverages
-      .filter(s => s.assignmentScores.length > 0)
-      .sort((a, b) => b.assignmentAvg - a.assignmentAvg)
-      .slice(0, 5);
+    const top = withAverages.filter(s => s.overallAvg >= 75).sort((a, b) => b.overallAvg - a.overallAvg).slice(0, 5);
+    const average = withAverages.filter(s => s.overallAvg >= 50 && s.overallAvg < 75).sort((a, b) => b.overallAvg - a.overallAvg).slice(0, 5);
+    const weak = withAverages.filter(s => s.overallAvg < 50).sort((a, b) => a.overallAvg - b.overallAvg).slice(0, 5);
+    const topQuiz = withAverages.filter(s => s.quizScores.length > 0).sort((a, b) => b.quizAvg - a.quizAvg).slice(0, 5);
+    const topAssignment = withAverages.filter(s => s.assignmentScores.length > 0).sort((a, b) => b.assignmentAvg - a.assignmentAvg).slice(0, 5);
 
     setPerformers({ top, average, weak, topQuiz, topAssignment });
   };
@@ -853,6 +865,7 @@ function TeacherDashboard() {
     const load = async () => {
       setLoading(true);
       setPerformersLoading(true);
+      setLoadingSchedule(true);
       try {
         const res  = await fetch(`${BASE}/dashboard-stats`);
         const data = await res.json();
@@ -865,14 +878,28 @@ function TeacherDashboard() {
         const assignedCourses = all.filter(c => myIds.has(String(c._id)));
         setMyCourses(assignedCourses);
         await buildPerformerInsights(assignedCourses);
+
+        if (user?.id) {
+          const ttRes = await fetch(`${API}/timetable/engine/published?facultyId=${user.id}`);
+          if (ttRes.ok) {
+            const ttData = await ttRes.json();
+            setTimetableEntries(ttData.entries || []);
+          }
+          const configRes = await fetch(`${API}/timetable/engine/config`);
+          if (configRes.ok) {
+            const configData = await configRes.json();
+            setScheduleConfig(configData.config);
+          }
+        }
       } catch {}
-      finally { setLoading(false); setPerformersLoading(false); }
+      finally { setLoading(false); setPerformersLoading(false); setLoadingSchedule(false); }
     };
     load();
   }, [user]);
 
   const tabs = [
     { id: 'home',        label: '🏠 Home' },
+    { id: 'schedule',    label: '📅 My Schedule' },
     { id: 'assignments', label: '📝 Assignments' },
     { id: 'materials',   label: '📚 Materials' },
     { id: 'attendance',  label: '📋 Attendance' },
@@ -897,7 +924,107 @@ function TeacherDashboard() {
         <>
           <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
             <h2 className="text-2xl font-bold mb-1">Welcome, {user?.name?.split(' ')[0]}!</h2>
-                <p className="text-indigo-100 text-sm">{user?.department} · {user?.specialization}</p>
+            <p className="text-indigo-100 text-sm">{user?.department} · {user?.specialization}</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-indigo-600 animate-pulse" /> Today's Classes
+                </h3>
+                <span className="text-[10px] bg-gray-100 text-gray-500 font-bold px-2 py-0.5 rounded-full">
+                  {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+              
+              {loadingSchedule ? (
+                <div className="flex justify-center py-6 text-gray-400 text-xs">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading schedule...
+                </div>
+              ) : getTodaySchedule().length === 0 ? (
+                <p className="text-xs text-gray-500 py-6 text-center italic">No classes scheduled for today.</p>
+              ) : (
+                <div className="space-y-3">
+                  {getTodaySchedule().map((e: any, idx: number) => {
+                    const isNow = getCurrentClass()?._id === e._id;
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                          isNow 
+                            ? 'border-indigo-200 bg-indigo-50/50 shadow-sm scale-[1.01]' 
+                            : 'border-gray-100 bg-gray-50/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full ${
+                            e.subjectType === 'lab' ? 'bg-emerald-500' : 'bg-blue-500'
+                          }`} />
+                          <div>
+                            <p className="text-xs font-bold text-gray-900">{e.subjectName}</p>
+                            <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                              {e.branch} Yr {e.year} Sec {e.section} · Room {e.roomName}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <span className="text-[10px] text-gray-500 font-bold bg-white px-2 py-1 rounded border shadow-sm">
+                            {e.timeSlot.startTime} - {e.timeSlot.endTime}
+                          </span>
+                          {isNow && (
+                            <button
+                              onClick={() => setActiveTab('attendance')}
+                              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg shadow transition flex items-center gap-1"
+                            >
+                              <Zap className="w-3 h-3 text-amber-300 animate-pulse" /> Take Attendance
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-purple-600" /> Weekly Workload Summary
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 font-medium">Scheduled Lectures:</span>
+                    <span className="font-bold text-gray-800">
+                      {timetableEntries.filter((e: any) => !e.isFree && !e.isLunch).length} periods / week
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 font-medium">Unique Courses:</span>
+                    <span className="font-bold text-gray-800">
+                      {new Set(timetableEntries.map((e: any) => e.subjectName).filter(Boolean)).size} courses
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {getCurrentClass() && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl space-y-1.5 shadow">
+                  <p className="text-[9px] font-bold uppercase tracking-wider animate-pulse flex items-center gap-0.5">
+                    <Zap className="w-3 h-3 text-amber-300" /> Active Class Now
+                  </p>
+                  <p className="text-xs font-bold truncate">{getCurrentClass()?.subjectName}</p>
+                  <p className="text-[9px] opacity-90 truncate">Room: {getCurrentClass()?.roomName} · Sec: {getCurrentClass()?.section}</p>
+                  <button
+                    onClick={() => setActiveTab('attendance')}
+                    className="w-full text-center py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] rounded-lg transition"
+                  >
+                    Take Attendance Now
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -996,6 +1123,26 @@ function TeacherDashboard() {
       {activeTab === 'assignments'   && <Assignments />}
       {activeTab === 'materials'     && <StudyMaterials />}
       {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} />}
+      {activeTab === 'schedule'      && (
+        <div className="space-y-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900">My Weekly Schedule</h3>
+            <p className="text-sm text-gray-500 mt-0.5">Your full weekly schedule based on published timetables</p>
+          </div>
+          {scheduleConfig ? (
+            <TimetableGrid
+              entries={timetableEntries}
+              config={scheduleConfig}
+              isEditable={false}
+            />
+          ) : (
+            <div className="text-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
+              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No published timetable schedule configuration found.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1083,7 +1230,7 @@ function AdminDashboard() {
       )}
 
       {activeTab === 'analytics'   && <AnalyticsAdmin />}
-      {activeTab === 'timetable'   && <TimetableManager />}
+      {activeTab === 'timetable'   && <TimetableDashboard />}
       {activeTab === 'materials'   && <StudyMaterials />}
       {activeTab === 'assignments' && <Assignments />}
     </div>

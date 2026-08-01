@@ -18,6 +18,7 @@ const submitUpload = multer({
 });
 
 // Fixed-path routes FIRST
+router.get('/',                            ctrl.getAssignments);
 router.post('/generate-ai',                ctrl.generateWithAI);
 router.post('/extract-pdf',  pdfUpload.single('pdf'), ctrl.extractFromPdf);
 router.post('/gemini',                     ctrl.geminiProxy);

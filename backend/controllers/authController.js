@@ -1,15 +1,10 @@
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
 const Admin = require('../models/Admin');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { generateToken } = require('../utils/jwtUtil');
 
-// Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'your_secret_key', {
-    expiresIn: '30d',
-  });
-};
+
 
 // ─── Helper: build teacher user payload ───────────────────────────────────────
 const buildTeacherPayload = (user) => ({
@@ -50,6 +45,12 @@ const register = async (req, res) => {
       if (!additionalData.studentId) {
         return res.status(400).json({ success: false, message: 'studentId is required for students' });
       }
+      if (!additionalData.phone) {
+        return res.status(400).json({ success: false, message: 'phone number is required for students' });
+      }
+      if (additionalData.semester) {
+        additionalData.semester = String(additionalData.semester).replace(/[^0-9]/g, '');
+      }
     } else if (role === 'teacher') {
       Model = Teacher;
       if (!additionalData.employeeId) {
@@ -77,7 +78,11 @@ const register = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
+    // Ensure required fields have defaults for students to pass validation
+    if (role === 'student') {
+      additionalData.department = additionalData.department || 'Other';
+      additionalData.semester = additionalData.semester || '1';
+    }
     const user = await Model.create({
       name,
       email,
@@ -106,9 +111,7 @@ const register = async (req, res) => {
           },
     };
 
-    if (role !== 'student') {
-      payload.token = generateToken(user._id);
-    }
+    payload.token = generateToken(user._id, role);
 
     res.status(201).json(payload);
 
@@ -154,17 +157,13 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    if (role === 'student' && user.approvalStatus !== 'approved') {
-      return res.status(403).json({
-        success: false,
-        message: `Your account is ${user.approvalStatus}. Please wait for admin approval.`,
-      });
-    }
+    // Approval check removed to allow login for all students
+
 
     res.status(200).json({
       success: true,
       message: `Welcome back, ${user.name}!`,
-      token: generateToken(user._id),
+      token: generateToken(user._id, role),
       user: role === 'teacher'
         ? buildTeacherPayload(user)
         : {

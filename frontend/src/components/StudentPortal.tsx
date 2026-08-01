@@ -8,6 +8,8 @@ import {
 import AILearningAssistant from './student/AILearningAssistant';
 import NotificationsPanel from './teacher/NotificationsPanel';
 import StudentDiscussionOfTheDay from './student/StudentDiscussionOfTheDay';
+import { AttendanceStats } from './student/AttendanceStats';
+import StudentTimetable from './timetable/StudentTimetable';
 import {
   LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar
@@ -131,7 +133,7 @@ export function StudentPortal() {
   // Tab & Panel Toggles
   const [showAI, setShowAI] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assignments' | 'courses' | 'timetable'>('overview');
 
   // Fee Statement States
   const [feeRecord, setFeeRecord] = useState<any>(null);
@@ -685,6 +687,7 @@ export function StudentPortal() {
             { id: 'overview' as const, label: 'Overview', icon: TrendingUp },
             { id: 'assignments' as const, label: 'Assignments', icon: FileText },
             { id: 'courses' as const, label: 'Courses', icon: BookOpen },
+            { id: 'timetable' as const, label: 'Timetable', icon: Calendar },
           ].map(({ id, label, icon: Icon }) => (
             <motion.button
               key={id}
@@ -757,6 +760,17 @@ export function StudentPortal() {
               animate="animate"
             >
               <StudentDiscussionOfTheDay />
+            </motion.div>
+
+            {/* Attendance Overview */}
+            <motion.div
+              variants={animationVariants.slideInUp}
+              initial="initial"
+              animate="animate"
+              className="mb-6"
+            >
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Attendance Overview</h3>
+              <AttendanceStats courses={enrolled} />
             </motion.div>
 
             {/* Performance Section Grid */}
@@ -1208,6 +1222,18 @@ export function StudentPortal() {
                 ))}
               </StaggerList>
             )}
+          </motion.div>
+        )}
+
+        {/* TIMETABLE TAB */}
+        {activeTab === 'timetable' && (
+          <motion.div
+            variants={animationVariants.slideInUp}
+            initial="initial"
+            animate="animate"
+            className="space-y-4"
+          >
+            <StudentTimetable />
           </motion.div>
         )}
       </div>

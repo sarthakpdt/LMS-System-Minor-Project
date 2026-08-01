@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { RoleContext } from "./contexts/RoleContext";
@@ -13,10 +13,13 @@ function AppContent() {
     "student" | "teacher" | "admin"
   >(user?.role || "student");
 
-  // jab user login kare → role update ho
-  useMemo(() => {
+  // Update role when user changes (login/logout)
+  useEffect(() => {
     if (user?.role) {
       setCurrentRole(user.role);
+    } else {
+      // Reset to default role on logout
+      setCurrentRole("student");
     }
   }, [user]);
 
