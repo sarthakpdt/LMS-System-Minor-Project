@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Calendar, Wallet } from 'lucide-react';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Calendar, Wallet, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { RoleSwitcher } from '../RoleSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +14,7 @@ export function StudentLayout() {
     { to: '/assignments', icon: FileText, label: 'Assignments' },
     { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
     { to: '/quizzes', icon: ClipboardList, label: 'Quizzes & Tests' },
+    { to: '/study-planner', icon: Flame, label: 'Study Planner & Streak' },
     { to: '/my-progress', icon: ClipboardList, label: 'My Progress & Level' },
     { to: '/fees', icon: Wallet, label: 'Fee Payment' },
   ];
