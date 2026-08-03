@@ -36,7 +36,7 @@ const studentSchema = new mongoose.Schema({
   rejectionReason: { type: String, default: null },
 
   // Academic Info
-  gpa: { type: Number, min: 0, max: 4.0, default: 0 },
+  gpa: { type: Number, min: 0, max: 10.0, default: 0 },
   level: {
     type: String,
     enum: ['Beginner', 'Intermediate', 'Advanced'],

@@ -23,9 +23,15 @@ const bucketRoutes       = require('./routes/bucketRoutes');
 const courseRoutes       = require('./routes/courseRoutes');   
 const teacherRoutes      = require('./routes/teacherRoutes'); 
 const assignmentRoutes   = require('./routes/assignmentRoutes');
+const feeRoutes          = require('./routes/feeRoutes');
+const paymentRoutes      = require('./routes/paymentRoutes');
+const analyticsRoutes    = require('./routes/analyticsRoutes');
+const academicHealthRoutes = require('./routes/academicHealthRoutes');
 
 // ── Route registration ─────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
+app.use('/api/payments',      paymentRoutes);
+app.use('/api',               feeRoutes);
 app.use('/api/quizzes',       quizRoutes);     
 app.use('/api/admin',         adminRoutes);
 app.use('/api/materials',     materialRoutes);
@@ -36,6 +42,8 @@ app.use('/api/buckets',       bucketRoutes);
 app.use('/api/courses',       courseRoutes);    
 app.use('/api/teachers',      teacherRoutes);     
 app.use('/api/assignments',   assignmentRoutes);
+app.use('/api/analytics',     analyticsRoutes);
+app.use('/api/academic-health', academicHealthRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

@@ -52,6 +52,9 @@
       target: 'esnext',
       outDir: 'build',
     },
+    optimizeDeps: {
+      exclude: ['canvg', 'html2canvas']
+    },
     server: {
       port: 3000,
       open: true,

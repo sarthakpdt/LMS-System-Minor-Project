@@ -817,8 +817,8 @@ export function StudentAuthNew() {
                           required
                         >
                           <option value="">Select Semester</option>
-                          {SEMESTERS.map((sem) => (
-                            <option key={sem} value={sem}>
+                          {SEMESTERS.map((sem, idx) => (
+                            <option key={sem} value={(idx + 1).toString()}>
                               Semester {sem}
                             </option>
                           ))}

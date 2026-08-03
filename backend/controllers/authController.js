@@ -129,8 +129,10 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    console.log(`[AUTH] Login attempt: email="${email}", role="${role}"`);
 
     if (!email || !password || !role) {
+      console.log('[AUTH] Missing required fields');
       return res.status(400).json({ success: false, message: 'email, password, and role are required' });
     }
 
@@ -138,15 +140,20 @@ const login = async (req, res) => {
     if (role === 'student') Model = Student;
     else if (role === 'teacher') Model = Teacher;
     else if (role === 'admin') Model = Admin;
-    else return res.status(400).json({ success: false, message: 'Invalid role' });
+    else {
+      console.log(`[AUTH] Invalid role: ${role}`);
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
 
     const user = await Model.findOne({ email });
     if (!user) {
+      console.log(`[AUTH] User not found: ${email} in role ${role}`);
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log(`[AUTH] Password mismatch for: ${email}`);
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 

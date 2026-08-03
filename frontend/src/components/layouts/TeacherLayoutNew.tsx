@@ -154,6 +154,7 @@ export function TeacherLayoutNew() {
       items: [
         { to: '/students', icon: Users, label: 'Students' },
         { to: '/subject-marks', icon: BarChart3, label: 'Marks Entry' },
+        { to: '/faculty-insights', icon: BarChart3, label: 'Faculty Insights' },
       ]
     },
     {

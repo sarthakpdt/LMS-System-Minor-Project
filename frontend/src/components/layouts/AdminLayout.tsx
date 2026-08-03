@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard, Users, BookOpen, FileText, BarChart3,
   Shield, FolderOpen, ClipboardCheck, Sparkles, UserCheck,
-  Bell, Moon, Sun, Menu, X, LogOut, ChevronUp, ChevronRight, CalendarDays
+  Bell, Moon, Sun, Menu, X, LogOut, ChevronUp, ChevronRight, CalendarDays, Wallet
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { RoleSwitcher } from '../RoleSwitcher';
 import { useTheme } from '../../theme/ThemeProvider';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -34,12 +35,14 @@ export function AdminLayout() {
       items: [
         { to: '/students', icon: Users, label: 'Students' },
         { to: '/student-approvals', icon: UserCheck, label: 'Student Approvals' },
+        { to: '/accounts', icon: Wallet, label: 'Accounts' },
       ]
     },
     {
       label: 'ACADEMICS',
       items: [
         { to: '/courses', icon: BookOpen, label: 'Courses' },
+        { to: '/timetable', icon: CalendarDays, label: 'Timetable' },
         { to: '/materials', icon: FolderOpen, label: 'Study Materials' },
         { to: '/assignments', icon: FileText, label: 'Assignments' },
         { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
@@ -321,6 +324,7 @@ export function AdminLayout() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
+            <RoleSwitcher />
             {/* Theme Toggle */}
             <motion.button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

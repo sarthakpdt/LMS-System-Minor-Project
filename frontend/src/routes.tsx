@@ -12,7 +12,7 @@ import { Analytics } from "./components/Analytics";
 import { StudyMaterials } from "./components/StudyMaterials";
 import { Assessments } from "./components/Assessments";
 import { AutoGrading } from "./components/AutoGrading";
-import { StudentPortalNew } from "./components/StudentPortalNew";
+import { StudentPortal } from "./components/StudentPortal";
 import { PerformanceLevels } from "./components/PerformanceLevels";
 import { TeacherQuizManagement } from "./components/teacher/TeacherQuizManagement";
 import { TeacherQuizMonitor } from "./components/teacher/TeacherQuizMonitor";
@@ -22,6 +22,7 @@ import { StudentQuizList } from "./components/student/StudentQuizList";
 import { StudentQuizTake } from "./components/student/StudentQuizTake";
 import { AdminQuizDashboardNew } from "./components/admin/AdminQuizDashboardNew";
 import { StudentApprovals } from "./components/admin/StudentApprovals";
+import { Accounts } from "./components/admin/Accounts";
 import { NotFound } from "./components/NotFound";
 import { StudentAuthNew } from "./components/auth/StudentAuthNew";
 import { TeacherAuth } from "./components/auth/TeacherAuth";
@@ -31,6 +32,10 @@ import { BucketDashboard } from "./components/teacher/BucketDashboard";
 import { StudentBucketProgress } from "./components/student/StudentBucketProgress";
 import StudentAttendancePage from "./components/student/StudentAttendancePage";
 import TeacherAttendancePage from "./components/attendance/TeacherAttendancePage";
+import { StudentFeePayment } from "./components/student/StudentFeePayment";
+import { StudentAcademicHealth } from "./components/student/StudentAcademicHealth";
+import { StudentStudyPlanner } from "./components/student/StudentStudyPlanner";
+import { FacultyInsights } from "./components/teacher/FacultyInsights";
 // AIAgent removed - AI Assistant feature moved to inline icon on Dashboard
 import TimetableDashboard from './components/timetable/TimetableDashboard';
 
@@ -61,15 +66,18 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         path: "/",
         Component: ProtectedStudentLayout,
         children: [
-          { index: true, Component: StudentPortalNew },
+          { index: true, Component: StudentPortal },
           { path: "courses", Component: Courses },
         { path: "assignments", Component: Assignments },
         { path: "materials", Component: StudyMaterials },
         { path: "attendance", Component: StudentAttendancePage },
         { path: "quizzes", Component: StudentQuizList },
         { path: "quiz/:id", Component: StudentQuizTake },
+        { path: "fees", Component: StudentFeePayment },
         // NEW: student progress page
         { path: "my-progress", Component: StudentBucketProgress },
+        { path: "academic-health", Component: StudentAcademicHealth },
+        { path: "study-planner", Component: StudentStudyPlanner },
         // ai-assistant route removed - now accessible via AI icon on Dashboard
         { path: "*", Component: NotFound },
         ],
@@ -102,6 +110,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
           { path: "grading", Component: AutoGrading },
           { path: "performance-levels", Component: PerformanceLevels },
           { path: "analytics", Component: Analytics },
+          { path: "faculty-insights", Component: FacultyInsights },
           { path: "notifications", Component: TeacherNotifications },
           // NEW: bucket management dashboard
           { path: "bucket-dashboard", Component: BucketDashboard },
@@ -124,6 +133,7 @@ export function createRouterForRole(role: 'admin' | 'teacher' | 'student') {
         { index: true, Component: Dashboard },
         { path: "students", Component: Students },
         { path: "student-approvals", Component: StudentApprovals },
+        { path: "accounts", Component: Accounts },
         { path: "courses", Component: Courses },
         { path: "materials", Component: StudyMaterials },
         { path: "assignments", Component: Assignments },

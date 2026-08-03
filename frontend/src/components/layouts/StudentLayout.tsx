@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Menu, X, Sun, Moon, Brain, Calendar } from 'lucide-react';
+import { Outlet, NavLink, useLocation } from 'react-router';
+import { Home, BookOpen, FolderOpen, ClipboardList, Award, Bell, LogOut, TrendingUp, FileText, Menu, X, Sun, Moon, Brain, Calendar, Wallet, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import AILearningAssistant from '../student/AILearningAssistant';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +21,8 @@ export function StudentLayout() {
       label: 'OVERVIEW',
       items: [
         { to: '/', icon: Home, label: 'My Dashboard', end: true },
+        { to: '/study-planner', icon: Flame, label: 'Study Planner & Streak' },
+        { to: '/academic-health', icon: Award, label: 'Academic Health' },
       ]
     },
     {
@@ -42,6 +44,12 @@ export function StudentLayout() {
       label: 'PERFORMANCE',
       items: [
         { to: '/my-progress', icon: TrendingUp, label: 'My Progress & Level' },
+      ]
+    },
+    {
+      label: 'FINANCE',
+      items: [
+        { to: '/fees', icon: Wallet, label: 'Fee Payment' },
       ]
     },
     {
