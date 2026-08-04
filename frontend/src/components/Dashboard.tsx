@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { motion, Variants } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Users, BookOpen, FileText, TrendingUp, Award,
   ArrowUp, AlertCircle, ChevronDown, ChevronUp, Loader2,
-  Clock, Star, Send, CheckCircle, Brain, UserCheck,
+  Clock, Star, Send, CheckCircle, Brain, Calendar, Zap,
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
+  Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { StudyMaterials }            from './StudyMaterials';
+import TimetableGrid                 from './timetable/TimetableGrid';
 import NotificationsPanel            from './teacher/NotificationsPanel';
 import { StudentReviewSheet }        from './StudentReviewSheet';
 import AILearningAssistant           from './student/AILearningAssistant';
@@ -18,8 +19,7 @@ import { Assignments }               from './Assignments';
 import AttendanceManager             from './teacher/AttendanceManager';
 import StudentAttendance             from './student/StudentAttendance';
 import AnalyticsAdmin                from './admin/Analytics';
-import TimetableManager              from './admin/TimetableManager';
-import { toast }                     from 'sonner';
+import TimetableDashboard            from './timetable/TimetableDashboard';
 
 const BASE = 'http://localhost:5000/api/admin';
 const API  = 'http://localhost:5000/api';
@@ -114,7 +114,7 @@ function StudentAssignmentsView() {
       </div>
 
       {courseKeys.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200/80 text-gray-400 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No assignments published yet</p>
           <p className="text-xs mt-1">Your teachers will publish assignments here</p>
@@ -128,7 +128,7 @@ function StudentAssignmentsView() {
             const active = items.filter(a => new Date(a.dueDate) > now).length;
 
             return (
-              <div key={courseLabel} className="bg-white rounded-xl border border-gray-200/80 shadow-sm overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+              <div key={courseLabel} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <button
                   onClick={() => setExpandedCourse(isOpen ? null : courseLabel)}
                   className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition text-left"
@@ -319,7 +319,7 @@ function StudentAttemptView({
           <div className="text-5xl font-black my-3">{result.percentage?.toFixed(1)}%</div>
           <p className="text-lg">{result.totalScore} / {result.totalMarks} · Grade: <strong>{result.grade}</strong></p>
           {result.plagiarismFlagged && (
-            <p className="mt-3 text-sm bg-white/20 rounded-[1.5rem] px-3 py-2 dark:bg-slate-800 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <p className="mt-3 text-sm bg-white/20 rounded-lg px-3 py-2">
               ⚠️ Plagiarism detected ({result.plagiarismScore}%) — Teacher will review
             </p>
           )}
@@ -352,12 +352,12 @@ function StudentAttemptView({
         <div className="flex flex-col gap-3">
           <button
             onClick={() => setShowReview(true)}
-            className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-md hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+            className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-md"
           >
             📋 Review My Answers &amp; Correct Solutions
           </button>
           <button onClick={onClose}
-            className="px-6 py-3 bg-white border border-gray-200/80 text-gray-700 rounded-xl hover:bg-gray-50 font-medium w-full dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium w-full">
             ← Back to Assignments
           </button>
         </div>
@@ -383,7 +383,7 @@ function StudentAttemptView({
           </span>
         </div>
         {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-        <div className="bg-white rounded-xl border border-gray-200/80 p-5 mb-4 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
           <div className="flex justify-between mb-3 text-sm text-gray-500">
             <span>Q{currentQ + 1} of {total}</span>
           </div>
@@ -407,7 +407,7 @@ function StudentAttemptView({
         </div>
         <div className="flex justify-between">
           <button onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}
-            className="px-5 py-2.5 bg-white border border-gray-300 rounded-[1.5rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            className="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-40">
             ← Previous
           </button>
           {currentQ === total - 1 ? (
@@ -448,7 +448,7 @@ function StudentAttemptView({
       )}
       <div className="space-y-4 mb-8">
         {questions.map((q: any, qi: number) => (
-          <div key={q._id} className="bg-white rounded-xl border border-gray-200/80 p-5 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700/50">
+          <div key={q._id} className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3 mb-3">
               <span className="font-semibold text-gray-700">Q{qi + 1}.</span>
               <span className="text-xs text-gray-400 ml-auto">{q.marks} mark{q.marks > 1 ? 's' : ''}</span>
@@ -477,7 +477,7 @@ function StudentAttemptView({
           </div>
         ))}
       </div>
-      <div className="bg-white border-t border-gray-200/80 p-4 flex items-center justify-between -mx-8 px-8 sticky bottom-0 dark:bg-slate-800 dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+      <div className="bg-white border-t border-gray-200 p-4 flex items-center justify-between -mx-8 px-8 sticky bottom-0">
         <p className="text-sm text-gray-500">
           {Object.values(answers).filter(a => a.trim()).length} / {total} answered
         </p>
@@ -568,7 +568,7 @@ function StudentDashboard() {
       {/* ── AI Performance Modal ── */}
       {showAIPanel && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 dark:bg-slate-800">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
             <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-white" />
@@ -587,7 +587,7 @@ function StudentDashboard() {
       {activeTab === 'home' && (
         <>
           {/* Welcome banner */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-8 shadow-lg hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-1">Welcome back, {user?.name?.split(' ')[0]}!</h2>
@@ -603,267 +603,693 @@ function StudentDashboard() {
           </div>
 
           {/* Quick stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
-              {
-                label: 'Total Students',
-                value: stats.students?.total || 0,
-                icon: Users,
-                textColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30',
-                description: `${stats.students?.approved || 0} approved students`
-              },
-              {
-                label: 'Total Teachers',
-                value: stats.teachers?.total || 0,
-                icon: Award,
-                textColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
-                description: `${stats.teachers?.approved || 0} active teachers`
-              },
-              {
-                label: 'Total Courses',
-                value: stats.courses?.total || 0,
-                icon: BookOpen,
-                textColor: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30',
-                description: 'Across all departments'
-              },
-              {
-                label: 'Pending Approvals',
-                value: stats.students?.pending || 0,
-                icon: Clock,
-                textColor: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30',
-                description: 'Requires admin attention'
-              },
-            ].map((s, idx) => (
-              <div
-                key={idx}
-                className="premium-glass neon-glow p-8 relative overflow-hidden cursor-default hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
-                style={{ borderRadius: '1.5rem' }}
-              >
-                <div className="flex justify-between items-start mb-6">
-                  <div 
-                    className={`flex items-center justify-center flex-shrink-0 shadow-lg ${s.textColor}`}
-                    style={{ width: '3.5rem', height: '3.5rem', borderRadius: '1rem' }}
-                  >
-                    <s.icon className="w-6 h-6 icon-pulse" />
-                  </div>
+              { label: 'Enrolled Courses', value: enrolledCourses.length, icon: BookOpen, color: 'bg-blue-500', onClick: undefined },
+              { label: 'Assignments',      value: assignments.filter(a => a.isPublished).length, icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments') },
+              { label: 'Avg. Score',       value: '—',                    icon: TrendingUp, color: 'bg-green-500', onClick: undefined },
+              { label: 'Level',            value: 'Beginner',             icon: Award,      color: 'bg-orange-500', onClick: undefined },
+            ].map((s, i) => (
+              <div key={i} onClick={s.onClick}
+                className={`bg-white rounded-xl p-5 border border-gray-200 shadow-sm ${s.onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}>
+                <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
+                  <s.icon className="w-5 h-5 text-white" />
                 </div>
-                <div className="flex flex-col relative z-10">
-                  <h3 className="text-4xl font-black leading-none mb-2 tracking-tight dynamic-text-white">
-                    {loading ? '—' : s.value}
-                  </h3>
-                  <p className="text-sm font-bold uppercase tracking-widest dynamic-text-muted">{s.label}</p>
-                  <p className="text-xs font-medium dynamic-text-muted opacity-80 mt-1">{s.description}</p>
-                </div>
+                <p className="text-2xl font-bold text-gray-900 mb-0.5">{s.value}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
               </div>
             ))}
-          </motion.div>
-
-          {/* Core Body Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Quick Approvals (Left 2 Columns) */}
-            <motion.div
-              variants={itemVariants}
-              className="lg:col-span-2 space-y-6"
-            >
-              <div className="premium-glass neon-glow flex flex-col h-full hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" style={{ borderRadius: '1.5rem' }}>
-                <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between">
-                  <h3 className="text-lg font-bold dynamic-text-white flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    Pending Approvals Request
-                  </h3>
-                  <button
-                    onClick={() => setActiveTab('home')}
-                    className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
-                  >
-                    Quick Feed
-                  </button>
-                </div>
-
-                <div className="p-6 flex-1 flex flex-col justify-center">
-                  {loading ? (
-                    <div className="text-center py-12 text-sm text-gray-400">Loading registrations...</div>
-                  ) : pendingStudents.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-purple-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-purple-100 dark:border-slate-800">
-                        <CheckCircle className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <p className="font-bold text-gray-800 dark:text-slate-200">System is fully approved!</p>
-                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">All registrations processed.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {pendingStudents.map(student => (
-                        <div
-                          key={student.id}
-                          className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 hover:border-purple-500/20 transition-all gap-4"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                              <span className="font-bold text-purple-700 dark:text-purple-400 text-sm">
-                                {student.name?.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold dynamic-text-white truncate">{student.name}</p>
-                              <p className="text-xs dynamic-text-muted truncate">
-                                {student.email} · {student.department} Sem {student.semester}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2 flex-shrink-0">
-                            <button
-                              disabled={approvingId === student.id || rejectingId === student.id}
-                              onClick={() => handleApprove(student.id)}
-                              className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center disabled:opacity-50"
-                            >
-                              {approvingId === student.id ? '...' : 'Approve'}
-                            </button>
-                            <button
-                              disabled={approvingId === student.id || rejectingId === student.id}
-                              onClick={() => handleReject(student.id)}
-                              className="px-3.5 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-                            >
-                              {rejectingId === student.id ? '...' : 'Reject'}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Recharts Pie Chart (Right 1 Column) */}
-            <motion.div
-              variants={itemVariants}
-              className="space-y-6"
-            >
-              <div className="premium-glass neon-glow p-6 flex flex-col h-full justify-between hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" style={{ borderRadius: '1.5rem' }}>
-                <div>
-                  <h3 className="text-base font-bold dynamic-text-white mb-1">Student Ratios</h3>
-                  <p className="text-[10px] font-bold dynamic-text-muted uppercase tracking-wider">Approval Overview</p>
-                </div>
-
-                <div className="h-48 my-4 relative flex items-center justify-center">
-                  {loading ? (
-                    <div className="text-xs text-gray-400">Loading chart...</div>
-                  ) : chartData.length === 0 ? (
-                    <div className="text-xs text-gray-400">No chart data available.</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={chartData}
-                          innerRadius={50}
-                          outerRadius={70}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                  {/* Center Total Count label inside donut */}
-                  {!loading && (
-                    <div className="absolute text-center">
-                      <p className="text-2xl font-black dynamic-text-white leading-none">
-                        {stats.students?.total || 0}
-                      </p>
-                      <p className="text-[9px] uppercase font-bold tracking-wider dynamic-text-muted mt-1">Total</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Legend list */}
-                <div className="space-y-2.5">
-                  {[
-                    { label: 'Approved Students', value: stats.students?.approved || 0, color: 'bg-purple-500' },
-                    { label: 'Pending Registrations', value: stats.students?.pending || 0, color: 'bg-amber-500' },
-                    { label: 'Rejected Applications', value: stats.students?.rejected || 0, color: 'bg-red-500' },
-                  ].map((leg, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${leg.color}`} />
-                        <span className="font-semibold dynamic-text-muted">{leg.label}</span>
-                      </div>
-                      <span className="font-black dynamic-text-white">{loading ? '—' : leg.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
           </div>
 
-          {/* Quick Actions Panel */}
-          <motion.div
-            variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {[
-              {
-                title: 'Add New Course',
-                desc: 'Configure semesters and departments',
-                action: () => setActiveTab('materials'),
-                emoji: '📚',
-                bg: 'hover:border-purple-500/30'
-              },
-              {
-                title: 'Register Faculty',
-                desc: 'Assign teachers to specific subjects',
-                action: () => toast.info('Navigate to Teachers menu from the sidebar'),
-                emoji: '👨‍🏫',
-                bg: 'hover:border-indigo-500/30'
-              },
-              {
-                title: 'View Full Reports',
-                desc: 'Examine detailed metrics and analytics',
-                action: () => setActiveTab('analytics'),
-                emoji: '📊',
-                bg: 'hover:border-pink-500/30'
-              }
-            ].map((act, idx) => (
-              <div
-                key={idx}
-                onClick={act.action}
-                className={`premium-glass neon-glow p-5 cursor-pointer transition-all duration-300 flex items-center gap-4 group ${act.bg}`}
-                style={{ borderRadius: '1.5rem' }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-white/10 dark:bg-black/20 border border-white/20 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform dark:border-slate-700/50 hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                  {act.emoji}
+          {/* AI Improvement Cards */}
+          <DashboardImprovementCards userId={user?.id || ''} assignments={assignments} />
+
+          {/* 2-Column: Upcoming Deadlines + Notifications */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Upcoming Deadlines */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-orange-500" /> Upcoming Deadlines
+                </h3>
+              </div>
+              <div className="p-6 space-y-4">
+                {[
+                  { course: 'DSA', title: 'Data Structures (CS201)', date: '24 Apr 2026', status: 'Due Soon!' },
+                  { course: 'COA', title: 'COA (CS301)', date: '25 Apr 2026', status: 'Due Soon' },
+                ].map((item, i) => (
+                  <div key={i} className={`p-4 rounded-lg border-l-4 ${i === 0 ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'}`}>
+                    <p className="font-semibold text-sm text-gray-900">{item.title}</p>
+                    <p className="text-xs text-gray-600 mt-1">📅 {item.date}</p>
+                    <span className={`inline-block text-xs font-bold mt-2 px-2 py-0.5 rounded ${i === 0 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      🔴 {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notifications Panel */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="text-lg">🔔</span>
+                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              </div>
+              <div className="p-5 max-h-[400px] overflow-y-auto">
+                <NotificationsPanel 
+                  userId={user?.id} 
+                  role="student" 
+                  userName={user?.name}
+                  isAdmin={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Enrolled courses */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-500" /> My Enrolled Courses
+              </h3>
+            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-10 text-gray-400 gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" /> Loading...
+              </div>
+            ) : enrolledCourses.length === 0 ? (
+              <div className="px-6 py-10 text-center">
+                <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No courses enrolled yet</p>
+                <p className="text-sm text-gray-400 mt-1">Admin will enroll you based on department and semester.</p>
+              </div>
+            ) : (
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {enrolledCourses.map((c: any) => (
+                  <div key={String(c.courseId)} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{c.courseName}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{c.courseCode}</p>
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                            {DEPT_LABELS[c.department] || c.department}
+                          </span>
+                          <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
+                            Sem {c.semester}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Shortcut to assignments */}
+          <div onClick={() => setActiveTab('assignments')}
+            className="cursor-pointer bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-800 flex items-center gap-3 hover:bg-indigo-100 transition">
+            <FileText className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+            <div>
+              <strong>View your Assignments</strong>
+              <p className="text-xs text-indigo-600 mt-0.5">All published assignments grouped by subject</p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'assignments'   && <StudentAssignmentsView />}
+      {activeTab === 'materials'     && <StudyMaterials />}
+      {activeTab === 'attendance'    && <StudentAttendance studentId={user?.id} />}
+
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// TEACHER DASHBOARD
+// ─────────────────────────────────────────────────────────────
+function TeacherDashboard() {
+  const { user } = useAuth();
+  const [stats,      setStats]      = useState<any>({});
+  const [loading,    setLoading]    = useState(true);
+  const [activeTab,  setActiveTab]  = useState('home');
+  const [myCourses,  setMyCourses]  = useState<any[]>([]);
+  const [performersLoading, setPerformersLoading] = useState(true);
+  const [performers, setPerformers] = useState<{
+    top: any[];
+    average: any[];
+    weak: any[];
+    topQuiz: any[];
+    topAssignment: any[];
+  }>({ top: [], average: [], weak: [], topQuiz: [], topAssignment: [] });
+
+  const [timetableEntries, setTimetableEntries] = useState<any[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState<any>(null);
+
+  const getTodaySchedule = () => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = days[new Date().getDay()];
+    return timetableEntries
+      .filter((e: any) => e.day === todayName && !e.isFree && !e.isLunch)
+      .sort((a: any, b: any) => (a.slotIndex || 0) - (b.slotIndex || 0));
+  };
+
+  const getCurrentClass = () => {
+    const todaySchedule = getTodaySchedule();
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return todaySchedule.find((e: any) => {
+      if (!e.timeSlot?.startTime || !e.timeSlot?.endTime) return false;
+      const [startH, startM] = e.timeSlot.startTime.split(':').map(Number);
+      const [endH, endM] = e.timeSlot.endTime.split(':').map(Number);
+      const startMin = startH * 60 + startM;
+      const endMin = endH * 60 + endM;
+      return currentMinutes >= startMin && currentMinutes <= endMin;
+    });
+  };
+
+  const buildPerformerInsights = async (courses: any[]) => {
+    const studentMap = new Map<string, any>();
+
+    const ensureStudent = (id: string, name = 'Student') => {
+      if (!studentMap.has(id)) {
+        studentMap.set(id, {
+          id,
+          name,
+          quizScores: [] as number[],
+          assignmentScores: [] as number[],
+        });
+      }
+      return studentMap.get(id);
+    };
+
+    for (const course of courses) {
+      try {
+        const aRes = await fetch(`${API}/assignments/course/${course._id}`);
+        if (aRes.ok) {
+          const aData = await aRes.json();
+          const assignments = aData?.assignments || [];
+          for (const assignment of assignments) {
+            const sRes = await fetch(`${API}/assignments/${assignment._id}/submissions`);
+            if (!sRes.ok) continue;
+            const sData = await sRes.json();
+            const submissions = sData?.submissions || [];
+            for (const sub of submissions) {
+              const sid = String(sub.studentId?._id || sub.studentId || '');
+              if (!sid) continue;
+              const holder = ensureStudent(sid, sub.studentId?.name || sub.studentName || 'Student');
+              holder.assignmentScores.push(Number(sub.percentage || 0));
+            }
+          }
+        }
+      } catch { }
+
+      try {
+        const qRes = await fetch(`${API}/quizzes/course/${course._id}`);
+        if (qRes.ok) {
+          const quizzes = await qRes.json();
+          for (const quiz of quizzes || []) {
+            const attemptsRes = await fetch(`${API}/quizzes/${quiz._id}/attempts`);
+            if (!attemptsRes.ok) continue;
+            const attempts = await attemptsRes.json();
+            for (const attempt of attempts || []) {
+              const sid = String(attempt.studentId?._id || attempt.studentId || '');
+              if (!sid) continue;
+              const holder = ensureStudent(sid, attempt.studentId?.name || 'Student');
+              const pct = typeof attempt.effectivePercentage === 'number'
+                ? attempt.effectivePercentage
+                : Number(attempt.percentage || 0);
+              holder.quizScores.push(pct);
+            }
+          }
+        }
+      } catch { }
+    }
+
+    const withAverages = [...studentMap.values()].map(s => {
+      const quizAvg = s.quizScores.length
+        ? s.quizScores.reduce((sum: number, v: number) => sum + v, 0) / s.quizScores.length
+        : 0;
+      const assignmentAvg = s.assignmentScores.length
+        ? s.assignmentScores.reduce((sum: number, v: number) => sum + v, 0) / s.assignmentScores.length
+        : 0;
+      const overallBase = [...s.quizScores, ...s.assignmentScores];
+      const overallAvg = overallBase.length
+        ? overallBase.reduce((sum: number, v: number) => sum + v, 0) / overallBase.length
+        : 0;
+      return {
+        ...s,
+        quizAvg: Number(quizAvg.toFixed(1)),
+        assignmentAvg: Number(assignmentAvg.toFixed(1)),
+        overallAvg: Number(overallAvg.toFixed(1)),
+      };
+    }).filter(s => s.quizScores.length > 0 || s.assignmentScores.length > 0);
+
+    const top = withAverages.filter(s => s.overallAvg >= 75).sort((a, b) => b.overallAvg - a.overallAvg).slice(0, 5);
+    const average = withAverages.filter(s => s.overallAvg >= 50 && s.overallAvg < 75).sort((a, b) => b.overallAvg - a.overallAvg).slice(0, 5);
+    const weak = withAverages.filter(s => s.overallAvg < 50).sort((a, b) => a.overallAvg - b.overallAvg).slice(0, 5);
+    const topQuiz = withAverages.filter(s => s.quizScores.length > 0).sort((a, b) => b.quizAvg - a.quizAvg).slice(0, 5);
+    const topAssignment = withAverages.filter(s => s.assignmentScores.length > 0).sort((a, b) => b.assignmentAvg - a.assignmentAvg).slice(0, 5);
+
+    setPerformers({ top, average, weak, topQuiz, topAssignment });
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setPerformersLoading(true);
+      setLoadingSchedule(true);
+      try {
+        const res  = await fetch(`${BASE}/dashboard-stats`);
+        const data = await res.json();
+        setStats(data.data || data);
+
+        const cRes  = await fetch(`${API}/courses`);
+        const cData = await cRes.json();
+        const all: any[] = Array.isArray(cData) ? cData : [];
+        const myIds = new Set((user?.assignedCourses || []).map((c: any) => String(c.courseId)));
+        const assignedCourses = all.filter(c => myIds.has(String(c._id)));
+        setMyCourses(assignedCourses);
+        await buildPerformerInsights(assignedCourses);
+
+        if (user?.id) {
+          const ttRes = await fetch(`${API}/timetable/engine/published?facultyId=${user.id}`);
+          if (ttRes.ok) {
+            const ttData = await ttRes.json();
+            setTimetableEntries(ttData.entries || []);
+          }
+          const configRes = await fetch(`${API}/timetable/engine/config`);
+          if (configRes.ok) {
+            const configData = await configRes.json();
+            setScheduleConfig(configData.config);
+          }
+        }
+      } catch {}
+      finally { setLoading(false); setPerformersLoading(false); setLoadingSchedule(false); }
+    };
+    load();
+  }, [user]);
+
+  const tabs = [
+    { id: 'home',        label: '🏠 Home' },
+    { id: 'schedule',    label: '📅 My Schedule' },
+    { id: 'assignments', label: '📝 Assignments' },
+    { id: 'materials',   label: '📚 Materials' },
+    { id: 'attendance',  label: '📋 Attendance' },
+  ];
+
+  return (
+    <div className="p-8">
+      <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-white border border-b-white border-gray-200 text-indigo-600 -mb-px'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <>
+          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-6 text-white mb-8 shadow-lg">
+            <h2 className="text-2xl font-bold mb-1">Welcome, {user?.name?.split(' ')[0]}!</h2>
+            <p className="text-indigo-100 text-sm">{user?.department} · {user?.specialization}</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-indigo-600 animate-pulse" /> Today's Classes
+                </h3>
+                <span className="text-[10px] bg-gray-100 text-gray-500 font-bold px-2 py-0.5 rounded-full">
+                  {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+              
+              {loadingSchedule ? (
+                <div className="flex justify-center py-6 text-gray-400 text-xs">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading schedule...
                 </div>
-                <div>
-                  <h4 className="font-bold text-sm dynamic-text-white group-hover:text-purple-600 transition-colors">
-                    {act.title}
-                  </h4>
-                  <p className="text-xs dynamic-text-muted mt-1">{act.desc}</p>
+              ) : getTodaySchedule().length === 0 ? (
+                <p className="text-xs text-gray-500 py-6 text-center italic">No classes scheduled for today.</p>
+              ) : (
+                <div className="space-y-3">
+                  {getTodaySchedule().map((e: any, idx: number) => {
+                    const isNow = getCurrentClass()?._id === e._id;
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                          isNow 
+                            ? 'border-indigo-200 bg-indigo-50/50 shadow-sm scale-[1.01]' 
+                            : 'border-gray-100 bg-gray-50/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full ${
+                            e.subjectType === 'lab' ? 'bg-emerald-500' : 'bg-blue-500'
+                          }`} />
+                          <div>
+                            <p className="text-xs font-bold text-gray-900">{e.subjectName}</p>
+                            <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                              {e.branch} Yr {e.year} Sec {e.section} · Room {e.roomName}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <span className="text-[10px] text-gray-500 font-bold bg-white px-2 py-1 rounded border shadow-sm">
+                            {e.timeSlot.startTime} - {e.timeSlot.endTime}
+                          </span>
+                          {isNow && (
+                            <button
+                              onClick={() => setActiveTab('attendance')}
+                              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg shadow transition flex items-center gap-1"
+                            >
+                              <Zap className="w-3 h-3 text-amber-300 animate-pulse" /> Take Attendance
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-purple-600" /> Weekly Workload Summary
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 font-medium">Scheduled Lectures:</span>
+                    <span className="font-bold text-gray-800">
+                      {timetableEntries.filter((e: any) => !e.isFree && !e.isLunch).length} periods / week
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 font-medium">Unique Courses:</span>
+                    <span className="font-bold text-gray-800">
+                      {new Set(timetableEntries.map((e: any) => e.subjectName).filter(Boolean)).size} courses
+                    </span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </motion.div>
-
-          {/* Notifications / Announcements Panel */}
-          <motion.div
-            variants={itemVariants}
-            className="premium-glass neon-glow hover:shadow-xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
-            style={{ borderRadius: '1.5rem' }}
-          >
-            <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center gap-2">
-              <span className="text-lg">📢</span>
-              <h3 className="text-lg font-bold dynamic-text-white">Global Announcements</h3>
-              <span className="text-[10px] font-bold dynamic-text-muted uppercase tracking-wider ml-auto">
-                System Broadcast
-              </span>
+              
+              {getCurrentClass() && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl space-y-1.5 shadow">
+                  <p className="text-[9px] font-bold uppercase tracking-wider animate-pulse flex items-center gap-0.5">
+                    <Zap className="w-3 h-3 text-amber-300" /> Active Class Now
+                  </p>
+                  <p className="text-xs font-bold truncate">{getCurrentClass()?.subjectName}</p>
+                  <p className="text-[9px] opacity-90 truncate">Room: {getCurrentClass()?.roomName} · Sec: {getCurrentClass()?.section}</p>
+                  <button
+                    onClick={() => setActiveTab('attendance')}
+                    className="w-full text-center py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] rounded-lg transition"
+                  >
+                    Take Attendance Now
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="p-6">
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: 'My Courses',  value: myCourses.length, icon: BookOpen,   color: 'bg-blue-500'   },
+              { label: 'Assignments', value: '📝',             icon: FileText,   color: 'bg-purple-500', onClick: () => setActiveTab('assignments') },
+              { label: 'Students',    value: stats.totalStudents || '—', icon: Users, color: 'bg-green-500' },
+              { label: 'Materials',   value: '📚',             icon: Award,      color: 'bg-orange-500', onClick: () => setActiveTab('materials') },
+            ].map((s: any, i) => (
+              <div key={i} onClick={s.onClick}
+                className={`bg-white rounded-xl p-5 border border-gray-200 shadow-sm ${s.onClick ? 'cursor-pointer hover:shadow-md' : ''}`}>
+                <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
+                  <s.icon className="w-5 h-5 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900 mb-0.5">{s.value}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {myCourses.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900">My Assigned Courses</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myCourses.map((c: any) => (
+                  <div key={c._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                    <p className="font-semibold text-gray-900">{c.courseName}</p>
+                    <p className="text-xs text-gray-500 font-mono mt-0.5">{c.courseCode}</p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{c.department}</span>
+                      <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">Sem {c.semester}</span>
+                      <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
+                        {c.enrolledStudents?.length || 0} students
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Student Performance Snapshot</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Overall + separate quiz/assignment performers for feedback planning.</p>
+            </div>
+            {performersLoading ? (
+              <div className="p-6 text-sm text-gray-500">Loading performance insights...</div>
+            ) : (
+              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {[
+                  { title: 'Top Students (Overall)', rows: performers.top, color: 'text-green-700 bg-green-50 border-green-200' },
+                  { title: 'Average Students', rows: performers.average, color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+                  { title: 'Weak Students', rows: performers.weak, color: 'text-red-700 bg-red-50 border-red-200' },
+                  { title: 'Top in Quizzes', rows: performers.topQuiz, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                  { title: 'Top in Assignments', rows: performers.topAssignment, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+                ].map(section => (
+                  <div key={section.title} className={`rounded-lg border p-4 ${section.color}`}>
+                    <p className="text-sm font-semibold mb-2">{section.title}</p>
+                    {section.rows.length === 0 ? (
+                      <p className="text-xs opacity-80">No data yet.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {section.rows.slice(0, 3).map((s: any) => (
+                          <div key={s.id} className="text-xs flex items-center justify-between">
+                            <span className="font-medium truncate pr-2">{s.name}</span>
+                            <span>
+                              Overall {s.overallAvg}% | Quiz {s.quizAvg}% | Assign {s.assignmentAvg}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Notifications on Teacher Home page */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+              <span className="text-lg">🔔</span>
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <span className="text-xs text-gray-400 ml-auto">Send announcements to your students</span>
+            </div>
+            <div className="p-5">
+              <NotificationsPanel userId={user?.id} role="teacher" userName={user?.name} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'assignments'   && <Assignments />}
+      {activeTab === 'materials'     && <StudyMaterials />}
+      {activeTab === 'attendance'    && <AttendanceManager teacherId={user?.id} />}
+      {activeTab === 'schedule'      && (
+        <div className="space-y-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900">My Weekly Schedule</h3>
+            <p className="text-sm text-gray-500 mt-0.5">Your full weekly schedule based on published timetables</p>
+          </div>
+          {scheduleConfig ? (
+            <TimetableGrid
+              entries={timetableEntries}
+              config={scheduleConfig}
+              isEditable={false}
+            />
+          ) : (
+            <div className="text-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
+              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No published timetable schedule configuration found.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN DASHBOARD
+// ─────────────────────────────────────────────────────────────
+function AdminDashboard() {
+  const { user } = useAuth();
+  const [stats,     setStats]     = useState<any>({});
+  const [loading,   setLoading]   = useState(true);
+  const [activeTab, setActiveTab] = useState('home');
+  const [pendingTeachers, setPendingTeachers] = useState<any[]>([]);
+  const [teacherLoading, setTeacherLoading] = useState(true);
+  const [teacherActionLoading, setTeacherActionLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res  = await fetch(`${BASE}/dashboard-stats`);
+        const data = await res.json();
+        setStats(data.data || data);
+      } catch {}
+      finally { setLoading(false); }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const loadPendingTeachers = async () => {
+      if (!user) return;
+      setTeacherLoading(true);
+      try {
+        const res  = await fetch(`${BASE}/teachers/pending`, {
+          headers: { Authorization: `Bearer ${(user as any).token}` }
+        });
+        const data = await res.json();
+        setPendingTeachers(data.data || []);
+      } catch {}
+      finally { setTeacherLoading(false); }
+    };
+    loadPendingTeachers();
+  }, [user]);
+
+  const handleApproveTeacher = async (teacherId: string) => {
+    if (!user) return;
+    setTeacherActionLoading(teacherId);
+    try {
+      const res  = await fetch(`${BASE}/teachers/${teacherId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(user as any)?.token}` },
+        body: JSON.stringify({ adminId: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingTeachers(prev => prev.filter(t => t._id !== teacherId));
+        const statsRes  = await fetch(`${BASE}/dashboard-stats`);
+        const statsData = await statsRes.json();
+        setStats(statsData.data || statsData);
+      }
+    } catch {}
+    finally { setTeacherActionLoading(null); }
+  };
+
+  const handleRejectTeacher = async (teacherId: string) => {
+    if (!user) return;
+    setTeacherActionLoading(teacherId);
+    try {
+      const res  = await fetch(`${BASE}/teachers/${teacherId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(user as any)?.token}` },
+        body: JSON.stringify({ adminId: user.id, reason: 'Rejected via admin panel' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingTeachers(prev => prev.filter(t => t._id !== teacherId));
+      }
+    } catch {}
+    finally { setTeacherActionLoading(null); }
+  };
+
+  const totalStudents  = stats?.students?.total    ?? stats?.totalStudents  ?? 0;
+  const totalTeachers  = stats?.teachers?.total    ?? stats?.totalTeachers  ?? 0;
+  const totalCourses   = stats?.courses?.total     ?? stats?.totalCourses   ?? 0;
+  const pendingStuds   = stats?.students?.pending  ?? stats?.pendingStudents ?? 0;
+  const pendingTeachN  = stats?.teachers?.pending  ?? 0;
+
+  const tabs = [
+    { id: 'home',        label: '🏠 Home' },
+    { id: 'approvals',   label: `👩‍🏫 Teachers${pendingTeachN > 0 ? ` (${pendingTeachN})` : ''}` },
+    { id: 'analytics',   label: '📊 Analytics' },
+    { id: 'timetable',   label: '📅 Timetable' },
+    { id: 'materials',   label: '📚 Materials' },
+    { id: 'assignments', label: '📝 Assignments' },
+  ];
+
+  return (
+    <div className="p-8">
+      <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-white border border-b-white border-gray-200 text-indigo-600 -mb-px'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <>
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-6 text-white mb-8 shadow-lg">
+            <h2 className="text-2xl font-bold mb-1">Admin Dashboard</h2>
+            <p className="text-gray-300 text-sm">System overview and management</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: 'Total Students',  value: totalStudents, icon: Users,    color: 'bg-blue-500'   },
+              { label: 'Total Teachers',  value: totalTeachers, icon: Award,    color: 'bg-green-500'  },
+              { label: 'Total Courses',   value: totalCourses,  icon: BookOpen, color: 'bg-purple-500' },
+              { label: 'Pending Students',value: pendingStuds,  icon: Clock,    color: 'bg-orange-500' },
+            ].map((s, i) => (
+              <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
+                  <s.icon className="w-5 h-5 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900 mb-0.5">{s.value}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+              <span className="text-lg">🔔</span>
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <span className="text-xs text-gray-400 ml-auto">Send announcements to your users</span>
+            </div>
+            <div className="p-5">
               <NotificationsPanel userId={user?.id} role="admin" userName={user?.name} isAdmin />
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </>
       )}
 
       {activeTab === 'approvals' && (
@@ -940,7 +1366,7 @@ function StudentDashboard() {
       )}
 
       {activeTab === 'analytics'   && <AnalyticsAdmin />}
-      {activeTab === 'timetable'   && <TimetableManager />}
+      {activeTab === 'timetable'   && <TimetableDashboard />}
       {activeTab === 'materials'   && <StudyMaterials />}
       {activeTab === 'assignments' && <Assignments />}
     </div>
