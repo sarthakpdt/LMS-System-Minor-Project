@@ -5,32 +5,68 @@ const razorpay = require('../services/RazorpayService');
 const crypto = require('crypto');
 
 exports.createOrder = async (req, res) => {
+  console.log("🔥 CREATE ORDER CALLED");
+  console.log("[PAYMENT] Request body:", req.body);
+
   try {
     const { studentId, amount, feeCategory } = req.body;
-    
+
+    // 1. Validate request
     if (!studentId || !amount || !feeCategory) {
-      return res.status(400).json({ success: false, message: 'Missing order details' });
+      console.log("[PAYMENT] Missing order details");
+
+      return res.status(400).json({
+        success: false,
+        message: "Missing order details"
+      });
     }
 
+    console.log("[PAYMENT] studentId:", studentId);
+    console.log("[PAYMENT] amount:", amount);
+    console.log("[PAYMENT] feeCategory:", feeCategory);
+
+    // 2. Find student's fee record
     const feeRecord = await FeeRecord.findOne({ studentId });
+
+    console.log(
+      "[PAYMENT] Fee record found:",
+      !!feeRecord
+    );
+
     if (!feeRecord) {
-      return res.status(404).json({ success: false, message: 'Student account record not found' });
+      return res.status(404).json({
+        success: false,
+        message: `Fee record not found for studentId: ${studentId}`
+      });
     }
 
+    // 3. Validate amount
     const payAmt = Number(amount);
-    if (payAmt <= 0) {
-      return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+
+    if (!Number.isFinite(payAmt) || payAmt <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be greater than zero"
+      });
     }
 
-    // Razorpay amount is in paise (1 INR = 100 paise)
+    console.log("[PAYMENT] Creating Razorpay order...");
+
+    // 4. Create Razorpay order
     const options = {
       amount: Math.round(payAmt * 100),
-      currency: 'INR',
+      currency: "INR",
       receipt: `receipt_order_${Date.now()}`
     };
 
     const order = await razorpay.orders.create(options);
 
+    console.log(
+      "[PAYMENT] Razorpay order created:",
+      order.id
+    );
+
+    // 5. Save payment record
     const payment = new Payment({
       orderId: order.id,
       studentId: feeRecord.studentId,
@@ -39,19 +75,40 @@ exports.createOrder = async (req, res) => {
       program: feeRecord.program,
       feeCategory: feeCategory,
       amount: payAmt,
-      status: 'created'
+      status: "created"
     });
+
+    console.log("[PAYMENT] Saving Payment document...");
+
     await payment.save();
 
-    res.json({
+    console.log(
+      "[PAYMENT] Payment document saved:",
+      payment._id
+    );
+
+    // 6. Return order to frontend
+    return res.status(200).json({
       success: true,
       order,
       key_id: process.env.RAZORPAY_KEY_ID,
       payment
     });
+
   } catch (error) {
-    console.error('Razorpay Create Order Error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("❌ CREATE ORDER FAILED");
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.error?.description ||
+        error?.description ||
+        error?.message ||
+        "Payment order creation failed"
+    });
   }
 };
 
@@ -106,14 +163,14 @@ exports.verifyPayment = async (req, res) => {
     const today = new Date();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const formattedDate = `${today.getDate()} ${months[today.getMonth()]}`;
-    
+
     let hours = today.getHours();
     const minutes = today.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
     hours = hours ? hours : 12;
     const strTime = `${hours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
-    
+
     const txnId = `TXN${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}${String(Math.floor(1000 + Math.random() * 9000))}`;
 
     const txn = new Transaction({
@@ -147,23 +204,33 @@ exports.verifyPayment = async (req, res) => {
 exports.getReceiptDetails = async (req, res) => {
   try {
     const { paymentId } = req.params;
-    
+
     // Look up transaction by referenceNumber (Razorpay payment ID/UTR) or transaction ID
     let txn = await Transaction.findOne({ referenceNumber: paymentId });
     if (!txn) {
       txn = await Transaction.findOne({ id: paymentId });
     }
-    
+
     if (!txn) {
       return res.status(404).json({ success: false, message: 'Transaction receipt record not found.' });
     }
-    
+
     res.json({
       success: true,
       transaction: txn
     });
   } catch (error) {
-    console.error('Fetch receipt details error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Razorpay Create Order Error:', error);
+    console.error('❌ Razorpay Error Details:', error?.error || error?.description || error?.message);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.error?.description ||
+        error?.description ||
+        error?.message ||
+        'Razorpay order creation failed'
+    });
   }
-};
+}
+

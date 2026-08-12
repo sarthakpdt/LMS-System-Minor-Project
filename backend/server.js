@@ -1,8 +1,12 @@
-const express  = require('express');
-const cors     = require('cors');
-const dotenv   = require('dotenv');
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-const path     = require('path');
+const path = require('path');
 
 dotenv.config();
 
@@ -12,37 +16,37 @@ app.use(cors());
 app.use(express.json());
 
 // ── Route imports ──────────────────────────────────────────────────────────
-const authRoutes         = require('./routes/authRoutes');
-const quizRoutes         = require('./routes/quizRoutes');
-const adminRoutes        = require('./routes/adminRoutes');
-const materialRoutes     = require('./routes/materials');
-const attendanceRoutes   = require('./routes/attendance1');
+const authRoutes = require('./routes/authRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const materialRoutes = require('./routes/materials');
+const attendanceRoutes = require('./routes/attendance1');
 const notificationRoutes = require('./routes/notifications');
-const timetableRoutes    = require('./routes/timetable');
-const bucketRoutes       = require('./routes/bucketRoutes');
-const courseRoutes       = require('./routes/courseRoutes');   
-const teacherRoutes      = require('./routes/teacherRoutes'); 
-const assignmentRoutes   = require('./routes/assignmentRoutes');
-const feeRoutes          = require('./routes/feeRoutes');
-const paymentRoutes      = require('./routes/paymentRoutes');
-const analyticsRoutes    = require('./routes/analyticsRoutes');
+const timetableRoutes = require('./routes/timetable');
+const bucketRoutes = require('./routes/bucketRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const teacherRoutes = require('./routes/teacherRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
+const feeRoutes = require('./routes/feeRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 const academicHealthRoutes = require('./routes/academicHealthRoutes');
 
 // ── Route registration ─────────────────────────────────────────────────────
-app.use('/api/auth',          authRoutes);
-app.use('/api/payments',      paymentRoutes);
-app.use('/api',               feeRoutes);
-app.use('/api/quizzes',       quizRoutes);     
-app.use('/api/admin',         adminRoutes);
-app.use('/api/materials',     materialRoutes);
-app.use('/api/attendance',    attendanceRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api', feeRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/materials', materialRoutes);
+app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/timetable',     timetableRoutes);
-app.use('/api/buckets',       bucketRoutes);
-app.use('/api/courses',       courseRoutes);    
-app.use('/api/teachers',      teacherRoutes);     
-app.use('/api/assignments',   assignmentRoutes);
-app.use('/api/analytics',     analyticsRoutes);
+app.use('/api/timetable', timetableRoutes);
+app.use('/api/buckets', bucketRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/teachers', teacherRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/academic-health', academicHealthRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

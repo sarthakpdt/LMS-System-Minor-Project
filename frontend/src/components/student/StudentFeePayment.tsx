@@ -34,8 +34,7 @@ function formatINR(amount: number) {
 
 export function StudentFeePayment({ embedMode = false }: { embedMode?: boolean }) {
   const { user } = useAuth();
-  // Fallback student ID for testing if not set
-  const studentId = user?.studentId || 'STU002';
+  const studentId = user?.studentId;
 
   const [record, setRecord] = useState<FeeRecord | null>(null);
   const [history, setHistory] = useState<TransactionRecord[]>([]);
@@ -60,6 +59,10 @@ export function StudentFeePayment({ embedMode = false }: { embedMode?: boolean }
   const [cardCVV, setCardCVV] = useState('');
 
   const fetchFeeData = async () => {
+    if (!studentId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const res = await fetch(`http://localhost:5000/api/accounts/student/${studentId}`);
